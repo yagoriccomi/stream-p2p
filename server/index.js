@@ -5,6 +5,7 @@ import { WebSocketServer } from 'ws';
 import { createRoom, addViewer, removeViewer, jitterTargetMs, MODES } from './topology.js';
 import * as S from './session.js';
 import { handleInteraction } from './discord.js';
+import { iceServers } from './ice.js';
 
 const PORT = Number(process.env.PORT) || 3000;
 const MAX_MSG_BYTES = 64 * 1024; // SDP + ICE fit easily; blocks memory abuse [#65]
@@ -46,6 +47,10 @@ function createSessionFor(id, name, device) {
 const http = createServer(async (req, res) => {
   const path = new URL(req.url, 'http://x').pathname;
   if (path === '/health') return res.end('ok'); // [#82]
+  if (path === '/ice.json') {
+    res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+    return res.end(JSON.stringify({ iceServers: iceServers() }));
+  }
   if (path === '/discord/interactions' && req.method === 'POST') {
     const chunks = [];
     for await (const c of req) chunks.push(c);

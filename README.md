@@ -41,7 +41,21 @@ npm start    # http://localhost:3000  (PORT para mudar)
   5. Caio, moderador, leva 403 ao tentar banir.
   6. Ana passa a vez para Dani.
   7. O relay sai e os filhos dele são re-pendurados.
-- **Manual, LAN:** quem transmite abre em `localhost`, porque a captura exige contexto seguro. Os amigos abrem `http://<seu-IP>:3000/?code=<código>`. Fora da LAN, configure um TURN em **Configurações** (T11).
+- **Manual, LAN:** quem transmite abre em `localhost`, porque a captura exige contexto seguro. Os amigos abrem `http://<seu-IP>:3000/?code=<código>`. Fora da LAN, use o TURN do servidor (abaixo) ou um TURN pessoal em **Configurações** (T11).
+
+## TURN para fora da LAN
+O servidor entrega a lista de ICE em `/ice.json`: sempre o STUN do Google e, se configurado, um TURN. Sem TURN, quem está atrás de NAT simétrico (rede móvel, empresa) não recebe vídeo nem voz.
+- `TURN_URLS`: uma ou mais URLs separadas por vírgula, por exemplo `turn:turn.seu-dominio.com:3478,turns:turn.seu-dominio.com:5349`.
+- `TURN_SECRET` (recomendado): o mesmo `static-auth-secret` do coturn com `use-auth-secret`. Cada cliente recebe uma credencial que vale 6 h.
+- `TURN_USERNAME` e `TURN_CREDENTIAL`: para provedores que dão usuário e senha fixos. Só valem quando não há `TURN_SECRET`.
+
+Exemplo mínimo de `turnserver.conf` para o coturn:
+```
+listening-port=3478
+use-auth-secret
+static-auth-secret=<o mesmo valor de TURN_SECRET>
+realm=seu-dominio.com
+```
 
 ## Celular (T07)
 É um PWA: no Android use **Instalar app**; no iPhone, **Compartilhar › Adicionar à Tela de Início**. No celular dá para assistir e falar; transmitir só pelo computador.

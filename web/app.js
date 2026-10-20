@@ -33,9 +33,22 @@ const st = {
 };
 window.__app = st; // read by e2e
 
-// ── ICE (T11: optional TURN) ──
+// ── ICE: the server's STUN/TURN (/ice.json) plus an optional personal TURN from T11 ──
+const ICE_REFRESH_MS = 60 * 60_000; // server TURN credentials last 6 h
+let serverIce = [{ urls: 'stun:stun.l.google.com:19302' }]; // until /ice.json answers
+async function loadIce() {
+  try {
+    const res = await fetch('/ice.json', { cache: 'no-store' });
+    if (res.ok) serverIce = (await res.json()).iceServers;
+  } catch (e) {
+    log(`ice: ${e.message}`); // keep the last list; STUN alone still works on most networks
+  }
+}
+loadIce();
+setInterval(loadIce, ICE_REFRESH_MS);
+
 function getIce() {
-  const ice = [{ urls: 'stun:stun.l.google.com:19302' }];
+  const ice = [...serverIce];
   const m = /^turns?:(?:([^:@]+):([^@]+)@)?(.+)$/.exec(st.settings.turn.trim());
   if (m) ice.push({ urls: `${st.settings.turn.startsWith('turns') ? 'turns' : 'turn'}:${m[3]}`, username: m[1], credential: m[2] });
   return ice;
