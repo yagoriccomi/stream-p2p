@@ -20,7 +20,8 @@
         "languages": ["PortugueseBR"],
         "displayLanguageSelector": false,
         "startMenuFolder": "Stream P2P",
-        "installerIcon": "icons/icon.ico"
+        "installerIcon": "icons/icon.ico",
+        "installerHooks": "hooks.nsh"
       }
     }
   },
