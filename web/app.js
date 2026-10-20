@@ -109,6 +109,8 @@ async function handle(msg) {
       st.me = msg.id;
       retry = 0;
       $('conn').hidden = true;
+      autoStart?.();
+      autoStart = null;
       if (st.rejoin) {
         st.pending = 'rejoin';
         send({ type: 'join', code: st.rejoin.code, name: st.rejoin.name, device: st.device });
@@ -195,6 +197,7 @@ function onSession(s) {
   st.pending = null;
   if (first) {
     st.rejoin = null;
+    st.auto = false; // only the session the command line asked for skips the mic prompt
     store.set('name', myName());
     history.replaceState(null, '', `/?code=${s.code}`);
     screen('session');
@@ -211,6 +214,7 @@ function onSession(s) {
   voice.sync(st.me, s.members.map((m) => m.id));
   tray('set_tray_live', { live: s.presenterId === st.me });
   render();
+  reportStatus();
 }
 
 function teardown({ keepScreen } = {}) {
@@ -223,6 +227,7 @@ function teardown({ keepScreen } = {}) {
   for (const d of document.querySelectorAll('dialog[open]')) d.close();
   $('messages').replaceChildren();
   if (!keepScreen) history.replaceState(null, '', '/');
+  reportStatus();
 }
 
 // ── rendering ──
@@ -400,8 +405,8 @@ $('create-form').addEventListener('submit', async (e) => {
   const name = $('create-name').value.trim();
   if (!name) return fieldError('create-name', 'create-err', 400, 'Digite um apelido. Ele aparece para quem entrar.');
   st.name = name;
-  st.voicePref = 'mic';
-  await voice.enableMic(); // asked inside the click; a denial keeps you listen-only
+  st.voicePref = st.auto ? 'listen' : 'mic';
+  if (!st.auto) await voice.enableMic(); // asked inside the click; a denial keeps you listen-only
   st.pending = 'create';
   send({ type: 'create', name, device: st.device });
 });
@@ -441,7 +446,7 @@ $('join-form').addEventListener('submit', async (e) => {
   if (!code) return fieldError('join-code', 'join-code-err', 400, 'Cole o código do convite.');
   if (!name) return fieldError('join-name', 'join-name-err', 400, 'O apelido é obrigatório para entrar. Ele precisa ser diferente dos que já estão na sessão.');
   st.name = name;
-  if (st.voicePref === 'mic' && !voice.raw) await voice.enableMic();
+  if (st.voicePref === 'mic' && !voice.raw && !st.auto) await voice.enableMic();
   st.pending = 'join';
   send({ type: 'join', code, name, device: st.device });
 });
@@ -507,11 +512,13 @@ $('f-full').addEventListener('click', () => {
   if (document.fullscreenElement) document.exitFullscreen();
   else (stage.requestFullscreen ?? $('video').webkitEnterFullscreen)?.call(stage.requestFullscreen ? stage : $('video'));
 });
-$('f-leave').addEventListener('click', () => {
+function leaveSession() {
   send({ type: 'leave' });
   teardown();
   screen('home');
-});
+  reportStatus();
+}
+$('f-leave').addEventListener('click', leaveSession);
 $('ov-stream').addEventListener('click', openSetup);
 
 
@@ -870,6 +877,8 @@ setInterval(async () => {
   const s = await video.stats();
   if (!s) {
     $('s-stats').textContent = '';
+    window.__stats = null;
+    reportStatus(); // also the heartbeat: --status calls the app closed after 10 s of silence
     return;
   }
   const now = performance.now();
@@ -877,6 +886,7 @@ setInterval(async () => {
   last = { bytes: s.bytes, at: now };
   if (s.rttMs !== null) send({ type: 'hopRtt', ms: Math.round(s.rttMs) }); // server turns it into buffers
   window.__stats = { kbps, fps: s.fps, w: s.w, h: s.h, codec: s.codec, jitterMs: video.jitterMs, rttMs: s.rttMs, parent: video.parentId };
+  reportStatus();
   const route = s.viewer ? `buffer ${video.jitterMs} ms` : `${s.children} direto(s)`;
   $('s-stats').textContent = `${s.w}×${s.h} · ${s.fps} fps · ${kbps} kbps${s.codec ? ` · ${s.codec}` : ''} · ${route}`;
   if (s.w && !$('ov-connecting').hidden) renderStage();
@@ -966,17 +976,56 @@ async function loadNativeSources() {
 function tray(cmd, args) {
   tauri?.core?.invoke(cmd, args).catch(() => {});
 }
+// Tray menu and the command line (--stop-stream, --mute, --copy-invite, --leave) land here.
 tauri?.event?.listen('tray', ({ payload }) => {
   if (!st.session) return;
   if (payload === 'stop' && st.session.presenterId === st.me) send({ type: 'stopStream' });
   if (payload === 'mute') $('f-mic').click();
   if (payload === 'copy') copyInvite();
+  if (payload === 'leave') leaveSession();
 });
 
+// ── App · estado para `stream-p2p --status` ──
+let lastError = null;
+addEventListener('sp2p:error', ({ detail }) => { lastError = { ...detail, at: new Date().toISOString() }; });
+function reportStatus() {
+  if (!tauri?.core?.invoke) return;
+  const s = st.session;
+  const presenter = s?.presenterId ? member(s.presenterId) : null;
+  const status = {
+    screen: document.body.dataset.view ?? null,
+    connected: ws?.readyState === 1,
+    session: s ? {
+      code: s.code,
+      me: myName(),
+      role: me()?.role ?? null,
+      members: s.members.map((m) => m.name),
+      presenter: presenter?.name ?? null,
+      presenting: s.presenterId === st.me,
+    } : null,
+    mic: voice.micOn,
+    stats: window.__stats,
+    lastError,
+  };
+  tauri.core.invoke('set_status', { status }).catch((e) => log(`set_status: ${e}`));
+}
+
 // ── boot ──
+// The app's command line opens ?create=1&name= or ?code=&name=&auto=1 (see app/src-tauri/src/cli.rs).
+let autoStart = null;
 const code = params.get('code') ?? params.get('room');
-if (code) openJoin(code, params.get('name') ?? undefined);
-else screen('home');
+if (params.get('create') === '1' && params.get('name')) {
+  screen('home');
+  $('create-name').value = params.get('name');
+  st.auto = true;
+  autoStart = () => $('create-form').requestSubmit();
+} else if (code) {
+  openJoin(code, params.get('name') ?? undefined);
+  if (params.get('auto') === '1' && params.get('name')) {
+    st.auto = true;
+    autoStart = () => $('join-form').requestSubmit();
+  }
+} else screen('home');
 $('conn').hidden = false;
 connect();
 checkAppUpdate();

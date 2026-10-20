@@ -1,16 +1,27 @@
 // Stream P2P desktop: the window loads the same web app as the browser and adds
-// native source listing (T12), a system tray (T13) and auto-update (T14).
+// native source listing (T12), a system tray (T13), auto-update (T14) and a command line.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
+mod cli;
 
 use base64::{engine::general_purpose::STANDARD, Engine};
 use serde::Serialize;
-use std::io::Cursor;
+use std::{fs, io::Cursor, path::PathBuf, process::ExitCode, time::{SystemTime, UNIX_EPOCH}};
 use tauri::{
     image::Image,
+    ipc::CapabilityBuilder,
     menu::{Menu, MenuItem, PredefinedMenuItem},
     tray::{MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent},
-    AppHandle, Emitter, Manager, State,
+    AppHandle, Emitter, Manager, RunEvent, State, WebviewUrl, WebviewWindowBuilder,
 };
+
+// Until there is a public server; --server or the installer's /SERVER= override it.
+const DEFAULT_SERVER: &str = "http://localhost:3000";
+// Same folder Tauri uses for this identifier; the NSIS hook writes server.txt here too.
+const IDENTIFIER: &str = "app.streamp2p.desktop";
+const STATUS_STALE_MS: u128 = 10_000; // the web app refreshes status every 2 s
+const EXIT_BAD_ARGS: u8 = 2;
+const EXIT_NOT_RUNNING: u8 = 3;
 
 const ICON_IDLE: &[u8] = include_bytes!("../icons/tray.png");
 const ICON_LIVE: &[u8] = include_bytes!("../icons/tray-live.png");
@@ -77,6 +88,119 @@ fn set_tray_live(live: bool, tray: State<Tray>) -> Result<(), String> {
         .map_err(|e| e.to_string())
 }
 
+fn config_dir() -> PathBuf {
+    std::env::var_os("APPDATA").map(PathBuf::from).unwrap_or_default().join(IDENTIFIER)
+}
+
+fn now_ms() -> u128 {
+    SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_millis()).unwrap_or(0)
+}
+
+// Written by the web app on every change so `--status` (another process) can read it.
+#[tauri::command]
+fn set_status(mut status: serde_json::Value) -> Result<(), String> {
+    status["updatedAt"] = serde_json::json!(now_ms() as u64);
+    status["running"] = serde_json::json!(true);
+    write_status(&status)
+}
+
+fn write_status(status: &serde_json::Value) -> Result<(), String> {
+    let dir = config_dir();
+    fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let tmp = dir.join("status.json.tmp");
+    fs::write(&tmp, serde_json::to_vec_pretty(status).map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
+    fs::rename(&tmp, dir.join("status.json")).map_err(|e| e.to_string()) // atomic: readers never see half a file
+}
+
+fn read_status() -> serde_json::Value {
+    let mut status = fs::read(config_dir().join("status.json"))
+        .ok()
+        .and_then(|b| serde_json::from_slice::<serde_json::Value>(&b).ok())
+        .unwrap_or_else(|| serde_json::json!({ "running": false }));
+    let age = status["updatedAt"].as_u64().map(|t| now_ms().saturating_sub(t as u128));
+    if age.map_or(true, |a| a > STATUS_STALE_MS) {
+        status["running"] = serde_json::json!(false);
+        status["stale"] = serde_json::json!(true);
+    }
+    status
+}
+
+fn save_server(server: &str) {
+    let _ = fs::create_dir_all(config_dir());
+    let _ = fs::write(config_dir().join("server.txt"), server);
+}
+
+fn server_from_disk() -> Option<String> {
+    let raw = fs::read_to_string(config_dir().join("server.txt")).ok()?;
+    cli::valid_server(raw.trim()).ok()
+}
+
+// A GUI-subsystem exe has no console; borrow the caller's so --help/--status print there.
+fn attach_console() {
+    #[cfg(windows)]
+    unsafe {
+        use windows_sys::Win32::System::Console::{AttachConsole, ATTACH_PARENT_PROCESS};
+        AttachConsole(ATTACH_PARENT_PROCESS);
+    }
+}
+
+// The single-instance plugin's hidden window: present exactly while the app is running.
+#[cfg(windows)]
+fn instance_running() -> bool {
+    use windows_sys::Win32::UI::WindowsAndMessaging::FindWindowW;
+    let wide = |s: String| s.encode_utf16().chain(Some(0)).collect::<Vec<u16>>();
+    let (class, title) = (wide(format!("{IDENTIFIER}-sic")), wide(format!("{IDENTIFIER}-siw")));
+    !unsafe { FindWindowW(class.as_ptr(), title.as_ptr()) }.is_null()
+}
+#[cfg(not(windows))]
+fn instance_running() -> bool {
+    read_status()["running"].as_bool().unwrap_or(false)
+}
+
+struct Server(String);
+
+// Runs in the first instance for args given to a later one (single-instance plugin).
+fn apply(app: &AppHandle, args: cli::Cli) {
+    if let Some(server) = &args.server {
+        save_server(server);
+    }
+    let server = args.server.clone().unwrap_or_else(|| app.state::<Server>().0.clone());
+    if let (Some(open), Some(w)) = (&args.open, app.get_webview_window("main")) {
+        allow_ipc(app, &server);
+        let _ = w.navigate(cli::start_url(&server, open));
+        show(app);
+    }
+    if args.remote.is_empty() && args.open.is_none() {
+        show(app); // starting the app again just brings it forward
+    }
+    for cmd in args.remote {
+        match cmd {
+            cli::Remote::Show => show(app),
+            cli::Remote::Quit => app.exit(0),
+            other => {
+                let _ = app.emit("tray", other.event());
+            }
+        }
+    }
+}
+
+// The page is remote and its URL is only known at runtime: grant IPC to that origin alone.
+fn allow_ipc(app: &AppHandle, server: &str) {
+    let cap = CapabilityBuilder::new(format!("server-{server}"))
+        .remote(format!("{server}/*"))
+        .window("main")
+        .permission("core:default")
+        .permission("core:event:default")
+        .permission("updater:default")
+        .permission("process:allow-restart")
+        .permission("allow-list-sources")
+        .permission("allow-set-tray-live")
+        .permission("allow-set-status");
+    if let Err(e) = app.add_capability(cap) {
+        eprintln!("capability: {e}");
+    }
+}
+
 fn show(app: &AppHandle) {
     if let Some(w) = app.get_webview_window("main") {
         let _ = w.unminimize();
@@ -85,12 +209,53 @@ fn show(app: &AppHandle) {
     }
 }
 
-fn main() {
-    tauri::Builder::default()
+fn main() -> ExitCode {
+    let args = match cli::parse(std::env::args().skip(1)) {
+        Ok(args) => args,
+        Err(e) => {
+            attach_console();
+            eprintln!("{e}\n\n{}", cli::HELP);
+            return ExitCode::from(EXIT_BAD_ARGS);
+        }
+    };
+    if let Some(query) = args.query {
+        attach_console();
+        match query {
+            cli::Query::Help => println!("{}", cli::HELP),
+            cli::Query::Version => println!("{}", env!("CARGO_PKG_VERSION")),
+            cli::Query::Status => println!("{}", serde_json::to_string_pretty(&read_status()).unwrap_or_default()),
+        }
+        return ExitCode::SUCCESS;
+    }
+    // A remote command with no running instance: single-instance would have forwarded it otherwise.
+    let only_remote = args.open.is_none() && args.server.is_none() && !args.remote.is_empty();
+    if only_remote && !args.remote.contains(&cli::Remote::Show) && !instance_running() {
+        attach_console();
+        eprintln!("O Stream P2P não está aberto.");
+        return ExitCode::from(EXIT_NOT_RUNNING);
+    }
+    if let Some(s) = &args.server {
+        save_server(s);
+    }
+    let server = args.server.clone().or_else(server_from_disk).unwrap_or_else(|| DEFAULT_SERVER.into());
+    let start = cli::start_url(&server, args.open.as_ref().unwrap_or(&cli::Open::Home));
+
+    let app = tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| match cli::parse(argv.into_iter().skip(1)) {
+            Ok(args) => apply(app, args),
+            Err(e) => eprintln!("{e}"),
+        }))
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
-        .invoke_handler(tauri::generate_handler![list_sources, set_tray_live])
-        .setup(|app| {
+        .invoke_handler(tauri::generate_handler![list_sources, set_tray_live, set_status])
+        .manage(Server(server.clone()))
+        .setup(move |app| {
+            allow_ipc(app.handle(), &server);
+            WebviewWindowBuilder::new(app, "main", WebviewUrl::External(start.clone()))
+                .title("Stream P2P")
+                .inner_size(1280.0, 800.0)
+                .min_inner_size(900.0, 600.0)
+                .build()?;
             // The web app listens to the 'tray' event: stop | mute | copy.
             let item = |id: &str, label: &str| MenuItem::with_id(app, id, label, true, None::<&str>);
             let menu = Menu::with_items(app, &[
@@ -123,6 +288,12 @@ fn main() {
             app.manage(Tray(tray));
             Ok(())
         })
-        .run(tauri::generate_context!())
+        .build(tauri::generate_context!())
         .expect("erro ao iniciar o Stream P2P");
+    app.run(|_, event| {
+        if let RunEvent::Exit = event {
+            let _ = write_status(&serde_json::json!({ "running": false, "updatedAt": now_ms() as u64 }));
+        }
+    });
+    ExitCode::SUCCESS
 }

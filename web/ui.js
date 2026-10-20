@@ -53,6 +53,7 @@ export function showError(code, reason, { title, actions = [], kind = 'error', t
     h('div', { class: 'acts' },
       ...actions.map((a) => h('button', { class: `btn${a.primary ? ' primary' : ''}`, type: 'button', text: a.label, onclick: () => { card.remove(); a.run(); } })),
       h('button', { class: 'btn ghost', type: 'button', text: 'Fechar', onclick: () => card.remove() })));
+  if (kind === 'error') dispatchEvent(new CustomEvent('sp2p:error', { detail: { code, title: title ?? TITLES[code] ?? null, reason } }));
   toasts().prepend(card);
   while (toasts().children.length > 4) toasts().lastElementChild.remove();
   if (timeout) setTimeout(() => card.remove(), timeout);
@@ -75,6 +76,7 @@ export function fieldError(inputId, errId, code, reason) {
   box.replaceChildren(h('span', { class: 'chip-code', text: String(code) }), h('span', { text: reason }));
   box.hidden = false;
   input.focus();
+  dispatchEvent(new CustomEvent('sp2p:error', { detail: { code, title: null, reason, field: inputId } }));
 }
 
 // Password-style reveal for the session code.

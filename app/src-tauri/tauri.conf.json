@@ -6,16 +6,13 @@
   "build": { "frontendDist": "https://stream-p2p.example.com" },
   "app": {
     "withGlobalTauri": true,
-    "windows": [
-      { "title": "Stream P2P", "url": "https://stream-p2p.example.com", "width": 1280, "height": 800, "minWidth": 900, "minHeight": 600 }
-    ],
     "security": { "csp": null }
   },
   "bundle": {
     "active": true,
     "targets": ["nsis"],
     "icon": ["icons/32x32.png", "icons/128x128.png", "icons/icon.ico"],
-    "createUpdaterArtifacts": true,
+    "createUpdaterArtifacts": false,
     "shortDescription": "Transmissão de tela P2P entre amigos",
     "windows": {
       "nsis": {
