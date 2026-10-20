@@ -146,6 +146,12 @@ export class VideoNet {
     this.jitterMs = jitterMs;
   }
 
+  // The server recomputes buffers as the tree grows and hops get measured; applies live.
+  setJitter(ms) {
+    this.jitterMs = ms;
+    for (const r of this.upstream?.getReceivers() ?? []) if ('jitterBufferTarget' in r) r.jitterBufferTarget = ms;
+  }
+
   async acceptFrom(parentId, sdp, nid) {
     this.upstream?.close();
     const pc = (this.upstream = this.newPc(parentId, nid));
@@ -197,10 +203,15 @@ export class VideoNet {
   async stats() {
     const pcs = this.upstream ? [this.upstream] : [...this.downstream.values()];
     if (!pcs.length) return null;
-    let bytes = 0, fps = 0, w = 0, h = 0, codec = '';
+    let bytes = 0, fps = 0, w = 0, h = 0, codec = '', rttMs = null;
     for (const pc of pcs) {
       const report = await pc.getStats();
       report.forEach((r) => {
+        // RTT of the hop from our parent: the selected pair of the upstream connection.
+        if (pc === this.upstream && r.type === 'transport' && r.selectedCandidatePairId) {
+          const rtt = report.get(r.selectedCandidatePairId)?.currentRoundTripTime;
+          if (rtt !== undefined) rttMs = rtt * 1000;
+        }
         if (r.kind !== 'video' || (r.type !== 'inbound-rtp' && r.type !== 'outbound-rtp')) return;
         bytes += r.bytesReceived ?? r.bytesSent ?? 0;
         fps = Math.max(fps, r.framesPerSecond ?? 0);
@@ -209,6 +220,6 @@ export class VideoNet {
         if (r.codecId) codec = report.get(r.codecId)?.mimeType?.split('/')[1] ?? codec;
       });
     }
-    return { bytes, fps, w, h, codec, children: this.downstream.size, viewer: Boolean(this.upstream) };
+    return { bytes, fps, w, h, codec, rttMs, children: this.downstream.size, viewer: Boolean(this.upstream) };
   }
 }

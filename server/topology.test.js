@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createRoom, addViewer, removeViewer, directQuota, depth, jitterTargetMs } from './topology.js';
+import { createRoom, addViewer, removeViewer, directQuota, depth, jitterTargets, setHopRtt } from './topology.js';
 
 test('quota: 1440p60 on 20 Mbps upload allows 1 direct viewer', () => {
   assert.equal(directQuota(20000, '1440p60'), 1);
@@ -60,10 +60,54 @@ test('removing host or unknown id is a no-op', () => {
   assert.deepEqual(removeViewer(room, 'zzz'), []);
 });
 
-test('deeper viewers get smaller jitter buffer, clamped at 0', () => {
+// Arrival time of a frame on screen for each viewer = Σ hops + buffers of the path (relays
+// forward after their buffer). Used to check the sync claim, not just the buffer numbers.
+function shownAt(room, hop) {
+  const buf = jitterTargets(room);
+  const at = new Map([[room.hostId, 0]]);
+  const walk = (id) => room.nodes.get(id).children.forEach((c) => { at.set(c, at.get(id) + hop(c) + buf.get(c)); walk(c); });
+  walk(room.hostId);
+  at.delete(room.hostId);
+  return at;
+}
+
+test('a lone direct viewer buffers up to the 150 ms target', () => {
   const room = createRoom('h', '1440p60', 20000);
-  ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'i'].forEach((id) => addViewer(room, id));
-  assert.equal(jitterTargetMs(room, 'a'), 120);
-  assert.ok(jitterTargetMs(room, 'b') < jitterTargetMs(room, 'a'));
-  for (const id of room.nodes.keys()) assert.ok(jitterTargetMs(room, id) >= 0);
+  addViewer(room, 'a');
+  assert.deepEqual([...jitterTargets(room)], [['a', 120]]); // 30 ms estimated hop
+});
+
+test('with a relay, its children land on 150 ms and the relay one hop ahead', () => {
+  const room = createRoom('h', '1440p60', 20000); // quota 1 → b, c hang under a
+  ['a', 'b', 'c'].forEach((id) => addViewer(room, id));
+  assert.deepEqual(Object.fromEntries(jitterTargets(room)), { a: 90, b: 0, c: 0 });
+  assert.deepEqual(Object.fromEntries(shownAt(room, () => 30)), { a: 120, b: 150, c: 150 });
+});
+
+test('measured RTT replaces the estimate and adds relay processing below the host', () => {
+  const room = createRoom('h', '1440p60', 20000);
+  ['a', 'b', 'c'].forEach((id) => addViewer(room, id));
+  setHopRtt(room, 'a', 10); // 5 ms one way
+  setHopRtt(room, 'b', 10); // 5 + 20 ms relay
+  setHopRtt(room, 'c', 30); // 15 + 20 ms relay
+  assert.deepEqual(Object.fromEntries(jitterTargets(room)), { a: 110, b: 10, c: 0 });
+});
+
+test('a deep tree never buffers below 0 and every leaf lands on the same time', () => {
+  const room = createRoom('h', '1440p60', 20000);
+  const ids = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'i'];
+  ids.forEach((id) => addViewer(room, id));
+  for (const ms of jitterTargets(room).values()) assert.ok(ms >= 0);
+  const at = shownAt(room, () => 30);
+  const leaves = ids.filter((id) => !room.nodes.get(id).children.length).map((id) => at.get(id));
+  assert.equal(new Set(leaves).size, 1);
+});
+
+test('re-parenting forgets the measured hop of the old edge', () => {
+  const room = createRoom('h', '1440p60', 20000);
+  ['a', 'b'].forEach((id) => addViewer(room, id));
+  setHopRtt(room, 'b', 100);
+  removeViewer(room, 'a'); // b moves up to the host
+  assert.equal(room.nodes.get('b').hopMs, null);
+  assert.equal(setHopRtt(room, 'h', 10), false, 'host has no upstream edge');
 });

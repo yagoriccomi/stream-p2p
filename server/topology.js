@@ -10,7 +10,9 @@ export const MODES = {
 const UPLOAD_HEADROOM = 0.8; // keep 20% of upload free for audio/signaling/bursts
 const MAX_CHILDREN_PER_RELAY = 2; // viewers usually have weaker upload than the host
 const TARGET_LATENCY_MS = 150; // upper bound of the 90–150 ms sync window
-const EST_HOP_LATENCY_MS = 30; // ponytail: fixed per-hop estimate; replace with measured RTT via getStats()
+const EST_HOP_LATENCY_MS = 30; // used for an edge until its viewer reports a measured RTT
+const RELAY_PROCESSING_MS = 20; // a relay decodes and re-encodes before forwarding
+export const JITTER_STEP_MS = 5; // smaller changes aren't worth a message
 
 export function directQuota(uploadKbps, mode) {
   const { kbps } = MODES[mode];
@@ -47,7 +49,7 @@ function findParent(room, exclude = new Set()) {
 }
 
 function attach(room, id, parentId) {
-  room.nodes.get(id).parent = parentId;
+  Object.assign(room.nodes.get(id), { parent: parentId, hopMs: null }); // new edge: not measured yet
   room.nodes.get(parentId).children.push(id);
 }
 
@@ -55,7 +57,7 @@ export function addViewer(room, id) {
   if (room.nodes.has(id)) throw new Error(`duplicate id: ${id}`);
   const parentId = findParent(room);
   if (!parentId) return null; // every node saturated
-  room.nodes.set(id, { parent: null, children: [], capacity: MAX_CHILDREN_PER_RELAY });
+  room.nodes.set(id, { parent: null, children: [], capacity: MAX_CHILDREN_PER_RELAY, hopMs: null });
   attach(room, id, parentId);
   return parentId;
 }
@@ -92,7 +94,38 @@ export function removeViewer(room, id) {
   return moved;
 }
 
-// Deeper viewers already carry hop delay, so they buffer less → everyone lands near TARGET_LATENCY_MS.
-export function jitterTargetMs(room, id) {
-  return Math.max(0, TARGET_LATENCY_MS - depth(room, id) * EST_HOP_LATENCY_MS);
+// One-way latency of the edge parent → id, from the RTT the viewer measured with getStats().
+export function setHopRtt(room, id, rttMs) {
+  const node = room.nodes.get(id);
+  if (!node?.parent) return false;
+  node.hopMs = rttMs / 2 + (node.parent === room.hostId ? 0 : RELAY_PROCESSING_MS);
+  return true;
+}
+
+const hopOf = (node) => node.hopMs ?? EST_HOP_LATENCY_MS;
+
+// Buffer per viewer so everyone shows a frame at about the same time.
+// A relay forwards what leaves its own jitter buffer, so its children carry that delay too.
+// Each node therefore shows (and forwards) at TARGET − slack, where slack is the longest
+// chain of hops below it: leaves land on TARGET, a relay only one hop ahead of its children.
+export function jitterTargets(room) {
+  const slack = new Map();
+  const slackOf = (id) => {
+    const node = room.nodes.get(id);
+    const s = Math.max(0, ...node.children.map((c) => hopOf(room.nodes.get(c)) + slackOf(c)));
+    slack.set(id, s);
+    return s;
+  };
+  slackOf(room.hostId);
+  const out = new Map();
+  const walk = (id, forwardAt) => {
+    for (const c of room.nodes.get(id).children) {
+      const arrival = forwardAt + hopOf(room.nodes.get(c));
+      const buffer = Math.max(0, TARGET_LATENCY_MS - slack.get(c) - arrival);
+      out.set(c, Math.round(buffer));
+      walk(c, arrival + buffer);
+    }
+  };
+  walk(room.hostId, 0);
+  return out;
 }

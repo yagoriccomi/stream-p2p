@@ -2,7 +2,7 @@ import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { WebSocketServer } from 'ws';
-import { createRoom, addViewer, removeViewer, jitterTargetMs, MODES } from './topology.js';
+import { createRoom, addViewer, removeViewer, jitterTargets, setHopRtt, JITTER_STEP_MS, MODES } from './topology.js';
 import * as S from './session.js';
 import { handleInteraction } from './discord.js';
 import { iceServers } from './ice.js';
@@ -10,6 +10,7 @@ import { iceServers } from './ice.js';
 const PORT = Number(process.env.PORT) || 3000;
 const MAX_MSG_BYTES = 64 * 1024; // SDP + ICE fit easily; blocks memory abuse [#65]
 const RATE_PER_SEC = 20; // ICE bursts stay well under this
+const MAX_RTT_MS = 5000; // a hop RTT above this is a broken report, not a network
 const ENDED_TTL_MS = 60 * 60_000; // remember ended codes for 1 h → 410 instead of 404
 const JS = 'text/javascript; charset=utf-8';
 const STATIC = {
@@ -82,14 +83,27 @@ const publish = (s) => broadcast(s, { type: 'session', session: S.snapshot(s) })
 
 // ── video topology: rebuilt with the presenter as root on every turn ──
 function notifyAssigned(s, id, parent) {
-  send(id, { type: 'assigned', parent, mode: s.room.mode, jitterMs: jitterTargetMs(s.room, id) });
+  const jitterMs = jitterTargets(s.room).get(id);
+  s.room.nodes.get(id).sentJitter = jitterMs;
+  send(id, { type: 'assigned', parent, mode: s.room.mode, jitterMs });
   send(parent, { type: 'child', id });
+}
+
+// Any change in the tree or in a measured hop can move everyone's buffer; send only real changes.
+function pushJitter(s) {
+  for (const [id, jitterMs] of jitterTargets(s.room)) {
+    const node = s.room.nodes.get(id);
+    if (node.sentJitter !== undefined && Math.abs(jitterMs - node.sentJitter) < JITTER_STEP_MS) continue;
+    node.sentJitter = jitterMs;
+    send(id, { type: 'jitter', jitterMs });
+  }
 }
 
 function attachViewer(s, id) {
   const parent = addViewer(s.room, id);
-  if (parent) return notifyAssigned(s, id, parent);
-  send(id, { type: 'notice', code: 503, reason: 'A transmissão chegou ao limite de espectadores para o upload de quem transmite. Você continua na voz e no chat.' });
+  if (!parent) return send(id, { type: 'notice', code: 503, reason: 'A transmissão chegou ao limite de espectadores para o upload de quem transmite. Você continua na voz e no chat.' });
+  notifyAssigned(s, id, parent);
+  pushJitter(s);
 }
 
 function beginTopology(s, presenterId, mode, uploadKbps) {
@@ -111,6 +125,7 @@ function detachViewer(s, id) {
     else send(childId, { type: 'notice', code: 503, reason: 'Sem vaga na árvore depois que um retransmissor saiu.' });
   }
   if (parent) send(parent, { type: 'childGone', id });
+  pushJitter(s);
 }
 
 function grantNotice(s, targetId) {
@@ -262,6 +277,12 @@ function handle(id, msg) {
     case 'end':
       if (!S.CAN.end(inSession(), s.members.get(id))) throw new S.HttpError(403, 'Só o dono pode encerrar a sessão para todos.');
       return endSession(s, `${s.members.get(id).name} encerrou a sessão para todos.`);
+    case 'hopRtt': {
+      const ms = Number(msg.ms);
+      if (!Number.isFinite(ms) || ms < 0 || ms > MAX_RTT_MS) throw new S.HttpError(400, `RTT inválido: ${msg.ms}.`);
+      if (s?.room && setHopRtt(s.room, id, ms)) pushJitter(s); // a late report after the stream ended is harmless
+      return;
+    }
     case 'signal':
     case 'vsignal': {
       // only relay between members of the same session

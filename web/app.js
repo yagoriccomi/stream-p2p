@@ -119,6 +119,8 @@ async function handle(msg) {
     case 'assigned':
       video.assigned(msg);
       return renderStage();
+    case 'jitter':
+      return video.setJitter(msg.jitterMs);
     case 'child':
       return video.child(msg.id);
     case 'childGone':
@@ -795,7 +797,8 @@ setInterval(async () => {
   const now = performance.now();
   const kbps = last.at ? Math.max(0, Math.round(((s.bytes - last.bytes) * 8) / (now - last.at))) : 0;
   last = { bytes: s.bytes, at: now };
-  window.__stats = { kbps, fps: s.fps, w: s.w, h: s.h, codec: s.codec, jitterMs: video.jitterMs, parent: video.parentId };
+  if (s.rttMs !== null) send({ type: 'hopRtt', ms: Math.round(s.rttMs) }); // server turns it into buffers
+  window.__stats = { kbps, fps: s.fps, w: s.w, h: s.h, codec: s.codec, jitterMs: video.jitterMs, rttMs: s.rttMs, parent: video.parentId };
   const route = s.viewer ? `buffer ${video.jitterMs} ms` : `${s.children} direto(s)`;
   $('s-stats').textContent = `${s.w}×${s.h} · ${s.fps} fps · ${kbps} kbps${s.codec ? ` · ${s.codec}` : ''} · ${route}`;
   if (s.w && !$('ov-connecting').hidden) renderStage();

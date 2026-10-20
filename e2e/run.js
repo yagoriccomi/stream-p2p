@@ -8,6 +8,9 @@ import assert from 'node:assert/strict';
 import puppeteer from 'puppeteer-core';
 
 const PORT = 3999;
+// Glass-to-glass spread between viewers. One machine encodes for everyone, so allow noise;
+// the old model (relay buffer stacked on its children) measured ~100 ms here.
+const MAX_SPREAD_MS = 60;
 const BASE = `http://localhost:${PORT}`;
 const CHROME = process.env.CHROME_PATH ?? [
   'C:/Program Files/Google/Chrome/Application/chrome.exe',
@@ -30,6 +33,13 @@ const FAKE_CAPTURE = () => {
       g.fillStyle = '#fff';
       g.font = '120px sans-serif';
       g.fillText(String(t), 100 + (t * 7) % (c.width - 400), c.height / 2);
+      // clock in the picture: 24 black/white blocks on top → viewers measure glass-to-glass latency
+      const stamp = Date.now() & 0xffffff;
+      const bw = c.width / 32;
+      for (let i = 0; i < 24; i++) {
+        g.fillStyle = (stamp >> i) & 1 ? '#fff' : '#000';
+        g.fillRect(i * bw, 0, bw, c.height / 8);
+      }
     }, 1000 / video.frameRate);
     const stream = c.captureStream(video.frameRate);
     const ctx = new AudioContext();
@@ -61,6 +71,26 @@ const waitFor = (page, fn, what, arg, timeout = 20000) =>
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const hasVideo = () => document.getElementById('video').videoWidth > 0 && window.__stats?.kbps > 0;
 const presenterVideo = () => !!window.__app.session.presenterState && document.getElementById('video').videoWidth > 0 && window.__stats?.kbps > 0;
+// Median latency (ms) of the frames this viewer presents, decoded from the clock blocks.
+const latency = async (page) => { await page.bringToFront(); return page.evaluate(() => new Promise((done) => {
+  const v = document.getElementById('video');
+  const c = Object.assign(document.createElement('canvas'), { width: 320, height: 180 });
+  const g = c.getContext('2d', { willReadFrequently: true });
+  const out = [];
+  const sample = () => {
+    g.drawImage(v, 0, 0, c.width, c.height);
+    const now = Date.now();
+    let stamp = 0;
+    for (let i = 0; i < 24; i++) {
+      const [r, gg, b] = g.getImageData(Math.floor((i + 0.5) * (c.width / 32)), Math.floor(c.height / 16), 1, 1).data;
+      if (r + gg + b > 384) stamp |= 1 << i;
+    }
+    out.push(((now & 0xffffff) - stamp + 0x1000000) % 0x1000000);
+    if (out.length < 30) setTimeout(sample, 50);
+    else done(out.sort((x, y) => x - y)[15]);
+  };
+  sample();
+})); };
 const toastWith = (text) => [...document.querySelectorAll('.err')].some((e) => e.textContent.includes(text));
 
 async function open(url) {
@@ -132,9 +162,22 @@ try {
   await startStream(ana, '1440p60');
   for (const [n, p] of Object.entries(people)) await waitFor(p, hasVideo, `vídeo em ${n}`);
   await sleep(4000);
-  const buffers = await Promise.all(Object.values(people).map((p) => p.evaluate(() => window.__stats.jitterMs)));
-  console.log('buffers:', buffers);
-  assert.deepEqual([...buffers].sort(), [120, 90, 90].sort(), '1 direto (120 ms) e 2 via relay (90 ms)');
+  // Quota 1: one direct (the relay) and two below it. The relay forwards after its own buffer,
+  // so it buffers more and its children ~0; the clock in the picture checks they end up in sync.
+  const anaId = await ana.evaluate(() => window.__app.me);
+  const lat = {};
+  for (const [n, p] of Object.entries(people)) {
+    lat[n] = { ...(await p.evaluate(() => ({ direct: window.__stats.parent, buffer: window.__stats.jitterMs, rtt: window.__stats.rttMs }))), ms: await latency(p) };
+    lat[n].direct = lat[n].direct === anaId;
+  }
+  console.log('latência ponta a ponta:', JSON.stringify(lat));
+  const direct = Object.values(lat).filter((x) => x.direct);
+  const relayed = Object.values(lat).filter((x) => !x.direct);
+  assert.equal(direct.length, 1, '1 direto e 2 via relay');
+  assert.ok(relayed.every((x) => x.buffer < direct[0].buffer), 'o relay segura o buffer, os filhos não somam outro');
+  assert.ok(Object.values(lat).every((x) => x.rtt !== null), 'todos mediram o RTT do salto');
+  const spread = Math.max(...Object.values(lat).map((x) => x.ms)) - Math.min(...Object.values(lat).map((x) => x.ms));
+  assert.ok(spread <= MAX_SPREAD_MS, `diferença de atraso entre espectadores ${spread} ms > ${MAX_SPREAD_MS} ms`);
 
   // T04 · swap source live: same connections, video keeps flowing
   const pcsBefore = await ana.evaluate(() => [...window.__app.video.downstream.values()].length);
@@ -175,10 +218,10 @@ try {
 
   // relay leaves → its child re-hangs and gets video again
   await sleep(3000);
-  const roles = await Promise.all(['Bruno', 'Caio'].map((n) => people[n].evaluate(() => window.__stats.jitterMs)));
-  const anaJitter = await ana.evaluate(() => window.__stats.jitterMs);
-  const all = { Ana: [ana, anaJitter], Bruno: [people.Bruno, roles[0]], Caio: [people.Caio, roles[1]] };
-  const [directName] = Object.entries(all).find(([, [, j]]) => j === 120);
+  const daniId = await people.Dani.evaluate(() => window.__app.me);
+  const parents = await Promise.all([ana, people.Bruno, people.Caio].map((p) => p.evaluate(() => window.__stats.parent)));
+  const all = { Ana: [ana, parents[0]], Bruno: [people.Bruno, parents[1]], Caio: [people.Caio, parents[2]] };
+  const [directName] = Object.entries(all).find(([, [, parent]]) => parent === daniId);
   const rest = Object.entries(all).filter(([n]) => n !== directName);
   await all[directName][0].close();
   await sleep(5000); // stats refresh every 2 s; kbps > 0 afterwards means the re-hung path is flowing
