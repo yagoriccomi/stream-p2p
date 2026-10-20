@@ -1,6 +1,6 @@
 # ENTREGA-telas-T01-T14
 
-Modo: 🔁 Loop. Plano: `PLANO-telas-T01-T14.md`. Data: 2026-10-20.
+Modo: 🔁 Loop. Plano: `PLANO-telas-T01-T14.md`. Design: https://claude.ai/artifact/PyEQWUdc5AsX4rGRARdC8S (versão 23). Data: 2026-10-20.
 
 ## O que foi entregue
 | Tela | Onde | Estado |

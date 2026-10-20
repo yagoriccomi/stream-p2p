@@ -1,6 +1,6 @@
 # Stream P2P
 
-Transmissão de tela P2P entre amigos, sem login. Voz em tempo real em malha; vídeo em árvore com relay e ~150 ms de atraso uniforme. Arquitetura em `handoff_stream_p2p_architecture.md`; telas em `docs/planos/PLANO-telas-T01-T14.md`.
+Transmissão de tela P2P entre amigos, sem login. Voz em tempo real em malha; vídeo em árvore com relay e ~150 ms de atraso uniforme. Arquitetura em `handoff_stream_p2p_architecture.md`; telas em `docs/planos/PLANO-telas-T01-T14.md`; design (identidade, telas T01–T14 e ícones) no canvas https://claude.ai/artifact/PyEQWUdc5AsX4rGRARdC8S.
 
 ## Rodar
 ```bash

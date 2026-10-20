@@ -1,6 +1,6 @@
 # PLANO-telas-T01-T14
 
-Modo: 🔁 Loop. Fonte do design: canvas "Stream P2P — Identidade, telas e ícones". Data: 2026-10-20.
+Modo: 🔁 Loop. Fonte do design: canvas "Stream P2P — Identidade, telas e ícones" (https://claude.ai/artifact/PyEQWUdc5AsX4rGRARdC8S, versão 23). Data: 2026-10-20.
 
 Objetivo: tirar a bancada MVP (`web/index.html` com dois fieldsets) e entregar as 14 telas do canvas funcionando, sem login, só tema escuro, violeta #7F00FF como destaque.
 
