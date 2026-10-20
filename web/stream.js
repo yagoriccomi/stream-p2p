@@ -37,9 +37,12 @@ export class VideoNet {
     this.audioOn = true;
   }
 
-  newPc(peerId) {
+  // nid tags one negotiation: after a re-parent a relay may re-offer while the child's answer
+  // to the previous offer is still in flight; that stale answer must not hit the new pc.
+  newPc(peerId, nid) {
     const pc = new RTCPeerConnection({ iceServers: this.getIce() });
-    pc.onicecandidate = (e) => e.candidate && this.send({ type: 'signal', to: peerId, data: { candidate: e.candidate } });
+    pc.nid = nid;
+    pc.onicecandidate = (e) => e.candidate && this.send({ type: 'signal', to: peerId, data: { candidate: e.candidate, nid } });
     pc.onconnectionstatechange = () => this.log(`vídeo ${peerId.slice(0, 6)}: ${pc.connectionState}`);
     return pc;
   }
@@ -118,7 +121,7 @@ export class VideoNet {
 
   async offerTo(childId) {
     this.downstream.get(childId)?.close();
-    const pc = this.newPc(childId);
+    const pc = this.newPc(childId, crypto.randomUUID().slice(0, 8));
     this.downstream.set(childId, pc);
     const s = this.stream;
     const [video] = s.getVideoTracks();
@@ -133,7 +136,7 @@ export class VideoNet {
     const offer = await pc.createOffer();
     if (this.downstream.get(childId) !== pc) return;
     await pc.setLocalDescription({ type: 'offer', sdp: mungeBitrate(offer.sdp, MODES[this.mode].kbps) });
-    this.send({ type: 'signal', to: childId, data: { sdp: pc.localDescription } });
+    this.send({ type: 'signal', to: childId, data: { sdp: pc.localDescription, nid: pc.nid } });
   }
 
   // ── viewer ──
@@ -143,9 +146,9 @@ export class VideoNet {
     this.jitterMs = jitterMs;
   }
 
-  async acceptFrom(parentId, sdp) {
+  async acceptFrom(parentId, sdp, nid) {
     this.upstream?.close();
-    const pc = (this.upstream = this.newPc(parentId));
+    const pc = (this.upstream = this.newPc(parentId, nid));
     pc.ontrack = (e) => {
       // Uniform latency for video AND its audio (A/V sync); deeper nodes already carry hop delay.
       if ('jitterBufferTarget' in e.receiver) e.receiver.jitterBufferTarget = this.jitterMs;
@@ -160,7 +163,7 @@ export class VideoNet {
     await pc.setRemoteDescription(sdp);
     const answer = await pc.createAnswer();
     await pc.setLocalDescription({ type: 'answer', sdp: mungeBitrate(answer.sdp, MODES[this.mode].kbps) });
-    this.send({ type: 'signal', to: parentId, data: { sdp: pc.localDescription } });
+    this.send({ type: 'signal', to: parentId, data: { sdp: pc.localDescription, nid } });
   }
 
   child(id) {
@@ -173,11 +176,12 @@ export class VideoNet {
     this.pending.delete(id);
   }
 
-  async signal(from, { sdp, candidate }) {
+  async signal(from, { sdp, candidate, nid }) {
+    if (sdp?.type === 'offer') return this.acceptFrom(from, sdp, nid);
     const pc = from === this.parentId ? this.upstream : this.downstream.get(from);
-    if (sdp?.type === 'offer') return this.acceptFrom(from, sdp);
-    if (sdp) return pc?.setRemoteDescription(sdp);
-    if (candidate) return pc?.addIceCandidate(candidate).catch(() => {});
+    if (!pc || pc.nid !== nid) return; // answer/candidate of a negotiation we already replaced
+    if (sdp) return pc.setRemoteDescription(sdp);
+    if (candidate) return pc.addIceCandidate(candidate).catch(() => {});
   }
 
   // Ends whatever role we had. Presenter stops capture.
