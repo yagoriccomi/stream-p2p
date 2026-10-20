@@ -282,6 +282,7 @@ try {
     clean: () => measure('recuperado (sem falha)', {}, bruno, ana),
     cut3: () => outage('mídia cortada 3 s', 3000, bruno),
     cut10: () => outage('mídia cortada 10 s', 10_000, bruno),
+    cut40: () => outage('mídia cortada 40 s', 40_000, bruno), // past ICE consent (30 s): connection fails
     ws2: () => signalingDrop('WebSocket caiu 2 s', 2000, bruno),
     ws15: () => signalingDrop('servidor fora 15 s', 15_000, bruno),
   };
