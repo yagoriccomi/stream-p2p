@@ -1,9 +1,9 @@
 # Handoff: Stream P2P
 
 **Data:** 20/10/2026
-**Estado:** MVP web funcionando de ponta a ponta. App Windows (Tauri 2) escrito e checado para Windows, mas ainda não compilado.
+**Estado:** MVP web funcionando de ponta a ponta, agora com TURN do servidor, upload medido e buffers por RTT medido. App Windows (Tauri 2) escrito, mas ainda não compilado: esta máquina não tem Rust nem MSVC.
 **Design:** canvas https://claude.ai/artifact/PyEQWUdc5AsX4rGRARdC8S (versão 23), com a identidade, as telas T01–T14 e os ícones.
-**Documentos:** plano em `docs/planos/PLANO-telas-T01-T14.md`; entrega e verificação em `docs/planos/ENTREGA-telas-T01-T14.md`; como rodar em `README.md`.
+**Documentos:** planos e entregas em `docs/planos/` (o mais recente é `ENTREGA-pendencias-handoff-20-10.md`); como rodar em `README.md`.
 
 ---
 
@@ -58,7 +58,11 @@
 - **Vídeo em árvore** (`server/topology.js` + `web/stream.js`):
   - A cota de envio direto é `floor(upload × 0.8 / bitrate do modo)`.
   - Quem excede a cota recebe via relay (no máximo 2 filhos por nó). Quando um relay sai, os filhos dele são re-pendurados.
-  - O buffer de cada um é 150 ms − 30 ms × profundidade.
+  - O relay reenvia o quadro **depois** do próprio jitter buffer, então os filhos herdam esse atraso. Cada nó mostra e reenvia em 150 ms − folga, onde a folga é o maior caminho de saltos abaixo dele (`jitterTargets` em `topology.js`). As folhas chegam em 150 ms; o relay fica um salto à frente.
+  - O atraso de um salto é RTT/2 (medido pelo `getStats` e enviado como `hopRtt`) mais 20 ms quando o pai é relay. Até medir, vale 30 ms. O servidor reenvia o buffer (`jitter`) quando ele muda 5 ms ou mais.
+  - O upload é medido em T02 por `POST /speedtest` (sonda de 1 MB, depois ~3 s de envio; até 32 MB e 2 testes por 10 s por IP).
+  - ICE: `GET /ice.json` entrega o STUN e o TURN do operador (`TURN_URLS` + `TURN_SECRET`, credencial REST do coturn que vale 6 h; ou `TURN_USERNAME`/`TURN_CREDENTIAL`). O TURN pessoal de T11 soma por cima.
+  - Cada oferta de vídeo leva um `nid`; resposta e ICE de negociação substituída (re-parent) são descartadas.
   - Modos: 720p30 a 4 Mbps, 1080p60 a 8 Mbps, 1440p60 a 15 Mbps. O bitrate é destravado com `b=AS:` e `maxBitrate`.
   - Mudanças ao vivo nunca renegociam:
     - troca de fonte: `replaceTrack`;
@@ -82,27 +86,30 @@
 
 ## 3. Verificação
 
-- `npm test`: 27 de 27 passando.
-- `npm run e2e` (Chromium headless, 4 pessoas) termina com `E2E OK`. Cobre:
+- `npm test`: 37 de 37 passando.
+- `npm run e2e` (Chrome headless, 4 pessoas) termina com `E2E OK` nesta máquina Windows. Cobre:
   - criar a sessão e entrar pelo convite;
   - o 409 com "bRúno";
   - chat e voz em malha;
-  - 1440p60 com buffers de 120, 90 e 90 ms;
+  - medição do upload em T02 sem sobrescrever o valor digitado;
+  - 1440p60 com 1 direto (relay) e 2 abaixo dele, e RTT medido em todos;
+  - latência ponta a ponta medida por um relógio desenhado no vídeo: ~140 ms no relay e ~170 ms nos filhos (diferença ~30 ms; antes da mudança era ~100 ms);
   - troca de fonte ao vivo;
   - 403 do moderador ao tentar banir;
   - passar a vez;
   - re-parent quando o nó direto sai.
-- App: `cargo check --target x86_64-pc-windows-msvc` passa. A exceção é o plugin de atualização, cuja dependência `ring` exige o `lib.exe` do MSVC.
+- App: `cargo check --target x86_64-pc-windows-msvc` passou no container da sessão anterior, exceto o plugin de atualização (`ring` exige o `lib.exe` do MSVC). Nesta máquina não há `rustc`/`cargo`, e o Visual Studio 2019 instalado não foi verificado quanto às ferramentas de C++.
+- Intermitência vista 1 vez em 11 rodadas do e2e: timeout em "Caio entrou" (antes de transmitir). Não se repetiu.
 
 ## 4. Pendências e próximos passos
 
-1. **No Windows:** gerar o instalador e testar a bandeja e o updater.
+1. **No Windows:** instalar Rust (rustup) e as Build Tools do Visual Studio com C++. Depois gerar o instalador e testar a bandeja e o updater.
    1. Troque `stream-p2p.example.com` pela URL real em `tauri.conf.json` e em `capabilities/default.json`.
    2. Gere as chaves com `npx tauri signer generate` e cole a chave pública em `pubkey`.
    3. Rode `cd app && npm i && npm run build`.
 2. **Captura nativa da fonte escolhida em T12.** Hoje ainda abre o seletor do sistema. Caminhos: `chromeMediaSourceId` no WebView2, ou captura própria com Windows.Graphics.Capture.
 3. **Codificação pela GPU (NVENC, AMF ou QuickSync).** O plano original era captura zero-copy na VRAM; hoje o app usa o WebRTC do WebView2.
-4. **Medir o upload e o RTT por salto com `getStats`,** em vez de pedir o upload à pessoa.
-5. **TURN padrão para fora da LAN.** Hoje só existe se for configurado em Configurações (T11).
+4. ~~Medir o upload e o RTT por salto.~~ Feito em 20/10. Falta: reduzir a cota ao vivo quando `availableOutgoingBitrate` cair abaixo do bitrate do modo.
+5. ~~TURN padrão para fora da LAN.~~ Feito no código (`/ice.json`). Falta: subir um coturn e definir `TURN_URLS` e `TURN_SECRET` no servidor publicado.
 6. **Bot do Discord:** criar o app no Discord, registrar `/stream criar` e apontar o endpoint para `PUBLIC_URL/discord/interactions`.
 7. **Publicar o servidor com HTTPS,** que a captura e o PWA exigem.

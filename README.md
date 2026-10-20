@@ -36,11 +36,12 @@ npm start    # http://localhost:3000  (PORT para mudar)
 - **Automático:** `npm run e2e` (Chrome headless; `CHROME_PATH` para outro navegador, `HEADFUL=1` para ver as janelas). O teste:
   1. Ana cria a sessão; Bruno, Caio e Dani entram pelo convite.
   2. Confere o 409, o chat e a malha de voz.
-  3. Ana transmite em 1440p60 com 20 Mbps: 1 recebe direto (buffer de 120 ms) e 2 via relay (90 ms).
-  4. Troca a fonte ao vivo.
-  5. Caio, moderador, leva 403 ao tentar banir.
-  6. Ana passa a vez para Dani.
-  7. O relay sai e os filhos dele são re-pendurados.
+  3. Ana mede o upload em T02 (a medição não sobrescreve o que ela digitou) e transmite em 1440p60 com 20 Mbps: 1 recebe direto e vira relay dos outros 2.
+  4. Cada um mede o RTT do salto. O vídeo falso traz um relógio em bits, e o teste mede a latência ponta a ponta de cada espectador: a diferença entre eles precisa ficar em até 60 ms (fica em ~30 ms).
+  5. Troca a fonte ao vivo.
+  6. Caio, moderador, leva 403 ao tentar banir.
+  7. Ana passa a vez para Dani.
+  8. O relay sai e os filhos dele são re-pendurados.
 - **Manual, LAN:** quem transmite abre em `localhost`, porque a captura exige contexto seguro. Os amigos abrem `http://<seu-IP>:3000/?code=<código>`. Fora da LAN, use o TURN do servidor (abaixo) ou um TURN pessoal em **Configurações** (T11).
 
 ## TURN para fora da LAN
@@ -83,7 +84,9 @@ Para gerar o instalador, no Windows com Rust e Node:
 A página `/download` explica a instalação para quem baixa.
 
 ## Limitações
-- O upload é declarado pela pessoa, não medido.
+- O upload é medido contra o servidor de sinalização antes de transmitir. Se a rede congestionar no meio da transmissão, a cota de envio direto não diminui sozinha.
+- O atraso de decodificar e recodificar num relay é uma estimativa fixa (20 ms). O RTT de cada salto é medido.
+- Quem é relay vê a transmissão um salto antes dos filhos (~10–30 ms), porque o navegador reenvia o quadro depois do próprio buffer.
 - O estado fica em memória, então reiniciar o servidor encerra as sessões.
 - O relay re-codifica no navegador.
 - O app usa o mesmo WebRTC do navegador; ainda não há encoder NVENC/AMF nativo.
