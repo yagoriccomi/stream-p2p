@@ -42,6 +42,11 @@ npm start    # http://localhost:3000  (PORT para mudar)
   6. Caio, moderador, leva 403 ao tentar banir.
   7. Ana passa a vez para Dani.
   8. O relay sai e os filhos dele são re-pendurados.
+- **Rede ruim:** `npm run netsim`. Ana transmite para Bruno com a mídia forçada por um TURN local, e um proxy UDP degrada o que o TURN entrega.
+  - Cenários: perda de 1, 5 e 10%; atraso de 50 ms; variação de ±20 ms; 150 ± 50 ms com 2% de perda; cortes de 3, 10 e 40 s; queda do WebSocket por 2 s; servidor fora por 15 s; `/speedtest` com 503.
+  - Mede, no espectador: fps, kbps, perda RTP, NACKs, congelamentos, buffer, RTT e latência pelo relógio no vídeo.
+  - O TURN é o servidor de referência do Pion: `go install github.com/pion/turn/v4/examples/turn-server/simple@latest`. Para outro caminho, defina `NETSIM_TURN_BIN`.
+  - `NETSIM_ONLY=base,loss5` roda só alguns cenários, `NETSIM_MODE=1080p60` troca a qualidade e `NETSIM_DEBUG=1` mostra o log das páginas.
 - **Manual, LAN:** quem transmite abre em `localhost`, porque a captura exige contexto seguro. Os amigos abrem `http://<seu-IP>:3000/?code=<código>`. Fora da LAN, use o TURN do servidor (abaixo) ou um TURN pessoal em **Configurações** (T11).
 
 ## TURN para fora da LAN
@@ -76,10 +81,40 @@ O app fica em `app/` e é feito com Tauri 2. A janela carrega o mesmo site e acr
 
 O instalador NSIS instala por usuário, sem pedir administrador, e cria o atalho no Menu Iniciar.
 
-Para gerar o instalador, no Windows com Rust e Node:
-1. Troque `https://stream-p2p.example.com` em `app/src-tauri/tauri.conf.json` e em `app/src-tauri/capabilities/default.json` pela URL do seu servidor.
-2. Gere as chaves com `npx tauri signer generate` e cole a chave pública em `plugins.updater.pubkey`.
-3. Rode `cd app && npm install && npm run build`. O instalador sai em `app/src-tauri/target/release/bundle/nsis/`.
+Para gerar o instalador, no Windows com Rust e Node: `cd app && npm install && npm run build`. Ele sai em `app/src-tauri/target/release/bundle/nsis/`. A URL do servidor não fica no build: vem da linha de comando ou do instalador (abaixo).
+
+Para ligar a atualização automática, gere as chaves com `npx tauri signer generate`, cole a chave pública em `plugins.updater.pubkey`, ponha `createUpdaterArtifacts: true` em `tauri.conf.json` e defina `TAURI_SIGNING_PRIVATE_KEY` no build. A chave privada nunca entra no repositório.
+
+### Instalar e controlar pela linha de comando
+Instalador (NSIS):
+```
+"Stream P2P_0.1.0_x64-setup.exe" /S /SERVER=http://192.168.0.10:3000
+```
+- `/S` instala em silêncio, por usuário, sem pedir administrador.
+- `/D=<pasta>` escolhe a pasta (precisa ser o último argumento).
+- `/SERVER=` grava o servidor em `%APPDATA%\app.streamp2p.desktop\server.txt`.
+- Para desinstalar em silêncio: `"<pasta>\uninstall.exe" /S`.
+
+App (`stream-p2p.exe --help` mostra tudo):
+
+| Comando | O que faz |
+|---|---|
+| `--server <url>` | Usa este servidor e o salva para as próximas vezes |
+| `--create --name <apelido>` | Abre e cria uma sessão |
+| `--join <código> [--name <apelido>]` | Abre na tela de entrar; com `--name`, já entra |
+| `--stop-stream`, `--mute`, `--copy-invite`, `--leave`, `--show`, `--quit` | Comandam o app que já está aberto |
+| `--status` | Imprime o estado em JSON: tela, sessão, membros, quem transmite, mic, stats e o último erro |
+| `--version`, `--help` | Imprime e sai |
+
+Códigos de saída:
+- `0`: ok;
+- `2`: argumento inválido;
+- `3`: o app não está aberto.
+
+Comportamento:
+- Um segundo `stream-p2p.exe` repassa os argumentos ao app que já está aberto e sai.
+- Quando a sessão é aberta pela linha de comando, o app entra sem pedir o microfone. `--mute` liga e desliga o microfone depois.
+- O `--status` lê `status.json`, que o app atualiza a cada 2 s. Se o arquivo tiver mais de 10 s, o resultado sai com `"running": false, "stale": true`.
 
 A página `/download` explica a instalação para quem baixa.
 
@@ -88,6 +123,8 @@ A página `/download` explica a instalação para quem baixa.
 - O atraso de decodificar e recodificar num relay é uma estimativa fixa (20 ms). O RTT de cada salto é medido.
 - Quem é relay vê a transmissão um salto antes dos filhos (~10–30 ms), porque o navegador reenvia o quadro depois do próprio buffer.
 - O estado fica em memória, então reiniciar o servidor encerra as sessões.
+- Se a mídia ficar mais de ~30 s sem passar, a conexão vai a `failed` e o app não a refaz (medido pelo `npm run netsim`). Cortes de até 10 s se recuperam sozinhos.
+- Com variação alta (150 ± 50 ms), o buffer cai para manter a sincronia e aparecem congelamentos curtos (0,3–0,7 s em 10 s).
 - O relay re-codifica no navegador.
 - O app usa o mesmo WebRTC do navegador; ainda não há encoder NVENC/AMF nativo.
 - A fonte escolhida no seletor nativo ainda passa pelo seletor do sistema na hora de capturar.

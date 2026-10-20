@@ -36,7 +36,7 @@
 | P2 | O estado do app vai para `%APPDATA%\app.streamp2p.desktop\status.json`, e `--status` imprime esse arquivo | Um app de interface gráfica não responde pelo stdout; um arquivo é simples e lido por qualquer ferramenta [#7] | Trocar por um pipe nomeado se precisar de comandos com resposta |
 | P3 | A permissão de IPC para a URL do servidor é concedida em tempo de execução (`add_capability`) só para essa origem | A URL é dinâmica; sem isso o `__TAURI__` não funciona na página remota [#55] | — |
 | P4 | `createUpdaterArtifacts` desligado até existir a chave de assinatura | Sem a chave privada o build falha | Religar quando a chave for gerada |
-| P5 | A degradação de rede é feita por um proxy UDP em Node, na frente de um TURN em Node (`iceTransportPolicy: 'relay'` no teste) | Funciona no Windows sem driver nem admin, e a degradação atinge pacotes reais [#45] | Não cobre o caminho direto host↔peer; esse caminho é o mesmo código WebRTC |
+| P5 | A degradação de rede é feita por um proxy UDP em Node, na frente de um TURN local (`iceTransportPolicy: 'relay'` no teste). *Atualizada na execução: o TURN é o Pion (Go), porque com o `node-turn` as conexões caíam sozinhas ~30 s depois* | Funciona no Windows sem driver nem admin, e a degradação atinge pacotes reais [#45] | Não cobre o caminho direto host↔peer; esse caminho é o mesmo código WebRTC |
 
 ## 4. Decisão Visual
 - Nenhuma tela nova. O app reaproveita a interface web; a CLI e o instalador não têm superfície visual nova. O NSIS segue em PT-BR, como já estava.
