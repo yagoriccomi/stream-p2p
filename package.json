@@ -1,0 +1,17 @@
+{
+  "name": "stream-p2p",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server/index.js",
+    "e2e": "node e2e/run.js",
+    "test":"node --test \"server/*.test.js\""
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "puppeteer-core": "^25.14.0"
+  }
+}

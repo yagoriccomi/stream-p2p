@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>stream-p2p — bancada MVP</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f6f6f7; --fg: #1b1b1f; --muted: #5c5c66; --border: #d0d0d6; --accent: #2563eb; --error: #b91c1c;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #111114; --fg: #ececf1; --muted: #9a9aa6; --border: #3a3a44; --accent: #60a5fa; --error: #f87171; }
+    }
+    body { font-family: system-ui, sans-serif; margin: 1rem; background: var(--bg); color: var(--fg); }
+    fieldset { border: 1px solid var(--border); border-radius: 6px; margin-bottom: 1rem; }
+    input, select, button { font: inherit; }
+    button { cursor: pointer; }
+    #status[data-kind="error"] { color: var(--error); font-weight: 600; }
+    #invite[hidden] { display: none; }
+    #invite a { color: var(--accent); word-break: break-all; }
+    #stats { font: 13px ui-monospace, monospace; color: var(--muted); min-height: 1.2em; }
+    video { width: 100%; max-width: 960px; background: #000; border-radius: 6px; }
+    #log { font: 12px ui-monospace, monospace; color: var(--muted); white-space: pre-wrap; max-height: 12rem; overflow: auto; }
+  </style>
+</head>
+<body>
+  <h1>stream-p2p</h1>
+  <fieldset>
+    <legend>Transmitir (host)</legend>
+    <label>Modo <select id="mode"><option>720p30</option><option>1080p60</option><option>1440p60</option></select></label>
+    <label>Upload (Mbps) <input id="upload" type="number" value="20" min="1"></label>
+    <button id="host">Compartilhar tela</button>
+    <p id="invite" hidden>Convite: <a id="invite-link" href="#"></a> <button id="copy" type="button">Copiar</button></p>
+  </fieldset>
+  <fieldset>
+    <legend>Assistir</legend>
+    <label>Sala <input id="room"></label>
+    <button id="join">Entrar</button>
+  </fieldset>
+  <p id="status" role="status">Conectando…</p>
+  <p id="stats" aria-live="off"></p>
+  <video id="video" autoplay playsinline muted controls></video>
+  <div id="log"></div>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
