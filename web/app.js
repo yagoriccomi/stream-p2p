@@ -837,8 +837,10 @@ if ('serviceWorker' in navigator && !tauri) {
     setInterval(() => reg.update().catch(() => {}), 30 * 60_000);
   }).catch((e) => log(`sw: ${e.message}`));
   let reloading = false;
+  // First visit: clients.claim() also fires controllerchange, but this page is already current.
+  const hadController = Boolean(navigator.serviceWorker.controller);
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (reloading || st.session) return; // never reload in the middle of a session
+    if (!hadController || reloading || st.session) return; // never reload in the middle of a session
     reloading = true;
     location.reload();
   });
