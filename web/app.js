@@ -518,9 +518,11 @@ $('ov-stream').addEventListener('click', openSetup);
 // ── T02 · Escolher fonte e qualidade ──
 function openSetup() {
   $('q-upload').value = st.upload;
+  uploadTouched = false;
   renderSetup();
   $('dlg-setup').showModal();
   loadNativeSources();
+  if (!store.get('uploadMeasured', false)) measureUpload(); // first time on this device: measure instead of guessing
 }
 closeOnX($('dlg-setup'));
 function renderSetup() {
@@ -553,11 +555,87 @@ function renderSetup() {
 }
 for (const tab of $('src-tabs').children) tab.addEventListener('click', () => { st.src = tab.dataset.src; renderSetup(); });
 $('q-upload').addEventListener('input', () => {
+  uploadTouched = true;
   st.upload = Number($('q-upload').value) || st.upload;
   store.set('upload', st.upload);
   renderSetup();
 });
 wireSwitch($('q-audio'), (on) => { st.audio = on; });
+
+// ── T02 · upload measurement: a small probe sizes the real test to ~3 s on this connection ──
+const SPEEDTEST_PROBE_BYTES = 1 << 20;
+const SPEEDTEST_TARGET_S = 3;
+const SPEEDTEST_MAX_BYTES = 24 << 20; // the server accepts up to 32 MB
+const MAX_UPLOAD_MBPS = 1000; // same max as the field
+let uploadTouched = false; // a value the person typed always wins over a measurement
+let measuring = false;
+
+function postBlob(bytes, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest(); // fetch has no upload progress
+    xhr.open('POST', '/speedtest');
+    xhr.upload.onprogress = (e) => onProgress?.(e.loaded);
+    xhr.onload = () => {
+      let body = {};
+      try { body = JSON.parse(xhr.responseText); } catch { /* reason below */ }
+      if (xhr.status === 200) return resolve(body);
+      reject({ code: xhr.status, reason: body.reason ?? 'O servidor recusou o teste de upload.' });
+    };
+    xhr.onerror = () => reject({ code: 503, reason: 'Não deu para falar com o servidor. Confira a internet e meça de novo.' });
+    xhr.send(new Uint8Array(bytes));
+  });
+}
+
+function showMeasured(text, { ok = false, use = null } = {}) {
+  const line = $('q-measured');
+  line.classList.toggle('ok', ok);
+  line.replaceChildren(h('span', { text }), ...(use ? [h('button', { type: 'button', text: 'Usar este valor', onclick: use })] : []));
+  line.hidden = false;
+}
+
+function setUpload(mbps) {
+  st.upload = mbps;
+  store.set('upload', mbps);
+  $('q-upload').value = mbps;
+  fieldError('q-upload', 'q-upload-err', null, null);
+  renderSetup();
+}
+
+async function measureUpload() {
+  if (measuring) return;
+  measuring = true;
+  const btn = $('q-measure');
+  btn.disabled = true;
+  btn.textContent = 'Medindo…';
+  $('q-upload-err').hidden = true;
+  try {
+    showMeasured('Medindo seu upload…');
+    const probe = await postBlob(SPEEDTEST_PROBE_BYTES);
+    const probeBps = probe.ms > 0 ? (probe.bytes * 1000) / probe.ms : Infinity;
+    const size = Math.round(Math.min(SPEEDTEST_MAX_BYTES, Math.max(SPEEDTEST_PROBE_BYTES, probeBps * SPEEDTEST_TARGET_S)));
+    const mb = (n) => Math.round(n / (1 << 20));
+    const run = await postBlob(size, (sent) => showMeasured(`Enviando ${mb(sent)} de ${mb(size)} MB…`));
+    const raw = run.ms > 0 ? (run.bytes * 8) / run.ms / 1000 : Infinity;
+    const mbps = Math.max(1, Math.min(MAX_UPLOAD_MBPS, Math.round(raw)));
+    store.set('uploadMeasured', true);
+    const label = raw > MAX_UPLOAD_MBPS ? `mais de ${MAX_UPLOAD_MBPS} Mbps` : `${mbps} Mbps`;
+    if (uploadTouched && mbps !== Number($('q-upload').value)) {
+      showMeasured(`Medido agora: ${label}.`, { ok: true, use: () => { setUpload(mbps); showMeasured(`Medido agora: ${label}`, { ok: true }); } });
+    } else {
+      setUpload(mbps);
+      showMeasured(`Medido agora: ${label}`, { ok: true });
+    }
+  } catch (e) {
+    console.error('[sp2p] speedtest', e);
+    $('q-measured').hidden = true;
+    fieldError('q-upload', 'q-upload-err', e.code ?? 503, e.reason ?? 'O teste de upload falhou. Meça de novo ou digite o valor.');
+  } finally {
+    measuring = false;
+    btn.disabled = false;
+    btn.textContent = 'Medir de novo';
+  }
+}
+$('q-measure').addEventListener('click', measureUpload);
 
 async function capture() {
   if (!window.isSecureContext) {

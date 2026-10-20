@@ -109,11 +109,23 @@ async function menuAction(page, person, label) {
   await page.evaluate((l) => [...document.querySelectorAll('#menu button')].find((b) => b.textContent.includes(l)).click(), label);
 }
 
-async function startStream(page, mode) {
+async function startStream(page, mode, { firstTime = false } = {}) {
   await page.bringToFront(); // background tabs don't get real clicks
   await page.click('#ov-stream');
   await page.evaluate((m) => [...document.querySelectorAll('#q-modes button')].find((b) => b.textContent === m).click(), mode);
   await page.$eval('#q-upload', (i) => { i.value = '20'; i.dispatchEvent(new Event('input')); });
+  if (firstTime) {
+    // T02 measures the upload by itself the first time; what the person typed still wins.
+    await waitFor(page, () => document.getElementById('q-measured').textContent.includes('Medido agora'), 'upload medido');
+    const shown = await page.$eval('#q-measured', (e) => e.textContent);
+    assert.equal(await page.$eval('#q-upload', (i) => i.value), '20', 'a medição não sobrescreve o valor digitado');
+    // Measure again after typing (past the 10 s rate window): the result is only offered.
+    await sleep(10_500);
+    await page.click('#q-measure');
+    await waitFor(page, () => document.querySelector('#q-measured button')?.textContent === 'Usar este valor', 'oferta de usar o valor medido');
+    assert.equal(await page.$eval('#q-upload', (i) => i.value), '20', 'a medição não sobrescreve o valor digitado');
+    console.log(`upload ok (${shown})`);
+  }
   await page.click('#q-start');
 }
 
@@ -159,7 +171,7 @@ try {
 
   // T02 · Ana streams 1440p60 with 20 Mbps → quota 1: one direct, two relayed
   assert.equal(await ana.evaluate(() => window.__app.voice.peers.size), 3, 'voz em malha com os 3');
-  await startStream(ana, '1440p60');
+  await startStream(ana, '1440p60', { firstTime: true });
   for (const [n, p] of Object.entries(people)) await waitFor(p, hasVideo, `vídeo em ${n}`);
   await sleep(4000);
   // Quota 1: one direct (the relay) and two below it. The relay forwards after its own buffer,

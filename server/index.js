@@ -11,6 +11,9 @@ const PORT = Number(process.env.PORT) || 3000;
 const MAX_MSG_BYTES = 64 * 1024; // SDP + ICE fit easily; blocks memory abuse [#65]
 const RATE_PER_SEC = 20; // ICE bursts stay well under this
 const MAX_RTT_MS = 5000; // a hop RTT above this is a broken report, not a network
+const SPEEDTEST_MAX_BYTES = 32 * 1024 * 1024; // [#65]
+const SPEEDTEST_WINDOW_MS = 10_000;
+const SPEEDTEST_PER_WINDOW = 2; // one measurement = a small probe + the real upload [#58]
 const ENDED_TTL_MS = 60 * 60_000; // remember ended codes for 1 h → 410 instead of 404
 const JS = 'text/javascript; charset=utf-8';
 const STATIC = {
@@ -35,6 +38,7 @@ const STATIC = {
 const sessions = new Map(); // code -> session (+ .room: video topology of the current stream)
 const ended = new Map(); // code -> ended at
 const clients = new Map(); // clientId -> { ws, code, tokens, at }
+const speedtests = new Map(); // ip -> recent request times
 
 function createSessionFor(id, name, device) {
   let code;
@@ -45,9 +49,40 @@ function createSessionFor(id, name, device) {
   return s;
 }
 
+// T02 upload test: the browser sends a blob here and we time it on arrival (no connection setup).
+// The signaling server sits on the internet, so this measures the sender's last-mile upload.
+async function speedtest(req, res) {
+  const reply = (status, body) => res.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store' }).end(JSON.stringify(body));
+  const now = Date.now();
+  for (const [ip, times] of speedtests) {
+    const recent = times.filter((t) => now - t < SPEEDTEST_WINDOW_MS);
+    if (recent.length) speedtests.set(ip, recent);
+    else speedtests.delete(ip);
+  }
+  const ip = req.socket.remoteAddress;
+  const times = speedtests.get(ip) ?? [];
+  if (times.length >= SPEEDTEST_PER_WINDOW) {
+    req.resume();
+    return reply(429, { code: 429, reason: 'Medição repetida rápido demais. Espere 10 segundos e meça de novo.' });
+  }
+  speedtests.set(ip, [...times, now]);
+  let bytes = 0;
+  let first = 0;
+  for await (const chunk of req) {
+    first ||= performance.now();
+    bytes += chunk.length;
+    if (bytes > SPEEDTEST_MAX_BYTES) {
+      reply(413, { code: 413, reason: 'O teste enviou mais dados que o permitido (32 MB).' });
+      return req.destroy();
+    }
+  }
+  return reply(200, { bytes, ms: first ? performance.now() - first : 0 });
+}
+
 const http = createServer(async (req, res) => {
   const path = new URL(req.url, 'http://x').pathname;
   if (path === '/health') return res.end('ok'); // [#82]
+  if (path === '/speedtest' && req.method === 'POST') return speedtest(req, res);
   if (path === '/ice.json') {
     res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
     return res.end(JSON.stringify({ iceServers: iceServers() }));

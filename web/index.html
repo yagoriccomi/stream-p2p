@@ -242,9 +242,15 @@
     <div class="section">
       <h3>Qualidade</h3>
       <div class="seg" role="group" aria-label="Qualidade" id="q-modes"></div>
-      <label class="field">Seu upload (Mbps)
-        <input type="number" id="q-upload" min="1" max="1000" step="1" value="20">
-      </label>
+      <div class="field">
+        <label for="q-upload">Seu upload (Mbps)</label>
+        <div class="row">
+          <input type="number" id="q-upload" min="1" max="1000" step="1" value="20" aria-describedby="q-measured q-upload-err">
+          <button class="btn" type="button" id="q-measure">Medir</button>
+        </div>
+        <p class="hint" id="q-measured" aria-live="polite" hidden></p>
+        <p class="field-error" id="q-upload-err" role="alert" hidden></p>
+      </div>
       <p class="quota" id="q-quota" aria-live="polite"></p>
     </div>
     <div class="section">

@@ -51,7 +51,7 @@ button, .btn { font: inherit; color: inherit; cursor: pointer; }
 .btn:disabled { opacity: .45; cursor: not-allowed; }
 
 /* ── form ── */
-label.field { display: flex; flex-direction: column; gap: 8px; font-size: 14px; font-weight: 600; }
+.field { display: flex; flex-direction: column; gap: 8px; font-size: 14px; font-weight: 600; }
 input[type=text], input[type=password], input[type=number], select, textarea {
   font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--input);
   border-radius: var(--r); min-height: 52px; padding: 0 14px; width: 100%; min-width: 0;
@@ -61,6 +61,8 @@ input[aria-invalid="true"] { border: 2px solid var(--error); }
 .row { display: flex; gap: 8px; align-items: center; }
 .row > input { flex: 1; }
 .hint { font-size: 13px; color: var(--muted); font-weight: 400; display: flex; gap: 8px; align-items: flex-start; }
+.hint.ok { color: var(--live); }
+.hint button { font: inherit; color: var(--violet-text); background: none; border: 0; padding: 0; text-decoration: underline; }
 .field-error { font-size: 14px; color: var(--error); display: flex; gap: 8px; align-items: flex-start; font-weight: 400; }
 .chip-code { font-family: var(--mono); font-weight: 500; padding: 1px 6px; border-radius: 6px; border: 1px solid currentColor; font-size: 13px; }
 
