@@ -1,0 +1,37 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Stream P2P",
+  "version": "0.1.0",
+  "identifier": "app.streamp2p.desktop",
+  "build": { "frontendDist": "https://stream-p2p.example.com" },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      { "title": "Stream P2P", "url": "https://stream-p2p.example.com", "width": 1280, "height": 800, "minWidth": 900, "minHeight": 600 }
+    ],
+    "security": { "csp": null }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/icon.ico"],
+    "createUpdaterArtifacts": true,
+    "shortDescription": "Transmissão de tela P2P entre amigos",
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": ["PortugueseBR"],
+        "displayLanguageSelector": false,
+        "startMenuFolder": "Stream P2P",
+        "installerIcon": "icons/icon.ico"
+      }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": ["https://github.com/yagoriccomi/stream-p2p/releases/latest/download/latest.json"],
+      "pubkey": "TROQUE-PELA-CHAVE-PUBLICA-GERADA-COM-tauri-signer-generate",
+      "windows": { "installMode": "passive" }
+    }
+  }
+}

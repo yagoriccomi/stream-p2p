@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server/index.js",
     "e2e": "node e2e/run.js",
-    "test":"node --test \"server/*.test.js\""
+    "test": "node --test \"server/*.test.js\""
   },
   "dependencies": {
     "ws": "^8.18.0"

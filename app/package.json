@@ -1,0 +1,12 @@
+{
+  "name": "stream-p2p-app",
+  "private": true,
+  "scripts": {
+    "icons": "tauri icon ../web/icon-512.png -o src-tauri/icons",
+    "dev": "tauri dev",
+    "build": "tauri build"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}

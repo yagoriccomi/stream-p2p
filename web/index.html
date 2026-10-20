@@ -2,46 +2,338 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>stream-p2p — bancada MVP</title>
-  <style>
-    :root {
-      color-scheme: light dark;
-      --bg: #f6f6f7; --fg: #1b1b1f; --muted: #5c5c66; --border: #d0d0d6; --accent: #2563eb; --error: #b91c1c;
-    }
-    @media (prefers-color-scheme: dark) {
-      :root { --bg: #111114; --fg: #ececf1; --muted: #9a9aa6; --border: #3a3a44; --accent: #60a5fa; --error: #f87171; }
-    }
-    body { font-family: system-ui, sans-serif; margin: 1rem; background: var(--bg); color: var(--fg); }
-    fieldset { border: 1px solid var(--border); border-radius: 6px; margin-bottom: 1rem; }
-    input, select, button { font: inherit; }
-    button { cursor: pointer; }
-    #status[data-kind="error"] { color: var(--error); font-weight: 600; }
-    #invite[hidden] { display: none; }
-    #invite a { color: var(--accent); word-break: break-all; }
-    #stats { font: 13px ui-monospace, monospace; color: var(--muted); min-height: 1.2em; }
-    video { width: 100%; max-width: 960px; background: #000; border-radius: 6px; }
-    #log { font: 12px ui-monospace, monospace; color: var(--muted); white-space: pre-wrap; max-height: 12rem; overflow: auto; }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0A0A0B">
+  <meta name="color-scheme" content="dark">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Stream P2P">
+  <title>Stream P2P</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-  <h1>stream-p2p</h1>
-  <fieldset>
-    <legend>Transmitir (host)</legend>
-    <label>Modo <select id="mode"><option>720p30</option><option>1080p60</option><option>1440p60</option></select></label>
-    <label>Upload (Mbps) <input id="upload" type="number" value="20" min="1"></label>
-    <button id="host">Compartilhar tela</button>
-    <p id="invite" hidden>Convite: <a id="invite-link" href="#"></a> <button id="copy" type="button">Copiar</button></p>
-  </fieldset>
-  <fieldset>
-    <legend>Assistir</legend>
-    <label>Sala <input id="room"></label>
-    <button id="join">Entrar</button>
-  </fieldset>
-  <p id="status" role="status">Conectando…</p>
-  <p id="stats" aria-live="off"></p>
-  <video id="video" autoplay playsinline muted controls></video>
-  <div id="log"></div>
-  <script type="module" src="/app.js"></script>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-screen-share" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4M12 13V7M9 10l3-3 3 3"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 5l12 7-12 7z"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></symbol>
+  <symbol id="i-quality-hd" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10v4M10 10v4M7 12h3M13 10v4h1.5a2 2 0 0 0 0-4z"/></symbol>
+  <symbol id="i-gpu-encoder" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 3v3M15 3v3M9 18v3M15 18v3M3 9h3M3 15h3M18 9h3M18 15h3"/></symbol>
+  <symbol id="i-live" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M6.3 6.3a8 8 0 0 0 0 11.4M17.7 6.3a8 8 0 0 1 0 11.4"/></symbol>
+  <symbol id="i-request-turn" viewBox="0 0 24 24"><path d="M8 13V6a1.5 1.5 0 0 1 3 0v5M11 11V4.5a1.5 1.5 0 0 1 3 0V11M14 11V6a1.5 1.5 0 0 1 3 0v7a7 7 0 0 1-7 7h-.5A5.5 5.5 0 0 1 5 15.5V12a1.5 1.5 0 0 1 3 0"/></symbol>
+  <symbol id="i-pass-turn" viewBox="0 0 24 24"><path d="M4 8h13M14 5l3 3-3 3M20 16H7M10 13l-3 3 3 3"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></symbol>
+  <symbol id="i-mic-off" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M4 4l16 16"/></symbol>
+  <symbol id="i-headphones" viewBox="0 0 24 24"><path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="4.5" height="6" rx="1.5"/><rect x="16.5" y="14" width="4.5" height="6" rx="1.5"/></symbol>
+  <symbol id="i-deafen" viewBox="0 0 24 24"><path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="4.5" height="6" rx="1.5"/><rect x="16.5" y="14" width="4.5" height="6" rx="1.5"/><path d="M3 3l18 18"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M4 12L20 4l-6 16-3-7z"/></symbol>
+  <symbol id="i-topology" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2.5"/><circle cx="6" cy="19" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M12 7.5v4M12 11.5l-5 5M12 11.5l5 5"/></symbol>
+  <symbol id="i-link-direct" viewBox="0 0 24 24"><circle cx="5" cy="12" r="2.5"/><circle cx="19" cy="12" r="2.5"/><path d="M7.5 12h9M14 9l3 3-3 3"/></symbol>
+  <symbol id="i-relay" viewBox="0 0 24 24"><circle cx="4.5" cy="12" r="2.5"/><circle cx="12" cy="12" r="2.5"/><circle cx="19.5" cy="12" r="2.5"/><path d="M7 12h2.5M14.5 12H17"/></symbol>
+  <symbol id="i-signal" viewBox="0 0 24 24"><path d="M4 20v-3M9 20v-7M14 20V9M19 20V4"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></symbol>
+  <symbol id="i-speed-test" viewBox="0 0 24 24"><path d="M4 18a8 8 0 1 1 16 0"/><path d="M12 18l4-6"/></symbol>
+  <symbol id="i-invite-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1"/><path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></symbol>
+  <symbol id="i-participants" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/></symbol>
+  <symbol id="i-watching" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-owner" viewBox="0 0 24 24"><path d="M4 18h16M5 15L4 7l5 4 3-6 3 6 5-4-1 8z"/></symbol>
+  <symbol id="i-fullscreen" viewBox="0 0 24 24"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></symbol>
+  <symbol id="i-volume" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></symbol>
+  <symbol id="i-mute" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M17 9l4 6M21 9l-4 6"/></symbol>
+  <symbol id="i-latency" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+  <symbol id="i-reconnect" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.5-4.5L4 8"/><path d="M4 4v4h4"/><path d="M4 13a8 8 0 0 0 14.5 4.5L20 16"/><path d="M20 20v-4h-4"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3l9.5 17h-19z"/><path d="M12 10v4M12 17v.5"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8v.5"/></symbol>
+  <symbol id="i-leave" viewBox="0 0 24 24"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M10 8l-4 4 4 4M6 12h10"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></symbol>
+  <symbol id="i-log" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></symbol>
+  <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-hide-code" viewBox="0 0 24 24"><path d="M3 3l18 18"/><path d="M10.6 5.6A10 10 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a17 17 0 0 1-3 3.7M6.6 6.6A17 17 0 0 0 2.5 12S6 18.5 12 18.5a9.6 9.6 0 0 0 4.4-1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-remove-person" viewBox="0 0 24 24"><circle cx="10" cy="8" r="3.5"/><path d="M3.5 20a6.5 6.5 0 0 1 13 0M16 11h6"/></symbol>
+  <symbol id="i-edit-name" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></symbol>
+  <symbol id="i-moderator" viewBox="0 0 24 24"><path d="M12 3l7.5 3v5.5c0 4.5-3.2 8.2-7.5 9.5-4.3-1.3-7.5-5-7.5-9.5V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="i-monitor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></symbol>
+  <symbol id="i-window" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M6.5 6.5h.01M9 6.5h.01"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01" stroke-width="3"/></symbol>
+</svg>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="logo" viewBox="0 0 120 104"><rect x="7" y="7" width="106" height="70" rx="12" fill="none" stroke="#7F00FF" stroke-width="12"/><path d="M60 80v12M42 96h36" stroke="#7F00FF" stroke-width="10" stroke-linecap="round"/><path d="M48 26L78 42L48 58Z" fill="none" stroke="#fff" stroke-width="6" stroke-linejoin="round"/><circle cx="48" cy="26" r="7" fill="#fff"/><circle cx="78" cy="42" r="7" fill="#fff"/><circle cx="48" cy="58" r="7" fill="#fff"/></symbol>
+</svg>
+
+<div id="banner-update" class="banner" role="status" hidden>
+  <svg class="i"><use href="#i-download"/></svg>
+  <p id="update-text">Nova versão do Stream P2P disponível.</p>
+  <button class="btn primary" id="update-go" type="button">Recarregar</button>
+  <button class="btn ghost icon" id="update-x" type="button" aria-label="Agora não"><svg class="i"><use href="#i-close"/></svg></button>
+</div>
+<div id="banner-install" class="banner" hidden>
+  <svg class="i"><use href="#i-download"/></svg>
+  <p><b>Adicionar à Tela de Início</b><br><span id="install-hint" class="small">Abre como app, em tela cheia, sem barra do navegador.</span></p>
+  <button class="btn primary" id="install-go" type="button">Adicionar</button>
+  <button class="btn ghost icon" id="install-x" type="button" aria-label="Fechar aviso"><svg class="i"><use href="#i-close"/></svg></button>
+</div>
+<div id="conn" class="conn" role="status" hidden><svg class="i sm"><use href="#i-reconnect"/></svg><span id="conn-text">Conectando…</span></div>
+
+<!-- T01 · Início -->
+<main data-screen="home" class="screen-center" hidden>
+  <div class="wrap hero">
+    <div class="brand"><svg width="48" height="42" aria-hidden="true"><use href="#logo"/></svg><span class="name">Stream P2P</span></div>
+    <h1>Sua tela, ao vivo,<br>para a sua galera.</h1>
+    <p class="muted">Sem login. Qualquer pessoa na sessão pode transmitir, uma de cada vez. Voz e chat juntos.</p>
+  </div>
+  <div class="wrap grid-2">
+    <form class="card" id="create-form" novalidate>
+      <h2>Criar sessão</h2>
+      <label class="field">Seu apelido
+        <input type="text" id="create-name" autocomplete="nickname" maxlength="24" required aria-describedby="create-err">
+      </label>
+      <div id="create-err" class="field-error" hidden></div>
+      <button class="btn primary big" type="submit">Criar sessão</button>
+      <p class="hint">Você vira dono(a) da sessão: modera, nomeia moderadores e passa a vez.</p>
+    </form>
+    <form class="card" id="home-join-form" novalidate>
+      <h2>Entrar</h2>
+      <label class="field" for="home-code">Código da sessão</label>
+      <div class="row">
+        <input type="password" id="home-code" class="code" autocomplete="off" spellcheck="false" placeholder="xxxx-xx" aria-describedby="home-code-hint">
+        <button class="btn icon eye" type="button" data-eye="home-code" aria-label="Mostrar código" aria-pressed="false"><svg class="i"><use href="#i-watching"/></svg></button>
+      </div>
+      <p id="home-code-hint" class="hint">Oculto por padrão, como uma senha.</p>
+      <button class="btn big" type="submit">Continuar</button>
+    </form>
+  </div>
+  <p class="wrap small muted">Transmite direto do navegador. O <a href="/download">app para Windows</a> deixa a qualidade maior (codificação pela placa de vídeo).</p>
+</main>
+
+<!-- T09 · Entrar -->
+<main data-screen="join" class="screen-center" hidden>
+  <div class="wrap grid-2">
+    <form class="card" id="join-form" novalidate style="flex-grow: 2">
+      <div class="brand"><svg width="40" height="35" aria-hidden="true"><use href="#logo"/></svg><h1 style="font-size: 32px">Entrar na sessão</h1></div>
+      <label class="field" for="join-code">Código da sessão</label>
+      <div class="row">
+        <input type="password" id="join-code" class="code" autocomplete="off" spellcheck="false" aria-describedby="join-code-err">
+        <button class="btn icon eye" type="button" data-eye="join-code" aria-label="Mostrar código" aria-pressed="false"><svg class="i"><use href="#i-watching"/></svg></button>
+      </div>
+      <div id="join-code-err" class="field-error" hidden></div>
+      <label class="field">Seu apelido na sessão <span class="sr-only">(obrigatório)</span>
+        <input type="text" id="join-name" autocomplete="nickname" maxlength="24" required aria-describedby="join-name-err join-name-hint">
+      </label>
+      <div id="join-name-err" class="field-error" hidden></div>
+      <p id="join-name-hint" class="hint"><svg class="i sm" style="color: var(--violet-text)"><use href="#i-info"/></svg><span>Veio pelo link do bot? Seu nome no servidor do Discord já vem preenchido. Sem login, sem conta. Dá para trocar dentro da sessão.</span></p>
+      <div role="radiogroup" aria-labelledby="voice-legend" style="display: flex; flex-direction: column; gap: 10px">
+        <span id="voice-legend" style="font-size: 14px; font-weight: 600">Como você quer entrar na voz?</span>
+        <button type="button" class="voice-opt" role="radio" data-voice="mic" aria-checked="true"><b>Com microfone</b><span class="small muted">O navegador pede permissão quando você clicar em Entrar.</span></button>
+        <button type="button" class="voice-opt" role="radio" data-voice="listen" aria-checked="false"><b>Só ouvindo</b><span class="small muted">Nenhuma permissão agora. Liga o microfone quando quiser.</span></button>
+      </div>
+      <button class="btn primary big" type="submit">Entrar</button>
+      <button class="btn ghost" type="button" id="join-back">Voltar</button>
+    </form>
+    <aside class="card">
+      <h2>Permissões do navegador</h2>
+      <div class="perm"><div class="top"><span>Microfone</span><span class="pill" id="perm-mic">ao entrar</span></div><p class="small muted">Pedido ao entrar com microfone ou ao ligar o mic. Sem ele você ouve e usa o chat.</p></div>
+      <div class="perm"><div class="top"><span>Captura de tela</span><span class="pill" id="perm-cap">ao transmitir</span></div><p class="small muted">Pedido só ao clicar em Transmitir. Exige localhost ou HTTPS.</p></div>
+      <div class="perm"><div class="top"><span>Reprodução de som</span><span class="pill">automático</span></div><p class="small muted">O navegador bloqueia som antes de um clique. O botão Entrar já conta como clique.</p></div>
+      <p class="small muted">Regra: só pedir na hora do clique, explicar antes e nunca travar a sessão se a pessoa negar.</p>
+    </aside>
+  </div>
+</main>
+
+<!-- T03 · Sessão -->
+<div data-screen="session" class="session" hidden>
+  <header class="s-head">
+    <div class="brand"><svg width="36" height="31" aria-hidden="true"><use href="#logo"/></svg><span class="name">Stream P2P</span></div>
+    <div class="code-box">
+      <span class="sr-only">Código da sessão:</span><span class="val" id="s-code">•••••••</span>
+      <button class="btn ghost icon" type="button" id="s-eye" aria-label="Mostrar código" aria-pressed="false"><svg class="i"><use href="#i-watching"/></svg></button>
+      <button class="btn ghost icon" type="button" id="s-copy" aria-label="Copiar convite"><svg class="i"><use href="#i-invite-link"/></svg></button>
+    </div>
+    <span class="badge live" id="s-live" hidden>Ao vivo</span>
+    <span class="badge paused" id="s-paused" hidden>Pausado</span>
+    <span class="small muted latency" id="s-latency" hidden><svg class="i sm" style="vertical-align: -4px"><use href="#i-latency"/></svg> 150 ms · igual para todos</span>
+    <span class="grow"></span>
+    <span class="small muted mono" id="s-stats" aria-live="off"></span>
+  </header>
+
+  <section class="stage" aria-label="Transmissão">
+    <div class="request" id="req-banner" hidden>
+      <svg class="i"><use href="#i-request-turn"/></svg>
+      <p id="req-text"></p>
+      <button class="btn primary" type="button" id="req-yes">Passar a vez</button>
+      <button class="btn" type="button" id="req-no">Agora não</button>
+    </div>
+    <div class="stage-meta"><span class="tag" id="s-who" hidden></span></div>
+    <video id="video" autoplay playsinline></video>
+    <div class="overlay" id="ov-empty">
+      <svg class="i" style="width: 48px; height: 48px; color: var(--muted)"><use href="#i-screen-share"/></svg>
+      <h2 id="ov-empty-title">Ninguém transmitindo</h2>
+      <p class="muted" id="ov-empty-text">Qualquer pessoa da sessão pode transmitir. Uma de cada vez.</p>
+      <button class="btn primary big" type="button" id="ov-stream"><svg class="i"><use href="#i-screen-share"/></svg>Transmitir</button>
+    </div>
+    <div class="overlay dim" id="ov-paused" hidden><svg class="i" style="width: 48px; height: 48px; color: var(--warn)"><use href="#i-pause"/></svg><h2>Transmissão pausada</h2><p class="muted" id="ov-paused-text"></p></div>
+    <div class="overlay dim" id="ov-connecting" hidden><svg class="i" style="width: 48px; height: 48px"><use href="#i-reconnect"/></svg><h2>Conectando ao vídeo…</h2><p class="muted">Achando a rota mais curta até quem transmite.</p></div>
+
+    <!-- T04 · Controles de quem transmite -->
+    <div class="presenter-bar" id="pbar" hidden>
+      <button class="btn" type="button" id="p-source"><svg class="i"><use href="#i-screen-share"/></svg>Trocar fonte</button>
+      <div class="seg" role="group" aria-label="Qualidade" id="p-quality"></div>
+      <button class="btn" type="button" id="p-pause" aria-pressed="false"><svg class="i"><use href="#i-pause"/></svg><span>Pausar</span></button>
+      <button class="switch" type="button" role="switch" id="p-audio" aria-checked="true"><span>Áudio da transmissão</span><span class="track"></span></button>
+      <button class="btn" type="button" id="p-pass"><svg class="i"><use href="#i-pass-turn"/></svg>Passar a vez</button>
+      <button class="btn danger" type="button" id="p-stop"><svg class="i"><use href="#i-stop"/></svg>Parar</button>
+    </div>
+  </section>
+
+  <aside class="side" data-tab="chat">
+    <div class="seg tabs" role="tablist" aria-label="Painel">
+      <button role="tab" type="button" data-tab="chat" aria-selected="true">Chat</button>
+      <button role="tab" type="button" data-tab="people" aria-selected="false">Pessoas <span id="people-count"></span></button>
+    </div>
+    <section class="panel people" aria-labelledby="people-h">
+      <div class="row" style="justify-content: space-between"><h3 id="people-h">Na sessão</h3><button class="btn ghost" type="button" id="s-rename"><svg class="i sm"><use href="#i-edit-name"/></svg>Meu apelido</button></div>
+      <ul class="people-list" id="people"></ul>
+    </section>
+    <section class="panel chat" aria-labelledby="chat-h">
+      <h3 id="chat-h">Chat</h3>
+      <div class="messages" id="messages" role="log" aria-live="polite"></div>
+      <form class="composer" id="chat-form">
+        <label for="chat-input" class="sr-only">Mensagem</label>
+        <input type="text" id="chat-input" maxlength="500" autocomplete="off" placeholder="Mensagem">
+        <button class="btn primary icon" type="submit" aria-label="Enviar"><svg class="i"><use href="#i-send"/></svg></button>
+      </form>
+    </section>
+  </aside>
+
+  <footer class="s-foot">
+    <button class="btn" type="button" id="f-mic" aria-pressed="false"><svg class="i"><use href="#i-mic-off"/></svg><span class="label-sm">Microfone</span></button>
+    <button class="btn" type="button" id="f-deafen" aria-pressed="false"><svg class="i"><use href="#i-headphones"/></svg><span class="label-sm">Ouvir</span></button>
+    <button class="btn" type="button" id="f-audio"><svg class="i"><use href="#i-volume"/></svg><span class="label-sm">Áudio</span></button>
+    <button class="btn" type="button" id="f-stream"><svg class="i"><use href="#i-screen-share"/></svg><span>Transmitir</span></button>
+    <span class="grow"></span>
+    <button class="btn icon" type="button" id="f-full" aria-label="Tela cheia"><svg class="i"><use href="#i-fullscreen"/></svg></button>
+    <button class="btn icon" type="button" id="f-settings" aria-label="Configurações"><svg class="i"><use href="#i-settings"/></svg></button>
+    <button class="btn danger" type="button" id="f-leave"><svg class="i"><use href="#i-leave"/></svg><span class="label-sm">Sair</span></button>
+  </footer>
+</div>
+
+<!-- T02 · Escolher fonte e qualidade -->
+<dialog id="dlg-setup" aria-labelledby="setup-h">
+  <form class="dlg" method="dialog" id="setup-form">
+    <div class="dlg-head"><h2 id="setup-h">Transmitir</h2><button class="btn ghost icon" value="cancel" aria-label="Fechar"><svg class="i"><use href="#i-close"/></svg></button></div>
+    <div class="section" style="border: 0; padding: 0">
+      <h3>Fonte</h3>
+      <div class="seg" role="tablist" aria-label="Categoria da fonte" id="src-tabs">
+        <button type="button" role="tab" data-src="monitor" aria-selected="true">Monitor <span class="count"></span></button>
+        <button type="button" role="tab" data-src="window" aria-selected="false">Janela <span class="count"></span></button>
+      </div>
+      <div class="src-grid" id="src-grid" hidden></div>
+      <p class="small muted" id="src-hint">O navegador abre a lista de monitores ou janelas quando você clicar em Começar. No app, a lista aparece aqui.</p>
+    </div>
+    <div class="section">
+      <h3>Qualidade</h3>
+      <div class="seg" role="group" aria-label="Qualidade" id="q-modes"></div>
+      <label class="field">Seu upload (Mbps)
+        <input type="number" id="q-upload" min="1" max="1000" step="1" value="20">
+      </label>
+      <p class="quota" id="q-quota" aria-live="polite"></p>
+    </div>
+    <div class="section">
+      <button class="switch" type="button" role="switch" id="q-audio" aria-checked="true"><span>Áudio da transmissão<br><span class="small muted">Dá para ligar e desligar ao vivo.</span></span><span class="track"></span></button>
+    </div>
+    <button class="btn primary big" type="button" id="q-start"><svg class="i"><use href="#i-play"/></svg>Começar a transmitir</button>
+  </form>
+</dialog>
+
+<!-- T10 · Áudio, papéis e moderação -->
+<dialog id="dlg-audio" aria-labelledby="audio-h">
+  <div class="dlg">
+    <div class="dlg-head"><h2 id="audio-h">Áudio e sessão</h2><button class="btn ghost icon" type="button" data-close aria-label="Fechar"><svg class="i"><use href="#i-close"/></svg></button></div>
+    <div class="section" style="border: 0; padding: 0">
+      <h3>Mixer</h3>
+      <div class="mix-row"><span class="name">Transmissão</span><input type="range" min="0" max="100" value="100" id="mx-stream" aria-label="Volume da transmissão"><output for="mx-stream">100</output><button class="btn icon" type="button" id="mx-stream-mute" aria-pressed="false" aria-label="Silenciar transmissão"><svg class="i"><use href="#i-volume"/></svg></button></div>
+      <div class="mix-row"><span class="name">Voz da sessão</span><input type="range" min="0" max="100" value="100" id="mx-voice" aria-label="Volume da voz"><output for="mx-voice">100</output><button class="btn icon" type="button" id="mx-voice-mute" aria-pressed="false" aria-label="Silenciar voz"><svg class="i"><use href="#i-volume"/></svg></button></div>
+    </div>
+    <div class="section">
+      <h3>Volume por pessoa</h3>
+      <div id="mx-people"></div>
+    </div>
+    <div class="section">
+      <h3>Dispositivos</h3>
+      <label class="field">Entrada (microfone)<select id="dev-in"></select></label>
+      <label class="field">Saída<select id="dev-out"></select></label>
+      <div class="mix-row"><span class="name">Ganho do mic</span><input type="range" min="0" max="200" value="100" id="mic-gain" aria-label="Ganho do microfone"><output for="mic-gain">100</output></div>
+      <button class="switch" type="button" role="switch" id="opt-ns" aria-checked="true"><span>Supressão de ruído</span><span class="track"></span></button>
+      <button class="switch" type="button" role="switch" id="opt-ec" aria-checked="true"><span>Cancelamento de eco</span><span class="track"></span></button>
+      <button class="switch" type="button" role="switch" id="opt-ptt" aria-checked="false"><span>Apertar para falar <span class="small muted">(segure V)</span></span><span class="track"></span></button>
+    </div>
+    <div class="section" id="rules">
+      <h3>Regras da sessão</h3>
+      <button class="switch" type="button" role="switch" id="rule-locked" aria-checked="false"><span><svg class="i sm" style="vertical-align: -3px"><use href="#i-lock"/></svg> Trancar sessão <span class="small muted">(novos recebem 423)</span></span><span class="track"></span></button>
+      <button class="switch" type="button" role="switch" id="rule-autoApprove" aria-checked="false"><span>Aprovar pedidos de vez automaticamente</span><span class="track"></span></button>
+      <button class="switch" type="button" role="switch" id="rule-presenterCanPass" aria-checked="true"><span>Quem transmite pode passar a vez</span><span class="track"></span></button>
+      <button class="btn danger" type="button" id="end-all">Encerrar para todos</button>
+    </div>
+    <div class="section">
+      <h3>Quem pode o quê</h3>
+      <div style="overflow-x: auto"><table class="matrix" id="matrix"></table></div>
+    </div>
+  </div>
+</dialog>
+
+<!-- T11 · Configurações -->
+<dialog id="dlg-settings" aria-labelledby="settings-h">
+  <div class="dlg">
+    <div class="dlg-head"><h2 id="settings-h">Configurações</h2><button class="btn ghost icon" type="button" data-close aria-label="Fechar"><svg class="i"><use href="#i-close"/></svg></button></div>
+    <div class="section" style="border: 0; padding: 0">
+      <h3>Codificação de vídeo</h3>
+      <label class="field">Codec preferido<select id="set-codec"></select></label>
+      <p class="small muted" id="set-codec-hint"></p>
+      <p class="small muted" id="set-encoder"></p>
+    </div>
+    <div class="section">
+      <h3>Rede</h3>
+      <label class="field">Upload padrão (Mbps)<input type="number" id="set-upload" min="1" max="1000" value="20"></label>
+      <label class="field">Servidor TURN (opcional)<input type="text" id="set-turn" placeholder="turn:usuario:senha@host:3478" autocomplete="off" spellcheck="false"></label>
+      <p class="small muted">Sem TURN, quem está atrás de NAT simétrico pode não conectar fora da rede local.</p>
+    </div>
+    <div class="section">
+      <h3>O que este navegador suporta</h3>
+      <ul class="small muted" id="set-support" style="margin: 0; padding-left: 18px"></ul>
+    </div>
+    <button class="btn primary" type="button" id="set-save">Salvar</button>
+  </div>
+</dialog>
+
+<dialog id="dlg-rename" aria-labelledby="rename-h">
+  <form class="dlg" id="rename-form" novalidate>
+    <div class="dlg-head"><h2 id="rename-h">Meu apelido</h2><button class="btn ghost icon" type="button" data-close aria-label="Fechar"><svg class="i"><use href="#i-close"/></svg></button></div>
+    <label class="field">Como quer ser chamado(a)<input type="text" id="rename-input" maxlength="24" aria-describedby="rename-err"></label>
+    <div id="rename-err" class="field-error" hidden></div>
+    <button class="btn primary" type="submit">Salvar</button>
+  </form>
+</dialog>
+
+<dialog id="dlg-pass" aria-labelledby="pass-h">
+  <div class="dlg">
+    <div class="dlg-head"><h2 id="pass-h">Passar a vez</h2><button class="btn ghost icon" type="button" data-close aria-label="Fechar"><svg class="i"><use href="#i-close"/></svg></button></div>
+    <p class="muted small">A transmissão atual para e a pessoa escolhida tem 1 minuto para começar.</p>
+    <div id="pass-list" style="display: flex; flex-direction: column; gap: 6px"></div>
+  </div>
+</dialog>
+
+<div class="menu" id="menu" role="menu" hidden></div>
+<div class="toasts" id="toasts" aria-live="assertive"></div>
+
+<script type="module" src="/app.js"></script>
 </body>
 </html>
