@@ -181,13 +181,54 @@ const VIDEO_IN = async () => {
   }
   return null;
 };
+// The presenter's side of the same video: what the congestion control allows (BWE), what the
+// encoder aims for, what actually left, and why quality is limited. Sampled every second.
 const VIDEO_OUT = async () => {
   for (const pc of window.__pcs) {
-    const v = [...(await pc.getStats()).values()].find((s) => s.type === 'outbound-rtp' && s.kind === 'video');
-    if (v && pc.connectionState !== 'closed') return { height: v.frameHeight ?? 0, limit: v.qualityLimitationReason, target: v.targetBitrate ?? 0 };
+    if (pc.connectionState === 'closed') continue;
+    const r = [...(await pc.getStats()).values()];
+    const v = r.find((s) => s.type === 'outbound-rtp' && s.kind === 'video');
+    if (!v) continue;
+    const transport = r.find((s) => s.type === 'transport');
+    const pair = r.find((s) => s.id === transport?.selectedCandidatePairId);
+    return {
+      bweKbps: (pair?.availableOutgoingBitrate ?? 0) / 1000, targetKbps: (v.targetBitrate ?? 0) / 1000,
+      bytes: v.bytesSent ?? 0, rtxBytes: v.retransmittedBytesSent ?? 0, height: v.frameHeight ?? 0,
+      fps: v.framesPerSecond ?? 0, limit: v.qualityLimitationReason, limitS: v.qualityLimitationDurations ?? {},
+      qpSum: v.qpSum ?? 0, encoded: v.framesEncoded ?? 0, codec: r.find((x) => x.id === v.codecId)?.mimeType,
+      at: performance.now(),
+    };
   }
   return null;
 };
+const SAMPLE_MS = 1000;
+// Window summary of the presenter samples; NETSIM_TRACE=1 also prints them second by second.
+function senderSummary(trace) {
+  const t = trace.filter(Boolean);
+  if (t.length < 2) return {};
+  const [o0, o1] = [t[0], t.at(-1)];
+  const s = (o1.at - o0.at) / 1000;
+  const sent = o1.bytes - o0.bytes;
+  const limited = (why) => Math.round((100 * ((o1.limitS[why] ?? 0) - (o0.limitS[why] ?? 0))) / s);
+  if (process.env.NETSIM_TRACE) {
+    for (let i = 1; i < t.length; i++) {
+      const kbps = Math.round(((t[i].bytes - t[i - 1].bytes) * 8) / (t[i].at - t[i - 1].at));
+      console.log(`    ${i}s BWE ${Math.round(t[i].bweKbps)} alvo ${Math.round(t[i].targetKbps)} enviado ${kbps} kbps, ${t[i].height}p ${Math.round(t[i].fps)} fps, ${t[i].limit}`);
+    }
+  }
+  return {
+    'BWE kbps': Math.round(median(t.map((x) => x.bweKbps))),
+    'BWE mín kbps': Math.round(Math.min(...t.map((x) => x.bweKbps))),
+    'alvo do encoder kbps': Math.round(median(t.map((x) => x.targetKbps))),
+    'enviado kbps': Math.round((sent * 8) / s / 1000),
+    'reenvio %': sent ? +((100 * (o1.rtxBytes - o0.rtxBytes)) / sent).toFixed(1) : 0,
+    'altura enviada': median(t.map((x) => x.height)),
+    // Average quantizer: how hard each frame is compressed (VP8 0–127; higher is blurrier).
+    'QP médio': o1.encoded > o0.encoded ? Math.round((o1.qpSum - o0.qpSum) / (o1.encoded - o0.encoded)) : null,
+    'limitado por banda %': limited('bandwidth'),
+    'limitado por CPU %': limited('cpu'),
+  };
+}
 // Median glass-to-glass latency from the clock blocks (same probe as e2e/run.js).
 const latency = async (page) => { await page.bringToFront(); return page.evaluate(() => new Promise((done) => {
   const v = document.getElementById('video');
@@ -210,16 +251,53 @@ const latency = async (page) => { await page.bringToFront(); return page.evaluat
 })); };
 
 const rows = [];
+// Stream start, on a clean network: the encoder starts from the initial bandwidth estimate and
+// climbs to the full resolution step by step. Measured on its own, so `base` does not get the ramp.
+const FULL_HEIGHT = Number(MODE.match(/^(\d+)p/)[1]);
+const STARTUP_MS = 30_000;
+async function startup(viewer, presenter) {
+  const a = await viewer.evaluate(VIDEO_IN);
+  const trace = [await presenter.evaluate(VIDEO_OUT)];
+  for (const end = Date.now() + STARTUP_MS; Date.now() < end;) {
+    await sleep(Math.min(SAMPLE_MS, end - Date.now()));
+    trace.push(await presenter.evaluate(VIDEO_OUT));
+  }
+  const b = await viewer.evaluate(VIDEO_IN);
+  const pref = await presenter.evaluate(() => window.__pcs.flatMap((pc) => pc.getSenders())
+    .find((s) => s.track?.kind === 'video')?.getParameters().degradationPreference ?? '-');
+  const t = trace.filter(Boolean);
+  const full = t.findIndex((x) => x.height >= FULL_HEIGHT);
+  rows.push({
+    cenário: 'início da transmissão',
+    degradationPreference: pref,
+    codec: t.at(-1)?.codec ?? '-',
+    'altura inicial': t[0]?.height,
+    'resolução cheia em s': full >= 0 ? Math.round((t[full].at - t[0].at) / 1000) : 'não chegou',
+    'altura no fim': t.at(-1)?.height,
+    fps: Math.round((b.frames - a.frames) / ((b.at - a.at) / 1000)),
+    'fps mín no host': Math.round(Math.min(...t.map((x) => x.fps))),
+    congelamentos: b.freezes - a.freezes,
+    'congelado s': +(b.freezeS - a.freezeS).toFixed(1),
+  });
+  const r = rows.at(-1);
+  const climb = full >= 0 ? `resolução cheia em ${r['resolução cheia em s']} s` : `não chegou a ${FULL_HEIGHT}p (ficou em ${r['altura no fim']}p)`;
+  console.log(`· início (${r.codec}, ${pref}): ${r['altura inicial']}p, ${climb}, ${r.fps} fps (mín ${r['fps mín no host']} no host), ${r.congelamentos} congelamento(s)`);
+}
+
 async function measure(name, set, viewer, presenter) {
   Object.assign(impair, { loss: 0, delay: 0, jitter: 0, down: false }, set);
   await sleep(SETTLE_MS);
   const a = await viewer.evaluate(VIDEO_IN);
+  const trace = [await presenter.evaluate(VIDEO_OUT)];
   const u0 = { ...udp };
   loopLag.reset();
-  await sleep(MEASURE_MS);
+  for (const end = Date.now() + MEASURE_MS; Date.now() < end;) {
+    await sleep(Math.min(SAMPLE_MS, end - Date.now()));
+    trace.push(await presenter.evaluate(VIDEO_OUT));
+  }
   const lagMs = Math.round(loopLag.percentile(99) / 1e6);
   const b = await viewer.evaluate(VIDEO_IN);
-  const out = await presenter.evaluate(VIDEO_OUT);
+  const sender = senderSummary(trace);
   const lat = await latency(viewer);
   const s = (b.at - a.at) / 1000;
   const pkts = b.recv - a.recv + (b.lost - a.lost);
@@ -237,14 +315,15 @@ async function measure(name, set, viewer, presenter) {
     'jitter RTP ms': Math.round(b.jitterMs),
     'alvo ms': b.targetMs,
     'latência ms': lat,
-    'limite no host': out?.limit ?? '-',
+    ...sender,
     'descartados proxy': udp.dropped - u0.dropped,
     'atraso do proxy p99 ms': lagMs,
   });
   assert.ok(b.relay, 'a mídia precisa passar pelo TURN');
   const r = rows.at(-1);
   const busy = lagMs > PROXY_LAG_MAX_MS ? ` ⚠ proxy atrasou ${lagMs} ms (máquina ocupada): não confiável` : '';
-  console.log(`· ${name}: ${r.fps} fps, ${r.kbps} kbps, latência ${lat} ms, buffer ${r['buffer ms']} ms (alvo ${r['alvo ms']}), ${r.congelamentos} congelamento(s)${busy}`);
+  console.log(`· ${name}: ${r.fps} fps, ${r.kbps} kbps, latência ${lat} ms, buffer ${r['buffer ms']} ms (alvo ${r['alvo ms']}), ${r.congelamentos} congelamento(s); `
+    + `BWE ${r['BWE kbps']} kbps (mín ${r['BWE mín kbps']}), ${r['altura enviada']}p enviado, QP ${r['QP médio']}, limitado por banda ${r['limitado por banda %']}%${busy}`);
 }
 
 // Time until the viewer decodes frames again after a total outage of `ms`.
@@ -315,6 +394,7 @@ try {
   await waitFor(bruno, hasVideo, 'vídeo no Bruno');
   const coarse = timerMs > TIMER_MAX_MS ? ' ⚠ timers grossos: atrasos e variação saem arredondados' : '';
   console.log(`transmitindo ${MODE} só por TURN; medindo ${MEASURE_MS / 1000} s por cenário; timer do proxy ${timerMs.toFixed(1)} ms${coarse}\n`);
+  await startup(bruno, ana);
 
   const SCENARIOS = {
     base: () => measure('base (só TURN)', {}, bruno, ana),
