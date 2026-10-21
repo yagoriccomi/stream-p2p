@@ -22,7 +22,7 @@ const TURN_USER = 'sp2p';
 const TURN_PASS = 'netsim'; // local throwaway credential, only valid for this run
 const MODE = process.env.NETSIM_MODE ?? '720p30';
 const SETTLE_MS = 4000; // let the encoder and the congestion control react before measuring
-const MEASURE_MS = 10_000;
+const MEASURE_MS = Number(process.env.NETSIM_MEASURE_MS) || 10_000; // longer windows for rare events (freezes)
 const BASE = `http://localhost:${PORT}`;
 const CHROME = process.env.CHROME_PATH ?? [
   'C:/Program Files/Google/Chrome/Application/chrome.exe',
@@ -153,6 +153,7 @@ const VIDEO_IN = async () => {
       freezes: v.freezeCount ?? 0, freezeS: v.totalFreezesDuration ?? 0, nacks: v.nackCount ?? 0,
       bufS: v.jitterBufferDelay ?? 0, bufN: v.jitterBufferEmittedCount ?? 0, height: v.frameHeight ?? 0,
       rttMs: pair?.currentRoundTripTime != null ? pair.currentRoundTripTime * 1000 : null,
+      jitterMs: (v.jitter ?? 0) * 1000, targetMs: window.__stats?.jitterMs ?? null,
       relay: local?.candidateType === 'relay', state: pc.connectionState, at: performance.now(),
     };
   }
@@ -209,12 +210,15 @@ async function measure(name, set, viewer, presenter) {
     'congelado s': +(b.freezeS - a.freezeS).toFixed(1),
     'buffer ms': b.bufN > a.bufN ? Math.round((1000 * (b.bufS - a.bufS)) / (b.bufN - a.bufN)) : null,
     'rtt ms': b.rttMs != null ? Math.round(b.rttMs) : null,
+    'jitter RTP ms': Math.round(b.jitterMs),
+    'alvo ms': b.targetMs,
     'latência ms': lat,
     'limite no host': out?.limit ?? '-',
     'descartados proxy': udp.dropped - u0.dropped,
   });
   assert.ok(b.relay, 'a mídia precisa passar pelo TURN');
-  console.log(`· ${name}: ${rows.at(-1).fps} fps, ${rows.at(-1).kbps} kbps, latência ${lat} ms`);
+  const r = rows.at(-1);
+  console.log(`· ${name}: ${r.fps} fps, ${r.kbps} kbps, latência ${lat} ms, buffer ${r['buffer ms']} ms (alvo ${r['alvo ms']}), ${r.congelamentos} congelamento(s)`);
 }
 
 // Time until the viewer decodes frames again after a total outage of `ms`.
@@ -293,6 +297,8 @@ try {
     delay50: () => measure('atraso 50 ms', { delay: 50 }, bruno, ana),
     jitter20: () => measure('atraso 50 ± 20 ms', { delay: 50, jitter: 20 }, bruno, ana),
     bad: () => measure('atraso 150 ± 50 ms + perda 2%', { delay: 150, jitter: 50, loss: 0.02 }, bruno, ana),
+    jitter50: () => measure('atraso 150 ± 50 ms', { delay: 150, jitter: 50 }, bruno, ana), // bad without loss
+    loss2rtt300: () => measure('atraso 150 ms + perda 2%', { delay: 150, loss: 0.02 }, bruno, ana), // bad without jitter
     clean: () => measure('recuperado (sem falha)', {}, bruno, ana),
     cut3: () => outage('mídia cortada 3 s', 3000, bruno),
     cut10: () => outage('mídia cortada 10 s', 10_000, bruno),
