@@ -10,6 +10,7 @@ import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import path from 'node:path';
 import dgram from 'node:dgram';
+import { monitorEventLoopDelay } from 'node:perf_hooks';
 import net from 'node:net';
 import assert from 'node:assert/strict';
 import puppeteer from 'puppeteer-core';
@@ -37,6 +38,11 @@ assert.ok(existsSync(TURN_BIN), `TURN não encontrado em ${TURN_BIN}; instale co
 // (applied on the TURN→browser leg only, so one media packet is degraded exactly once
 // and a round trip crosses it twice: once to the viewer, once back to the presenter).
 const impair = { loss: 0, delay: 0, jitter: 0, down: false };
+// The proxy is this process: if the machine is busy, its event loop lags and adds delay and
+// jitter of its own. Measured per window, so a contaminated measurement says so.
+const loopLag = monitorEventLoopDelay({ resolution: 10 });
+loopLag.enable();
+const PROXY_LAG_MAX_MS = 20; // p99 above this: the numbers measure the machine, not the scenario
 const udp = { delivered: 0, dropped: 0 };
 function deliver(fn) {
   if (impair.down || Math.random() < impair.loss) return udp.dropped++;
@@ -193,7 +199,9 @@ async function measure(name, set, viewer, presenter) {
   await sleep(SETTLE_MS);
   const a = await viewer.evaluate(VIDEO_IN);
   const u0 = { ...udp };
+  loopLag.reset();
   await sleep(MEASURE_MS);
+  const lagMs = Math.round(loopLag.percentile(99) / 1e6);
   const b = await viewer.evaluate(VIDEO_IN);
   const out = await presenter.evaluate(VIDEO_OUT);
   const lat = await latency(viewer);
@@ -215,10 +223,12 @@ async function measure(name, set, viewer, presenter) {
     'latência ms': lat,
     'limite no host': out?.limit ?? '-',
     'descartados proxy': udp.dropped - u0.dropped,
+    'atraso do proxy p99 ms': lagMs,
   });
   assert.ok(b.relay, 'a mídia precisa passar pelo TURN');
   const r = rows.at(-1);
-  console.log(`· ${name}: ${r.fps} fps, ${r.kbps} kbps, latência ${lat} ms, buffer ${r['buffer ms']} ms (alvo ${r['alvo ms']}), ${r.congelamentos} congelamento(s)`);
+  const busy = lagMs > PROXY_LAG_MAX_MS ? ` ⚠ proxy atrasou ${lagMs} ms (máquina ocupada): não confiável` : '';
+  console.log(`· ${name}: ${r.fps} fps, ${r.kbps} kbps, latência ${lat} ms, buffer ${r['buffer ms']} ms (alvo ${r['alvo ms']}), ${r.congelamentos} congelamento(s)${busy}`);
 }
 
 // Time until the viewer decodes frames again after a total outage of `ms`.
