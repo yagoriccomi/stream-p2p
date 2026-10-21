@@ -44,12 +44,21 @@ npm start    # http://localhost:3000  (PORT para mudar)
   8. O relay sai e os filhos dele são re-pendurados.
 - **Rede ruim:** `npm run netsim`. Ana transmite para Bruno com a mídia forçada por um TURN local, e um proxy UDP degrada o que o TURN entrega.
   - Cenários: perda de 1, 5 e 10%; atraso de 50 ms; variação de ±20 ms; 150 ± 50 ms com 2% de perda (e cada parte separada: `jitter50` e `loss2rtt300`); cortes de 3, 10, 40 e 90 s; queda do WebSocket por 2 s; servidor fora por 15 s; `/speedtest` com 503.
+  - A variação tem dois modelos:
+    - o padrão sorteia um atraso por pacote, e os pacotes trocam de lugar (reordenam);
+    - em `badQueue` (150 ± 50 ms + 2%), o atraso sobe e desce devagar, como uma fila que enche e esvazia, sem reordenar.
   - Mede, no espectador: fps, kbps, perda RTP, NACKs, congelamentos, buffer, RTT e latência pelo relógio no vídeo. Nos cortes, mede quanto tempo o vídeo e a voz levam para voltar.
+  - Mede, em quem transmite, a cada 1 s: a banda estimada pelo controle de congestionamento (BWE), o alvo do encoder, o que saiu, a fração de reenvio, a resolução enviada e o tempo em que o encoder ficou limitado por banda ou por CPU.
+  - Antes dos cenários, mede o início da transmissão: a resolução inicial e em quantos segundos chega à resolução cheia. Hoje são 13–16 s até 720p, porque o navegador parte de uma estimativa de banda baixa.
+  - No Windows, o proxy pede timers de 1 ms ao sistema (`timeBeginPeriod`, pelo `koffi`). Sem isso, todo atraso sai arredondado para 15,6 ms e os pacotes saem em rajadas. A primeira linha mostra o timer medido.
   - O TURN é o servidor de referência do Pion: `go install github.com/pion/turn/v4/examples/turn-server/simple@latest`. Para outro caminho, defina `NETSIM_TURN_BIN`.
   - Variáveis:
     - `NETSIM_ONLY=base,loss5` roda só alguns cenários;
     - `NETSIM_MODE=1080p60` troca a qualidade;
     - `NETSIM_MEASURE_MS=60000` alonga a janela de 10 s (congelamentos são raros, e 10 s não bastam para comparar);
+    - `NETSIM_TRACE=1` mostra, segundo a segundo, o que quem transmite mediu;
+    - `NETSIM_CONTENT=game` troca a tela de teste, que é lisa e se comprime a ~1,2 Mbps, por uma textura em movimento que deixa o encoder limitado por banda, como num jogo;
+    - `NETSIM_DEGRADATION=balanced` (ou `maintain-resolution`, `maintain-framerate`) força o `degradationPreference` de quem transmite, para comparar;
     - `NETSIM_DEBUG=1` mostra o log das páginas.
   - A carga da máquina contamina os números. Rode `base` junto (`NETSIM_ONLY=base,bad`) e descarte a rodada se o `base` não sair com jitter RTP perto de 0 e sem congelamentos.
 - **Manual, LAN:** quem transmite abre em `localhost`, porque a captura exige contexto seguro. Os amigos abrem `http://<seu-IP>:3000/?code=<código>`. Fora da LAN, use o TURN do servidor (abaixo) ou um TURN pessoal em **Configurações** (T11).
@@ -131,7 +140,8 @@ A página `/download` explica a instalação para quem baixa.
 - Se a mídia ficar mais de ~30 s sem passar, a conexão vai a `failed`. Quem oferece (o pai no vídeo, o id menor na voz) então refaz a conexão, tentando de novo a cada 1, 2, 4 e 5 s até a rede voltar. Depois que a rede volta, vídeo e voz retornam em até ~5 s (medido pelo `npm run netsim` com cortes de 40 e 90 s). Cortes de até 10 s se recuperam sem refazer nada.
 - Com 150 ± 50 ms de atraso e 2% de perda:
   - O buffer do próprio navegador sobe sozinho até ~260 ms, e há de 0 a 3 congelamentos por minuto.
-  - O envio cai para algumas centenas de kbps (controle de congestionamento de quem transmite).
+  - O envio cai para ~1 Mbps ou menos. A causa é a variação do atraso, não a perda: o controle de congestionamento de quem transmite (GCC) a lê como fila enchendo, ou como pacotes fora de ordem que pede de novo. Só com a perda, a banda volta a ~5 Mbps.
+  - O app mantém os fps e baixa a resolução (`maintain-framerate`). Com conteúdo de jogo, manter a resolução derrubou o vídeo para 1–4 fps com até 2 s de latência. Detalhes em `docs/planos/ENTREGA-bitrate-sob-perda.md`.
   - Um piso de buffer proporcional ao jitter foi testado e não ajudou: na comparação com a máquina limpa, dobrou os congelamentos. Detalhes em `docs/planos/ENTREGA-piso-de-buffer.md`.
 - O relay re-codifica no navegador.
 - O app usa o mesmo WebRTC do navegador; ainda não há encoder NVENC/AMF nativo.
