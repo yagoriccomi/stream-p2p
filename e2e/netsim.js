@@ -111,15 +111,40 @@ const server = spawn(process.execPath, ['server/index.js'], {
   stdio: ['ignore', 'ignore', 'inherit'],
 });
 
-// Same fake screen as e2e/run.js: an animated canvas with a 24-bit clock on top.
-const FAKE_CAPTURE = () => {
+// Same fake screen as e2e/run.js: an animated canvas with a 24-bit clock on top. It is easy to
+// compress (~1.2 Mbps in 720p30). NETSIM_CONTENT=game draws a detailed texture panning like a
+// game camera, with lighting changes and particles, so the encoder needs every bit it gets.
+const CONTENT = process.env.NETSIM_CONTENT ?? 'simple';
+const FAKE_CAPTURE = (content) => {
   navigator.mediaDevices.getDisplayMedia = async ({ video }) => {
     const c = Object.assign(document.createElement('canvas'), { width: video.width, height: video.height });
     const g = c.getContext('2d');
+    const TILE = 512;
+    const tex = Object.assign(document.createElement('canvas'), { width: TILE, height: TILE });
+    if (content === 'game') {
+      const small = Object.assign(document.createElement('canvas'), { width: TILE / 4, height: TILE / 4 });
+      const sg = small.getContext('2d');
+      const img = sg.createImageData(small.width, small.height);
+      for (let i = 0; i < img.data.length; i += 4) img.data.set([Math.random() * 256, Math.random() * 256, Math.random() * 256, 255], i);
+      sg.putImageData(img, 0, 0);
+      tex.getContext('2d').drawImage(small, 0, 0, TILE, TILE); // smoothed 4x: detail, not pure noise
+    }
     let t = 0;
     setInterval(() => {
-      g.fillStyle = `hsl(${t++ % 360} 70% 40%)`;
-      g.fillRect(0, 0, c.width, c.height);
+      t++;
+      if (content === 'game') {
+        const [ox, oy] = [(t * 7) % TILE, (t * 3) % TILE];
+        for (let x = -ox; x < c.width; x += TILE) for (let y = -oy; y < c.height; y += TILE) g.drawImage(tex, x, y);
+        g.fillStyle = `hsl(${(t * 3) % 360} 80% 50% / 0.25)`; // lighting changes every frame
+        g.fillRect(0, 0, c.width, c.height);
+        for (let i = 0; i < 40; i++) { // particles: nothing to predict them from
+          g.fillStyle = `hsl(${Math.random() * 360} 90% 60%)`;
+          g.fillRect(Math.random() * c.width, Math.random() * c.height, 24, 24);
+        }
+      } else {
+        g.fillStyle = `hsl(${t % 360} 70% 40%)`;
+        g.fillRect(0, 0, c.width, c.height);
+      }
       g.fillStyle = '#fff';
       g.font = '120px sans-serif';
       g.fillText(String(t), 100 + (t * 7) % (c.width - 400), c.height / 2);
@@ -163,7 +188,7 @@ const hasVideo = () => document.getElementById('video').videoWidth > 0 && window
 async function open(url) {
   const p = await browser.newPage();
   await p.setViewport({ width: 1280, height: 800 });
-  await p.evaluateOnNewDocument(FAKE_CAPTURE);
+  await p.evaluateOnNewDocument(FAKE_CAPTURE, CONTENT);
   await p.evaluateOnNewDocument(FORCE_RELAY);
   p.on('pageerror', (e) => console.error('pageerror:', e.message));
   if (process.env.NETSIM_DEBUG) p.on('console', (m) => console.log(`  [${new URL(url).port}] ${m.text()}`));
@@ -404,7 +429,7 @@ try {
   await ana.click('#q-start');
   await waitFor(bruno, hasVideo, 'vídeo no Bruno');
   const coarse = timerMs > TIMER_MAX_MS ? ' ⚠ timers grossos: atrasos e variação saem arredondados' : '';
-  console.log(`transmitindo ${MODE} só por TURN; medindo ${MEASURE_MS / 1000} s por cenário; timer do proxy ${timerMs.toFixed(1)} ms${coarse}\n`);
+  console.log(`transmitindo ${MODE} (conteúdo ${CONTENT}) só por TURN; medindo ${MEASURE_MS / 1000} s por cenário; timer do proxy ${timerMs.toFixed(1)} ms${coarse}\n`);
   await startup(bruno, ana);
 
   const SCENARIOS = {
