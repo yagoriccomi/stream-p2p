@@ -158,6 +158,15 @@ const FAKE_CAPTURE = (content) => {
     return c.captureStream(video.frameRate);
   };
 };
+// NETSIM_DEGRADATION=maintain-framerate|balanced|maintain-resolution overrides the app's choice on
+// every video setParameters, so the three can be compared on the same network.
+const FORCE_DEGRADATION = (pref) => {
+  const set = RTCRtpSender.prototype.setParameters;
+  RTCRtpSender.prototype.setParameters = function (p, ...rest) {
+    if (this.track?.kind === 'video') p.degradationPreference = pref;
+    return set.call(this, p, ...rest);
+  };
+};
 // Only relay candidates: every byte crosses the TURN, so the proxy degrades all of it.
 const FORCE_RELAY = () => {
   const Native = window.RTCPeerConnection;
@@ -190,6 +199,7 @@ async function open(url) {
   await p.setViewport({ width: 1280, height: 800 });
   await p.evaluateOnNewDocument(FAKE_CAPTURE, CONTENT);
   await p.evaluateOnNewDocument(FORCE_RELAY);
+  if (process.env.NETSIM_DEGRADATION) await p.evaluateOnNewDocument(FORCE_DEGRADATION, process.env.NETSIM_DEGRADATION);
   p.on('pageerror', (e) => console.error('pageerror:', e.message));
   if (process.env.NETSIM_DEBUG) p.on('console', (m) => console.log(`  [${new URL(url).port}] ${m.text()}`));
   await p.goto(url);
