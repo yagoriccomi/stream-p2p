@@ -221,19 +221,33 @@ async function measure(name, set, viewer, presenter) {
 async function outage(name, ms, viewer) {
   Object.assign(impair, { loss: 0, delay: 0, jitter: 0, down: true });
   await sleep(ms);
-  const before = await viewer.evaluate(VIDEO_IN);
-  impair.down = false;
-  const t0 = Date.now();
-  const ok = await viewer.waitForFunction(async (f) => {
+  // Frames decoded so far per pc: the app may already have replaced a failed pc with a new
+  // one (counters from 0), so progress is measured against each pc's own count.
+  await viewer.evaluate(async () => {
+    window.__framesAt = new Map();
     for (const pc of window.__pcs) {
       const v = [...(await pc.getStats()).values()].find((s) => s.type === 'inbound-rtp' && s.kind === 'video');
-      if (v && pc.connectionState !== 'closed' && v.framesDecoded > f + 10) return true;
+      window.__framesAt.set(pc, v?.framesDecoded ?? 0);
     }
-    return false;
-  }, { timeout: 40_000, polling: 100 }, before.frames).then(() => true, () => false);
+  });
+  impair.down = false;
+  const t0 = Date.now();
+  const since = (p) => p.then(() => Date.now() - t0, () => 'não recuperou');
+  const [video, voice] = await Promise.all([
+    since(viewer.waitForFunction(async () => {
+      for (const pc of window.__pcs) {
+        const v = [...(await pc.getStats()).values()].find((s) => s.type === 'inbound-rtp' && s.kind === 'video');
+        if (v && pc.connectionState !== 'closed' && v.framesDecoded > (window.__framesAt.get(pc) ?? 0) + 10) return true;
+      }
+      return false;
+    }, { timeout: 40_000, polling: 100 })),
+    // Voice pcs are the sendrecv ones (video is sendonly/recvonly).
+    since(viewer.waitForFunction(() => window.__pcs.some((pc) => pc.connectionState === 'connected'
+      && pc.getTransceivers().some((t) => t.direction === 'sendrecv')), { timeout: 40_000, polling: 100 })),
+  ]);
   const after = await viewer.evaluate(VIDEO_IN);
-  rows.push({ cenário: name, 'recuperou em ms': ok ? Date.now() - t0 : 'não recuperou', estado: after?.state ?? '-' });
-  console.log(`· ${name}: ${rows.at(-1)['recuperou em ms']}`);
+  rows.push({ cenário: name, 'vídeo de volta ms': video, 'voz de volta ms': voice, estado: after?.state ?? '-' });
+  console.log(`· ${name}: vídeo ${video} ms, voz ${voice} ms`);
 }
 
 // Bruno's signaling drops for `ms`; time until he is back in the session and has video again.
@@ -283,6 +297,7 @@ try {
     cut3: () => outage('mídia cortada 3 s', 3000, bruno),
     cut10: () => outage('mídia cortada 10 s', 10_000, bruno),
     cut40: () => outage('mídia cortada 40 s', 40_000, bruno), // past ICE consent (30 s): connection fails
+    cut90: () => outage('mídia cortada 90 s', 90_000, bruno), // re-offers fail too while it is down (backoff)
     ws2: () => signalingDrop('WebSocket caiu 2 s', 2000, bruno),
     ws15: () => signalingDrop('servidor fora 15 s', 15_000, bruno),
   };
