@@ -54,7 +54,7 @@ Leitura:
 |---|---|
 | mídia cortada 3 s | volta em 0,6–0,7 s |
 | mídia cortada 10 s | volta em 0,2 s (o ICE fica `disconnected` e retoma) |
-| mídia cortada 40 s | **não volta**: voz e vídeo vão a `failed`, e o app não refaz a conexão |
+| mídia cortada 40 s | **não volta**: voz e vídeo vão a `failed`, e o app não refaz a conexão. *Corrigido depois: ver `ENTREGA-recuperar-conexao.md`* |
 | WebSocket do Bruno caiu 2 s | volta à sessão em 1,1 s e o vídeo em 3,5 s (a queda derruba o vídeo dele, e o servidor o pendura de novo) |
 | servidor fora 15 s (para o Bruno) | volta 0,1 s depois do servidor; o vídeo, em 3,0 s. A espera depende do backoff (1, 2, 4, 8, até 10 s) |
 | `/speedtest` com 503 | T02 mostra "503 · O servidor recusou o teste de upload.", sem travar |

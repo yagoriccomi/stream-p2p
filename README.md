@@ -43,8 +43,8 @@ npm start    # http://localhost:3000  (PORT para mudar)
   7. Ana passa a vez para Dani.
   8. O relay sai e os filhos dele são re-pendurados.
 - **Rede ruim:** `npm run netsim`. Ana transmite para Bruno com a mídia forçada por um TURN local, e um proxy UDP degrada o que o TURN entrega.
-  - Cenários: perda de 1, 5 e 10%; atraso de 50 ms; variação de ±20 ms; 150 ± 50 ms com 2% de perda; cortes de 3, 10 e 40 s; queda do WebSocket por 2 s; servidor fora por 15 s; `/speedtest` com 503.
-  - Mede, no espectador: fps, kbps, perda RTP, NACKs, congelamentos, buffer, RTT e latência pelo relógio no vídeo.
+  - Cenários: perda de 1, 5 e 10%; atraso de 50 ms; variação de ±20 ms; 150 ± 50 ms com 2% de perda; cortes de 3, 10, 40 e 90 s; queda do WebSocket por 2 s; servidor fora por 15 s; `/speedtest` com 503.
+  - Mede, no espectador: fps, kbps, perda RTP, NACKs, congelamentos, buffer, RTT e latência pelo relógio no vídeo. Nos cortes, mede quanto tempo o vídeo e a voz levam para voltar.
   - O TURN é o servidor de referência do Pion: `go install github.com/pion/turn/v4/examples/turn-server/simple@latest`. Para outro caminho, defina `NETSIM_TURN_BIN`.
   - `NETSIM_ONLY=base,loss5` roda só alguns cenários, `NETSIM_MODE=1080p60` troca a qualidade e `NETSIM_DEBUG=1` mostra o log das páginas.
 - **Manual, LAN:** quem transmite abre em `localhost`, porque a captura exige contexto seguro. Os amigos abrem `http://<seu-IP>:3000/?code=<código>`. Fora da LAN, use o TURN do servidor (abaixo) ou um TURN pessoal em **Configurações** (T11).
@@ -123,7 +123,7 @@ A página `/download` explica a instalação para quem baixa.
 - O atraso de decodificar e recodificar num relay é uma estimativa fixa (20 ms). O RTT de cada salto é medido.
 - Quem é relay vê a transmissão um salto antes dos filhos (~10–30 ms), porque o navegador reenvia o quadro depois do próprio buffer.
 - O estado fica em memória, então reiniciar o servidor encerra as sessões.
-- Se a mídia ficar mais de ~30 s sem passar, a conexão vai a `failed` e o app não a refaz (medido pelo `npm run netsim`). Cortes de até 10 s se recuperam sozinhos.
+- Se a mídia ficar mais de ~30 s sem passar, a conexão vai a `failed`. Quem oferece (o pai no vídeo, o id menor na voz) então refaz a conexão, tentando de novo a cada 1, 2, 4 e 5 s até a rede voltar. Depois que a rede volta, vídeo e voz retornam em até ~5 s (medido pelo `npm run netsim` com cortes de 40 e 90 s). Cortes de até 10 s se recuperam sem refazer nada.
 - Com variação alta (150 ± 50 ms), o buffer cai para manter a sincronia e aparecem congelamentos curtos (0,3–0,7 s em 10 s).
 - O relay re-codifica no navegador.
 - O app usa o mesmo WebRTC do navegador; ainda não há encoder NVENC/AMF nativo.
