@@ -43,10 +43,15 @@ npm start    # http://localhost:3000  (PORT para mudar)
   7. Ana passa a vez para Dani.
   8. O relay sai e os filhos dele são re-pendurados.
 - **Rede ruim:** `npm run netsim`. Ana transmite para Bruno com a mídia forçada por um TURN local, e um proxy UDP degrada o que o TURN entrega.
-  - Cenários: perda de 1, 5 e 10%; atraso de 50 ms; variação de ±20 ms; 150 ± 50 ms com 2% de perda; cortes de 3, 10, 40 e 90 s; queda do WebSocket por 2 s; servidor fora por 15 s; `/speedtest` com 503.
+  - Cenários: perda de 1, 5 e 10%; atraso de 50 ms; variação de ±20 ms; 150 ± 50 ms com 2% de perda (e cada parte separada: `jitter50` e `loss2rtt300`); cortes de 3, 10, 40 e 90 s; queda do WebSocket por 2 s; servidor fora por 15 s; `/speedtest` com 503.
   - Mede, no espectador: fps, kbps, perda RTP, NACKs, congelamentos, buffer, RTT e latência pelo relógio no vídeo. Nos cortes, mede quanto tempo o vídeo e a voz levam para voltar.
   - O TURN é o servidor de referência do Pion: `go install github.com/pion/turn/v4/examples/turn-server/simple@latest`. Para outro caminho, defina `NETSIM_TURN_BIN`.
-  - `NETSIM_ONLY=base,loss5` roda só alguns cenários, `NETSIM_MODE=1080p60` troca a qualidade e `NETSIM_DEBUG=1` mostra o log das páginas.
+  - Variáveis:
+    - `NETSIM_ONLY=base,loss5` roda só alguns cenários;
+    - `NETSIM_MODE=1080p60` troca a qualidade;
+    - `NETSIM_MEASURE_MS=60000` alonga a janela de 10 s (congelamentos são raros, e 10 s não bastam para comparar);
+    - `NETSIM_DEBUG=1` mostra o log das páginas.
+  - A carga da máquina contamina os números. Rode `base` junto (`NETSIM_ONLY=base,bad`) e descarte a rodada se o `base` não sair com jitter RTP perto de 0 e sem congelamentos.
 - **Manual, LAN:** quem transmite abre em `localhost`, porque a captura exige contexto seguro. Os amigos abrem `http://<seu-IP>:3000/?code=<código>`. Fora da LAN, use o TURN do servidor (abaixo) ou um TURN pessoal em **Configurações** (T11).
 
 ## TURN para fora da LAN
@@ -124,7 +129,10 @@ A página `/download` explica a instalação para quem baixa.
 - Quem é relay vê a transmissão um salto antes dos filhos (~10–30 ms), porque o navegador reenvia o quadro depois do próprio buffer.
 - O estado fica em memória, então reiniciar o servidor encerra as sessões.
 - Se a mídia ficar mais de ~30 s sem passar, a conexão vai a `failed`. Quem oferece (o pai no vídeo, o id menor na voz) então refaz a conexão, tentando de novo a cada 1, 2, 4 e 5 s até a rede voltar. Depois que a rede volta, vídeo e voz retornam em até ~5 s (medido pelo `npm run netsim` com cortes de 40 e 90 s). Cortes de até 10 s se recuperam sem refazer nada.
-- Com variação alta (150 ± 50 ms), o buffer cai para manter a sincronia e aparecem congelamentos curtos (0,3–0,7 s em 10 s).
+- Com 150 ± 50 ms de atraso e 2% de perda:
+  - O buffer do próprio navegador sobe sozinho até ~260 ms, e há de 0 a 3 congelamentos por minuto.
+  - O envio cai para algumas centenas de kbps (controle de congestionamento de quem transmite).
+  - Um piso de buffer proporcional ao jitter foi testado e não ajudou: na comparação com a máquina limpa, dobrou os congelamentos. Detalhes em `docs/planos/ENTREGA-piso-de-buffer.md`.
 - O relay re-codifica no navegador.
 - O app usa o mesmo WebRTC do navegador; ainda não há encoder NVENC/AMF nativo.
 - A fonte escolhida no seletor nativo ainda passa pelo seletor do sistema na hora de capturar.
