@@ -37,7 +37,7 @@ assert.ok(existsSync(TURN_BIN), `TURN não encontrado em ${TURN_BIN}; instale co
 // ── UDP proxy: every packet the TURN sends to a browser passes `impair` once ──
 // (applied on the TURN→browser leg only, so one media packet is degraded exactly once
 // and a round trip crosses it twice: once to the viewer, once back to the presenter).
-const impair = { loss: 0, delay: 0, jitter: 0, down: false };
+const impair = { loss: 0, delay: 0, jitter: 0, queue: false, down: false };
 // The proxy is this process: if the machine is busy, its event loop lags and adds delay and
 // jitter of its own. Measured per window, so a contaminated measurement says so.
 const loopLag = monitorEventLoopDelay({ resolution: 10 });
@@ -60,10 +60,21 @@ const timerMs = await new Promise((done) => {
 });
 const PROXY_LAG_MAX_MS = 20; // p99 above this: the numbers measure the machine, not the scenario
 const udp = { delivered: 0, dropped: 0 };
+// Two jitter models. Default: each packet draws its own delay, so packets ±50 ms apart swap
+// places (reordering, which real paths rarely do). `queue`: the delay drifts between random
+// points 200 ms apart, like a queue filling and draining; the drift is slower than time itself,
+// so order is kept.
+const SMOOTH_SEGMENT_MS = 200;
+const wander = { from: 0, to: 0, at: 0 };
+function drift(now) {
+  if (now - wander.at >= SMOOTH_SEGMENT_MS) Object.assign(wander, { from: wander.to, to: Math.random() * 2 - 1, at: now });
+  return wander.from + ((wander.to - wander.from) * (now - wander.at)) / SMOOTH_SEGMENT_MS;
+}
 function deliver(fn) {
   if (impair.down || Math.random() < impair.loss) return udp.dropped++;
   udp.delivered++;
-  const ms = Math.max(0, impair.delay + (Math.random() * 2 - 1) * impair.jitter);
+  const spread = impair.queue ? drift(performance.now()) : Math.random() * 2 - 1;
+  const ms = Math.max(0, impair.delay + spread * impair.jitter);
   ms ? setTimeout(fn, ms) : fn();
 }
 const front = dgram.createSocket('udp4');
@@ -285,7 +296,7 @@ async function startup(viewer, presenter) {
 }
 
 async function measure(name, set, viewer, presenter) {
-  Object.assign(impair, { loss: 0, delay: 0, jitter: 0, down: false }, set);
+  Object.assign(impair, { loss: 0, delay: 0, jitter: 0, queue: false, down: false }, set);
   await sleep(SETTLE_MS);
   const a = await viewer.evaluate(VIDEO_IN);
   const trace = [await presenter.evaluate(VIDEO_OUT)];
@@ -328,7 +339,7 @@ async function measure(name, set, viewer, presenter) {
 
 // Time until the viewer decodes frames again after a total outage of `ms`.
 async function outage(name, ms, viewer) {
-  Object.assign(impair, { loss: 0, delay: 0, jitter: 0, down: true });
+  Object.assign(impair, { loss: 0, delay: 0, jitter: 0, queue: false, down: true });
   await sleep(ms);
   // Frames decoded so far per pc: the app may already have replaced a failed pc with a new
   // one (counters from 0), so progress is measured against each pc's own count.
@@ -405,6 +416,7 @@ try {
     jitter20: () => measure('atraso 50 ± 20 ms', { delay: 50, jitter: 20 }, bruno, ana),
     bad: () => measure('atraso 150 ± 50 ms + perda 2%', { delay: 150, jitter: 50, loss: 0.02 }, bruno, ana),
     jitter50: () => measure('atraso 150 ± 50 ms', { delay: 150, jitter: 50 }, bruno, ana), // bad without loss
+    badQueue: () => measure('atraso 150 ± 50 ms (fila) + perda 2%', { delay: 150, jitter: 50, loss: 0.02, queue: true }, bruno, ana), // bad, in order
     loss2rtt300: () => measure('atraso 150 ms + perda 2%', { delay: 150, loss: 0.02 }, bruno, ana), // bad without jitter
     clean: () => measure('recuperado (sem falha)', {}, bruno, ana),
     cut3: () => outage('mídia cortada 3 s', 3000, bruno),
