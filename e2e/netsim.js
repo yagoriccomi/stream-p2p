@@ -42,6 +42,22 @@ const impair = { loss: 0, delay: 0, jitter: 0, down: false };
 // jitter of its own. Measured per window, so a contaminated measurement says so.
 const loopLag = monitorEventLoopDelay({ resolution: 10 });
 loopLag.enable();
+// Windows timers tick every ~15.6 ms by default: every delay would be rounded up to a tick and
+// the packets released in bursts. Ask for 1 ms, as Chrome does for itself.
+if (process.platform === 'win32') {
+  const { default: koffi } = await import('koffi');
+  koffi.load('winmm.dll').func('uint32 __stdcall timeBeginPeriod(uint32)')(1);
+}
+const median = (xs) => (xs.length ? [...xs].sort((x, y) => x - y)[Math.floor(xs.length / 2)] : null);
+const TIMER_MAX_MS = 5; // setTimeout(1) slower than this: delays and jitter come out coarser than asked
+const timerMs = await new Promise((done) => {
+  const out = [];
+  const tick = () => {
+    const t = performance.now();
+    setTimeout(() => (out.push(performance.now() - t) < 50 ? tick() : done(median(out))), 1);
+  };
+  tick();
+});
 const PROXY_LAG_MAX_MS = 20; // p99 above this: the numbers measure the machine, not the scenario
 const udp = { delivered: 0, dropped: 0 };
 function deliver(fn) {
@@ -297,7 +313,8 @@ try {
   await ana.$eval('#q-upload', (i) => { i.value = '50'; i.dispatchEvent(new Event('input')); });
   await ana.click('#q-start');
   await waitFor(bruno, hasVideo, 'vídeo no Bruno');
-  console.log(`transmitindo ${MODE} só por TURN; medindo ${MEASURE_MS / 1000} s por cenário\n`);
+  const coarse = timerMs > TIMER_MAX_MS ? ' ⚠ timers grossos: atrasos e variação saem arredondados' : '';
+  console.log(`transmitindo ${MODE} só por TURN; medindo ${MEASURE_MS / 1000} s por cenário; timer do proxy ${timerMs.toFixed(1)} ms${coarse}\n`);
 
   const SCENARIOS = {
     base: () => measure('base (só TURN)', {}, bruno, ana),
