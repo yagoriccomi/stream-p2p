@@ -23,6 +23,17 @@ export function captureConstraints(mode, surface) {
   };
 }
 
+// Re-negotiation after a failed connection (stream.js and voice.js).
+export const RECOVER_BASE_MS = 1000;
+export const RECOVER_MAX_MS = 5000; // short: the connect deadline already spaces attempts out
+const CONNECT_TIMEOUT_MS = 10_000;
+
+// A pc that never connects (offer lost, or no candidates while the network is down) never
+// reaches 'failed' either, so the offering side gives it a deadline.
+export function connectDeadline(pc, onTimeout) {
+  setTimeout(() => ['new', 'connecting'].includes(pc.connectionState) && onTimeout(), CONNECT_TIMEOUT_MS);
+}
+
 export class VideoNet {
   constructor({ send, log, onStream, getIce, getCodec }) {
     Object.assign(this, { send, log, onStream, getIce, getCodec });
@@ -35,6 +46,7 @@ export class VideoNet {
     this.pending = new Set(); // children that arrived before we had a stream
     this.presenting = false;
     this.audioOn = true;
+    this.retries = new Map(); // childId -> failed attempts in a row (backoff)
   }
 
   // nid tags one negotiation: after a re-parent a relay may re-offer while the child's answer
@@ -43,8 +55,28 @@ export class VideoNet {
     const pc = new RTCPeerConnection({ iceServers: this.getIce() });
     pc.nid = nid;
     pc.onicecandidate = (e) => e.candidate && this.send({ type: 'signal', to: peerId, data: { candidate: e.candidate, nid } });
-    pc.onconnectionstatechange = () => this.log(`vídeo ${peerId.slice(0, 6)}: ${pc.connectionState}`);
+    pc.onconnectionstatechange = () => {
+      this.log(`vídeo ${peerId.slice(0, 6)}: ${pc.connectionState}`);
+      if (pc.connectionState === 'connected') this.retries.delete(peerId);
+      if (pc.connectionState === 'failed' && this.downstream.get(peerId) === pc) this.recover(peerId, pc);
+    };
     return pc;
+  }
+
+  // Past ICE consent (~30 s without packets) a pc stays failed for good (and a re-offer made
+  // while the network is down may never connect: see connectDeadline). The parent owns the
+  // link, so it offers again on a fresh pc (fresh TURN allocation too); the child takes any
+  // offer, like after a re-parent. Backs off while the network is still down.
+  recover(childId, pc) {
+    const n = this.retries.get(childId) ?? 0;
+    this.retries.set(childId, n + 1);
+    const ms = Math.min(RECOVER_MAX_MS, RECOVER_BASE_MS * 2 ** n);
+    this.log(`vídeo ${childId.slice(0, 6)}: refazendo em ${ms} ms`);
+    setTimeout(() => {
+      // Gone, replaced, or the old pc made it after all (late candidates) while we waited.
+      if (this.downstream.get(childId) !== pc || pc.connectionState === 'connected' || !this.stream) return;
+      this.offerTo(childId);
+    }, ms);
   }
 
   // ── presenter ──
@@ -137,6 +169,7 @@ export class VideoNet {
     if (this.downstream.get(childId) !== pc) return;
     await pc.setLocalDescription({ type: 'offer', sdp: mungeBitrate(offer.sdp, MODES[this.mode].kbps) });
     this.send({ type: 'signal', to: childId, data: { sdp: pc.localDescription, nid: pc.nid } });
+    connectDeadline(pc, () => this.downstream.get(childId) === pc && this.recover(childId, pc));
   }
 
   // ── viewer ──
@@ -177,6 +210,7 @@ export class VideoNet {
   }
 
   childGone(id) {
+    this.retries.delete(id);
     this.downstream.get(id)?.close();
     this.downstream.delete(id);
     this.pending.delete(id);
@@ -197,6 +231,7 @@ export class VideoNet {
     for (const pc of this.downstream.values()) pc.close();
     this.downstream.clear();
     this.pending.clear();
+    this.retries.clear();
     Object.assign(this, { upstream: null, parentId: null, stream: null, presenting: false });
   }
 

@@ -1,7 +1,7 @@
 // Service worker: makes the app installable (T07) and announces new versions (T14).
 // Network-first so a deploy is picked up right away; the cache is only the offline fallback.
 // Bump VERSION on every release: a changed sw.js is what triggers the "Nova versão" banner.
-const VERSION = 'sp2p-v3';
+const VERSION = 'sp2p-v4';
 const SHELL = ['/', '/styles.css', '/app.js', '/ui.js', '/stream.js', '/voice.js', '/session.js', '/manifest.webmanifest', '/icon.svg', '/icon-maskable.svg', '/icon-192.png', '/icon-512.png'];
 
 self.addEventListener('install', (e) => {

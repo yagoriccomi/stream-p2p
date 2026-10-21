@@ -1,3 +1,5 @@
+import { RECOVER_BASE_MS, RECOVER_MAX_MS, connectDeadline } from '/stream.js';
+
 // Session voice: an audio-only mesh between all members, no jitter target (real time).
 // Every pair has one connection; the lower id offers, so both sides never offer at once.
 // The audio transceiver exists from the start (sendrecv), so turning the mic on or off,
@@ -7,6 +9,7 @@ export class VoiceMesh {
     Object.assign(this, { send, log, getIce, onError });
     this.me = null;
     this.peers = new Map(); // id -> { pc, el }
+    this.retries = new Map(); // id -> failed attempts in a row (backoff)
     this.raw = null; // getUserMedia stream
     this.ctx = null;
     this.gain = null;
@@ -96,7 +99,11 @@ export class VoiceMesh {
     pc.addTransceiver('audio', { direction: 'sendrecv' });
     this.attachMic(pc);
     pc.onicecandidate = (e) => e.candidate && this.send({ type: 'vsignal', to: id, data: { candidate: e.candidate } });
-    pc.onconnectionstatechange = () => this.log(`voz ${id.slice(0, 6)}: ${pc.connectionState}`);
+    pc.onconnectionstatechange = () => {
+      this.log(`voz ${id.slice(0, 6)}: ${pc.connectionState}`);
+      if (pc.connectionState === 'connected') this.retries.delete(id);
+      if (pc.connectionState === 'failed' && this.me < id && this.peers.get(id)?.pc === pc) this.recover(id, pc);
+    };
     const el = new Audio();
     el.autoplay = true;
     if (this.sinkId && el.setSinkId) el.setSinkId(this.sinkId).catch(() => {});
@@ -114,16 +121,37 @@ export class VoiceMesh {
     this.me = me;
     const want = new Set(memberIds.filter((id) => id !== me));
     for (const id of this.peers.keys()) if (!want.has(id)) this.drop(id);
+    for (const id of this.retries.keys()) if (!want.has(id)) this.retries.delete(id);
     for (const id of want) {
       if (this.peers.has(id) || me > id) continue; // the lower id offers
-      const pc = this.newPc(id);
-      const offer = await pc.createOffer();
-      // A snapshot or an incoming offer may have replaced this pc while we awaited.
-      if (this.peers.get(id)?.pc !== pc) continue;
-      await pc.setLocalDescription(offer);
-      if (this.peers.get(id)?.pc !== pc) continue;
-      this.send({ type: 'vsignal', to: id, data: { sdp: pc.localDescription } });
+      await this.offer(id);
     }
+  }
+
+  async offer(id) {
+    const pc = this.newPc(id);
+    const offer = await pc.createOffer();
+    // A snapshot or an incoming offer may have replaced this pc while we awaited.
+    if (this.peers.get(id)?.pc !== pc) return;
+    await pc.setLocalDescription(offer);
+    if (this.peers.get(id)?.pc !== pc) return;
+    this.send({ type: 'vsignal', to: id, data: { sdp: pc.localDescription } });
+    connectDeadline(pc, () => this.peers.get(id)?.pc === pc && this.recover(id, pc));
+  }
+
+  // Same as video: a failed (or never connected) pc never comes back, so the offering side
+  // starts a new one.
+  recover(id, pc) {
+    const n = this.retries.get(id) ?? 0;
+    this.retries.set(id, n + 1);
+    const ms = Math.min(RECOVER_MAX_MS, RECOVER_BASE_MS * 2 ** n);
+    this.log(`voz ${id.slice(0, 6)}: refazendo em ${ms} ms`);
+    setTimeout(() => {
+      // Dropped, the peer already re-offered, or the old pc made it after all.
+      if (this.peers.get(id)?.pc !== pc || pc.connectionState === 'connected') return;
+      this.drop(id);
+      this.offer(id);
+    }, ms);
   }
 
   async signal(from, { sdp, candidate }) {
@@ -185,6 +213,7 @@ export class VoiceMesh {
 
   leave() {
     for (const id of [...this.peers.keys()]) this.drop(id);
+    this.retries.clear();
     this.raw?.getTracks().forEach((t) => t.stop());
     this.raw = null;
     this.out = null;
