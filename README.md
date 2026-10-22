@@ -49,7 +49,7 @@ npm start    # http://localhost:3000  (PORT para mudar)
     - em `badQueue` (150 ± 50 ms + 2%), o atraso sobe e desce devagar, como uma fila que enche e esvazia, sem reordenar.
   - Mede, no espectador: fps, kbps, perda RTP, NACKs, congelamentos, buffer, RTT e latência pelo relógio no vídeo. Nos cortes, mede quanto tempo o vídeo e a voz levam para voltar.
   - Mede, em quem transmite, a cada 1 s: a banda estimada pelo controle de congestionamento (BWE), o alvo do encoder, o que saiu, a fração de reenvio, a resolução enviada e o tempo em que o encoder ficou limitado por banda ou por CPU.
-  - Antes dos cenários, mede o início da transmissão: a resolução inicial e em quantos segundos chega à resolução cheia. Hoje são 13–16 s até 720p, porque o navegador parte de uma estimativa de banda baixa.
+  - Antes dos cenários, mede o início da transmissão: a resolução inicial e em quantos segundos chega à resolução cheia. Quem transmite começa com `x-google-start-bitrate` em metade do bitrate do modo (no máximo o upload medido × 0,8): são 3–4 s até a resolução cheia, contra 10–16 s com o padrão do navegador.
   - No Windows, o proxy pede timers de 1 ms ao sistema (`timeBeginPeriod`, pelo `koffi`). Sem isso, todo atraso sai arredondado para 15,6 ms e os pacotes saem em rajadas. A primeira linha mostra o timer medido.
   - O TURN é o servidor de referência do Pion: `go install github.com/pion/turn/v4/examples/turn-server/simple@latest`. Para outro caminho, defina `NETSIM_TURN_BIN`.
   - Variáveis:
@@ -59,6 +59,8 @@ npm start    # http://localhost:3000  (PORT para mudar)
     - `NETSIM_TRACE=1` mostra, segundo a segundo, o que quem transmite mediu;
     - `NETSIM_CONTENT=game` troca a tela de teste, que é lisa e se comprime a ~1,2 Mbps, por uma textura em movimento que deixa o encoder limitado por banda, como num jogo;
     - `NETSIM_DEGRADATION=balanced` (ou `maintain-resolution`, `maintain-framerate`) força o `degradationPreference` de quem transmite, para comparar;
+    - `NETSIM_START_BITRATE=<kbps>` troca o valor de início do app (`0` tira o parâmetro: padrão do navegador);
+    - `NETSIM_START_IN=bad` (ou `badQueue`) começa a transmissão numa rede ruim, para medir o início quando o upload medido é otimista;
     - `NETSIM_DEBUG=1` mostra o log das páginas.
   - A carga da máquina contamina os números. Rode `base` junto (`NETSIM_ONLY=base,bad`) e descarte a rodada se o `base` não sair com jitter RTP perto de 0 e sem congelamentos.
 - **Manual, LAN:** quem transmite abre em `localhost`, porque a captura exige contexto seguro. Os amigos abrem `http://<seu-IP>:3000/?code=<código>`. Fora da LAN, use o TURN do servidor (abaixo) ou um TURN pessoal em **Configurações** (T11).
