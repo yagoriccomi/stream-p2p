@@ -110,6 +110,7 @@ Instalador (NSIS):
 - `/D=<pasta>` escolhe a pasta (precisa ser o último argumento).
 - `/SERVER=` grava o servidor em `%APPDATA%\app.streamp2p.desktop\server.txt`.
 - Para desinstalar em silêncio: `"<pasta>\uninstall.exe" /S`.
+- Rode pelo PowerShell ou pelo `cmd`. O Git Bash converte argumentos que começam com `/` em caminhos, e o `/SERVER=` não chega ao instalador.
 
 App (`stream-p2p.exe --help` mostra tudo):
 
@@ -133,6 +134,13 @@ Comportamento:
 - O `--status` lê `status.json`, que o app atualiza a cada 2 s. Se o arquivo tiver mais de 10 s, o resultado sai com `"running": false, "stale": true`.
 
 A página `/download` explica a instalação para quem baixa.
+
+### Servidor na rede local, sem HTTPS
+- **No app:** o servidor configurado (`/SERVER=` ou `--server`) é tratado como origem segura. Captura de tela e microfone funcionam em `http://192.168.x.x:3000`.
+  - Trocar o servidor com `--server` enquanto o app está aberto não aplica essa liberação. Feche o app (`--quit`) e abra de novo.
+- **No navegador**, por `http://` com IP:
+  - a pessoa entra, assiste e usa o chat;
+  - o navegador não libera microfone nem captura fora de HTTPS ou `localhost`. Para falar ou transmitir, use o app.
 
 ## Limitações
 - O upload é medido contra o servidor de sinalização antes de transmitir. Se a rede congestionar no meio da transmissão, a cota de envio direto não diminui sozinha.
