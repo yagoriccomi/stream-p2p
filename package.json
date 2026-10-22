@@ -7,7 +7,7 @@
     "start": "node server/index.js",
     "e2e": "node e2e/run.js",
     "netsim": "node e2e/netsim.js",
-    "test": "node --test \"server/*.test.js\""
+    "test": "node --test \"server/*.test.js\" \"web/*.test.js\""
   },
   "dependencies": {
     "ws": "^8.18.0"

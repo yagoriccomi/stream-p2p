@@ -12,6 +12,33 @@ export function mungeBitrate(sdp, kbps) {
   return sdp.replace(/(m=video[^\r\n]*\r\n(?:(?!m=)[^\r\n]*\r\n)*?c=[^\r\n]*\r\n)/, `$1b=AS:${kbps}\r\n`);
 }
 
+// Where the sender's bandwidth estimate starts. Chrome starts at ~300 kbps and climbs for 13–16 s
+// (low resolution meanwhile); the measured upload says how much fits. Read by the SENDING side
+// from its remote description, so the presenter applies it to each answer it receives.
+const VIDEO_CODECS = /^(VP8|VP9|AV1|H264|H265)$/i;
+const UPLOAD_HEADROOM = 0.8; // same 20% the server keeps free when sizing the direct quota
+// Half the mode: in 720p30 it reaches full resolution as fast as the full bitrate (3–4 s against
+// 10–13 s), with half the freezes when the path turns out worse than the upload (netsim, 2026-10-21).
+const START_FRACTION = 0.5;
+export function mungeStartBitrate(sdp, kbps) {
+  const start = sdp.indexOf('m=video');
+  if (start < 0) return sdp;
+  const next = sdp.indexOf('\r\nm=', start);
+  const end = next < 0 ? sdp.length : next + 2;
+  const lines = sdp.slice(start, end).split('\r\n');
+  const param = `x-google-start-bitrate=${Math.round(kbps)}`;
+  const pts = lines.map((l) => l.match(/^a=rtpmap:(\d+) ([^/]+)\//)).filter((m) => m && VIDEO_CODECS.test(m[2])).map((m) => m[1]);
+  for (const pt of pts) {
+    const i = lines.findIndex((l) => l.startsWith(`a=fmtp:${pt} `));
+    if (i >= 0) {
+      const [head, ...rest] = lines[i].split(' ');
+      const params = rest.join(' ').split(';').filter((p) => p && !p.startsWith('x-google-start-bitrate='));
+      lines[i] = `${head} ${[...params, param].join(';')}`;
+    } else lines.splice(lines.findIndex((l) => l.startsWith(`a=rtpmap:${pt} `)) + 1, 0, `a=fmtp:${pt} ${param}`);
+  }
+  return sdp.slice(0, start) + lines.join('\r\n') + sdp.slice(end);
+}
+
 export function captureConstraints(mode, surface) {
   const m = MODES[mode];
   return {
@@ -45,6 +72,7 @@ export class VideoNet {
     this.downstream = new Map(); // childId -> RTCPeerConnection
     this.pending = new Set(); // children that arrived before we had a stream
     this.presenting = false;
+    this.startKbps = 0; // presenter only: where each child's bandwidth estimate starts
     this.audioOn = true;
     this.retries = new Map(); // childId -> failed attempts in a row (backoff)
   }
@@ -80,11 +108,13 @@ export class VideoNet {
   }
 
   // ── presenter ──
-  present(stream, mode) {
+  present(stream, mode, uploadKbps) {
     this.reset();
     this.presenting = true;
     this.stream = stream;
     this.mode = mode;
+    // Each direct child starts at half the mode's bitrate, unless the measured upload says less.
+    this.startKbps = uploadKbps > 0 ? Math.min(MODES[mode].kbps * START_FRACTION, uploadKbps * UPLOAD_HEADROOM) : 0;
     stream.getVideoTracks()[0].contentHint = 'motion'; // games: prefer fps over sharpness
     this.applyAudio();
   }
@@ -220,6 +250,7 @@ export class VideoNet {
     if (sdp?.type === 'offer') return this.acceptFrom(from, sdp, nid);
     const pc = from === this.parentId ? this.upstream : this.downstream.get(from);
     if (!pc || pc.nid !== nid) return; // answer/candidate of a negotiation we already replaced
+    if (sdp && this.presenting && this.startKbps) return pc.setRemoteDescription({ type: sdp.type, sdp: mungeStartBitrate(sdp.sdp, this.startKbps) });
     if (sdp) return pc.setRemoteDescription(sdp);
     if (candidate) return pc.addIceCandidate(candidate).catch(() => {});
   }

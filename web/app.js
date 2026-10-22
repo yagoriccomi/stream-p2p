@@ -667,7 +667,7 @@ $('q-start').addEventListener('click', async () => {
   const stream = await capture();
   if (!stream) return;
   $('dlg-setup').close();
-  video.present(stream, st.mode);
+  video.present(stream, st.mode, st.upload * 1000);
   video.setAudio(st.audio);
   $('video').srcObject = stream;
   $('video').muted = true; // no echo of my own stream
