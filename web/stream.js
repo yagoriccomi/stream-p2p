@@ -50,6 +50,17 @@ export function captureConstraints(mode, surface) {
   };
 }
 
+// crypto.randomUUID only exists in secure contexts, and a browser that joins a LAN server over
+// plain http is not one (app.js and stream.js).
+export function randomId() {
+  if (crypto.randomUUID) return crypto.randomUUID();
+  const b = crypto.getRandomValues(new Uint8Array(16));
+  b[6] = (b[6] & 0x0f) | 0x40; // version 4
+  b[8] = (b[8] & 0x3f) | 0x80; // RFC 4122 variant
+  const h = [...b].map((x) => x.toString(16).padStart(2, '0')).join('');
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+}
+
 // Re-negotiation after a failed connection (stream.js and voice.js).
 export const RECOVER_BASE_MS = 1000;
 export const RECOVER_MAX_MS = 5000; // short: the connect deadline already spaces attempts out
@@ -183,7 +194,7 @@ export class VideoNet {
 
   async offerTo(childId) {
     this.downstream.get(childId)?.close();
-    const pc = this.newPc(childId, crypto.randomUUID().slice(0, 8));
+    const pc = this.newPc(childId, randomId().slice(0, 8));
     this.downstream.set(childId, pc);
     const s = this.stream;
     const [video] = s.getVideoTracks();

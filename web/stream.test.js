@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mungeStartBitrate } from './stream.js';
+import { mungeStartBitrate, randomId } from './stream.js';
 
 // Trimmed from a real Chrome answer: VP8 has no fmtp line, H264 has one, rtx points at both.
 const SDP = [
@@ -34,6 +34,14 @@ test('start bitrate: applying twice replaces the value instead of repeating it',
   const out = mungeStartBitrate(mungeStartBitrate(SDP, 4000), 2500);
   assert.equal(out.match(/x-google-start-bitrate/g).length, 2);
   assert.match(out, /a=fmtp:96 x-google-start-bitrate=2500\r\n/);
+});
+
+test('random id: a v4 UUID even without crypto.randomUUID (plain http on the LAN)', (t) => {
+  Object.defineProperty(crypto, 'randomUUID', { value: undefined, configurable: true }); // shadows the prototype's
+  t.after(() => delete crypto.randomUUID);
+  const a = randomId();
+  assert.match(a, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+  assert.notEqual(randomId(), a);
 });
 
 test('start bitrate: no video section, no change', () => {

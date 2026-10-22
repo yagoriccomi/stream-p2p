@@ -1,5 +1,5 @@
 // Stream P2P client: screens (T01–T14), session state, and wiring between VideoNet and VoiceMesh.
-import { VideoNet, MODES, captureConstraints } from '/stream.js';
+import { VideoNet, MODES, captureConstraints, randomId } from '/stream.js';
 import { VoiceMesh } from '/voice.js';
 import { CAN } from '/session.js';
 import {
@@ -16,7 +16,7 @@ const st = {
   session: null, // last snapshot
   code: null,
   name: store.get('name', ''),
-  device: store.get('device', null) ?? (() => { const d = crypto.randomUUID(); store.set('device', d); return d; })(),
+  device: store.get('device', null) ?? (() => { const d = randomId(); store.set('device', d); return d; })(),
   voicePref: 'mic',
   rejoin: null, // { code, name } after a dropped socket
   pending: null, // op we are waiting an answer for
