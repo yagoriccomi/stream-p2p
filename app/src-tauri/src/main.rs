@@ -252,6 +252,7 @@ fn main() -> ExitCode {
         .setup(move |app| {
             allow_ipc(app.handle(), &server);
             WebviewWindowBuilder::new(app, "main", WebviewUrl::External(start.clone()))
+                .additional_browser_args(&cli::browser_args(&server))
                 .title("Stream P2P")
                 .inner_size(1280.0, 800.0)
                 .min_inner_size(900.0, 600.0)

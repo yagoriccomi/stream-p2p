@@ -150,6 +150,17 @@ pub fn start_url(server: &str, open: &Open) -> tauri::Url {
     url
 }
 
+// WebView2 flags. WebView2 only exposes screen capture and the mic to secure origins, and a
+// server on the LAN is plain http: that one origin is treated as secure. Setting the flags
+// replaces Tauri's defaults, so those come first.
+pub fn browser_args(server: &str) -> String {
+    let mut args = String::from("--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection");
+    if server.starts_with("http://") {
+        args.push_str(&format!(" --unsafely-treat-insecure-origin-as-secure={server}"));
+    }
+    args
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -205,5 +216,13 @@ mod tests {
         assert_eq!(start_url(s, &Open::Create { name: "Zé Ninguém".into() }).as_str(), "http://localhost:3000/?create=1&name=Z%C3%A9+Ningu%C3%A9m");
         assert_eq!(start_url(s, &Open::Join { code: "abcd-ef".into(), name: None }).as_str(), "http://localhost:3000/?code=abcd-ef");
         assert_eq!(start_url(s, &Open::Join { code: "abcd-ef".into(), name: Some("Bia".into()) }).as_str(), "http://localhost:3000/?code=abcd-ef&name=Bia&auto=1");
+    }
+
+    #[test]
+    fn a_plain_http_server_is_treated_as_secure() {
+        let lan = browser_args("http://192.168.0.10:3000");
+        assert!(lan.starts_with("--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection"));
+        assert!(lan.ends_with(" --unsafely-treat-insecure-origin-as-secure=http://192.168.0.10:3000"));
+        assert!(!browser_args("https://stream.example.com").contains("unsafely"));
     }
 }
