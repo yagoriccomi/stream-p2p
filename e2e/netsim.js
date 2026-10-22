@@ -167,6 +167,16 @@ const FORCE_DEGRADATION = (pref) => {
     return set.call(this, p, ...rest);
   };
 };
+// NETSIM_START_BITRATE=<kbps> replaces the app's x-google-start-bitrate (0 strips it: Chrome's default).
+const SET_START_BITRATE = (kbps) => {
+  const set = RTCPeerConnection.prototype.setRemoteDescription;
+  RTCPeerConnection.prototype.setRemoteDescription = function (d, ...rest) {
+    const sdp = kbps
+      ? d?.sdp?.replace(/x-google-start-bitrate=\d+/g, `x-google-start-bitrate=${kbps}`)
+      : d?.sdp?.replace(/;?x-google-start-bitrate=\d+/g, '').replace(/a=fmtp:\d+ \r\n/g, '');
+    return set.call(this, sdp ? { type: d.type, sdp } : d, ...rest);
+  };
+};
 // Only relay candidates: every byte crosses the TURN, so the proxy degrades all of it.
 const FORCE_RELAY = () => {
   const Native = window.RTCPeerConnection;
@@ -199,6 +209,7 @@ async function open(url) {
   await p.setViewport({ width: 1280, height: 800 });
   await p.evaluateOnNewDocument(FAKE_CAPTURE, CONTENT);
   await p.evaluateOnNewDocument(FORCE_RELAY);
+  if (process.env.NETSIM_START_BITRATE) await p.evaluateOnNewDocument(SET_START_BITRATE, Number(process.env.NETSIM_START_BITRATE));
   if (process.env.NETSIM_DEGRADATION) await p.evaluateOnNewDocument(FORCE_DEGRADATION, process.env.NETSIM_DEGRADATION);
   p.on('pageerror', (e) => console.error('pageerror:', e.message));
   if (process.env.NETSIM_DEBUG) p.on('console', (m) => console.log(`  [${new URL(url).port}] ${m.text()}`));
@@ -301,6 +312,8 @@ const rows = [];
 // climbs to the full resolution step by step. Measured on its own, so `base` does not get the ramp.
 const FULL_HEIGHT = Number(MODE.match(/^(\d+)p/)[1]);
 const STARTUP_MS = 30_000;
+// NETSIM_START_IN=bad|badQueue starts the stream on that network instead of a clean one.
+const START_IN = { bad: { delay: 150, jitter: 50, loss: 0.02 }, badQueue: { delay: 150, jitter: 50, loss: 0.02, queue: true } }[process.env.NETSIM_START_IN];
 async function startup(viewer, presenter) {
   const a = await viewer.evaluate(VIDEO_IN);
   const trace = [await presenter.evaluate(VIDEO_OUT)];
@@ -311,11 +324,15 @@ async function startup(viewer, presenter) {
   const b = await viewer.evaluate(VIDEO_IN);
   const pref = await presenter.evaluate(() => window.__pcs.flatMap((pc) => pc.getSenders())
     .find((s) => s.track?.kind === 'video')?.getParameters().degradationPreference ?? '-');
+  const startKbps = await presenter.evaluate(() => Number(window.__pcs.map((pc) => pc.remoteDescription?.sdp ?? '')
+    .join('').match(/x-google-start-bitrate=(\d+)/)?.[1] ?? 0));
   const t = trace.filter(Boolean);
   const full = t.findIndex((x) => x.height >= FULL_HEIGHT);
   rows.push({
     cenário: 'início da transmissão',
+    'rede no início': process.env.NETSIM_START_IN || 'limpa',
     degradationPreference: pref,
+    'start bitrate kbps': startKbps || 'padrão do Chrome',
     codec: t.at(-1)?.codec ?? '-',
     'altura inicial': t[0]?.height,
     'resolução cheia em s': full >= 0 ? Math.round((t[full].at - t[0].at) / 1000) : 'não chegou',
@@ -327,7 +344,7 @@ async function startup(viewer, presenter) {
   });
   const r = rows.at(-1);
   const climb = full >= 0 ? `resolução cheia em ${r['resolução cheia em s']} s` : `não chegou a ${FULL_HEIGHT}p (ficou em ${r['altura no fim']}p)`;
-  console.log(`· início (${r.codec}, ${pref}): ${r['altura inicial']}p, ${climb}, ${r.fps} fps (mín ${r['fps mín no host']} no host), ${r.congelamentos} congelamento(s)`);
+  console.log(`· início (${r.codec}, ${pref}, start ${startKbps ? `${startKbps} kbps` : 'padrão'}${START_IN ? `, rede ${process.env.NETSIM_START_IN}` : ''}): ${r['altura inicial']}p, ${climb}, ${r.fps} fps (mín ${r['fps mín no host']} no host), ${r.congelamentos} congelamento(s)`);
 }
 
 async function measure(name, set, viewer, presenter) {
@@ -436,11 +453,13 @@ try {
   await ana.click('#ov-stream');
   await ana.evaluate((m) => [...document.querySelectorAll('#q-modes button')].find((b) => b.textContent === m).click(), MODE);
   await ana.$eval('#q-upload', (i) => { i.value = '50'; i.dispatchEvent(new Event('input')); });
+  Object.assign(impair, START_IN);
   await ana.click('#q-start');
   await waitFor(bruno, hasVideo, 'vídeo no Bruno');
   const coarse = timerMs > TIMER_MAX_MS ? ' ⚠ timers grossos: atrasos e variação saem arredondados' : '';
   console.log(`transmitindo ${MODE} (conteúdo ${CONTENT}) só por TURN; medindo ${MEASURE_MS / 1000} s por cenário; timer do proxy ${timerMs.toFixed(1)} ms${coarse}\n`);
   await startup(bruno, ana);
+  Object.assign(impair, { loss: 0, delay: 0, jitter: 0, queue: false });
 
   const SCENARIOS = {
     base: () => measure('base (só TURN)', {}, bruno, ana),
