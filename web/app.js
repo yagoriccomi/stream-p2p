@@ -968,7 +968,19 @@ $('f-settings').addEventListener('click', () => {
     yes('setSinkId' in HTMLMediaElement.prototype, 'Escolher a saída de áudio'),
     yes('setCodecPreferences' in (window.RTCRtpTransceiver?.prototype ?? {}), 'Escolher o codec'),
   );
+  $('set-app').hidden = !tauri?.updater;
+  if (tauri?.updater) tauri.app?.getVersion?.().then((v) => { $('set-app-version').textContent = `Você está na versão ${v} do app.`; }).catch(() => {});
+  $('set-app-status').textContent = '';
   $('dlg-settings').showModal();
+});
+$('set-app-check').addEventListener('click', async () => {
+  $('set-app-check').disabled = true;
+  $('set-app-status').textContent = 'Procurando…';
+  const r = await checkAppUpdate();
+  $('set-app-check').disabled = false;
+  $('set-app-status').textContent = r.state === 'current' ? 'Esta é a versão mais recente.'
+    : r.state === 'available' ? `Versão ${r.version} disponível: clique em Atualizar no aviso do topo.`
+      : `Não deu para procurar agora: ${r.reason ?? 'o app não tem atualização automática'}.`;
 });
 closeOnX($('dlg-settings'));
 $('set-save').addEventListener('click', () => {
@@ -1090,8 +1102,10 @@ addEventListener('appinstalled', () => { $('banner-install').hidden = true; });
 
 // ── T14 · Atualização (PWA via service worker; app via tauri-plugin-updater) ──
 let applyUpdate = null;
-function offerUpdate(text, run) {
+function offerUpdate(text, run, label = 'Recarregar') {
   $('update-text').textContent = text;
+  $('update-go').textContent = label;
+  $('update-go').disabled = false;
   applyUpdate = run;
   $('banner-update').hidden = false;
 }
@@ -1117,17 +1131,45 @@ if ('serviceWorker' in navigator && !tauri) {
     location.reload();
   });
 }
+// The app looks for a new release on start and every 30 min; one click downloads, installs
+// (signed: the updater rejects anything not signed with our key) and reopens.
+const APP_UPDATE_EVERY_MS = 30 * 60_000;
+let appUpdate = null; // the release on offer, so the 30-min check doesn't offer it twice
 async function checkAppUpdate() {
   const updater = tauri?.updater;
-  if (!updater?.check) return;
-  const upd = await updater.check().catch(() => null);
-  if (!upd) return;
-  offerUpdate(`Nova versão ${upd.version} do app disponível. Reinicia em segundos.`, async () => {
-    $('update-text').textContent = 'Baixando atualização…';
-    await upd.downloadAndInstall();
-    await tauri.process?.relaunch();
-  });
+  if (!updater?.check) return { state: 'unsupported' };
+  let upd;
+  try {
+    upd = await updater.check();
+  } catch (e) {
+    log(`updater check: ${e}`);
+    return { state: 'error', reason: String(e) };
+  }
+  if (!upd) return { state: 'current' };
+  if (appUpdate?.version !== upd.version) {
+    appUpdate = upd;
+    offerUpdate(`Versão ${upd.version} do app disponível.`, () => installAppUpdate(upd), 'Atualizar');
+  }
+  return { state: 'available', version: upd.version };
 }
+async function installAppUpdate(upd) {
+  if (st.session && !confirm('Atualizar agora tira você da sessão por alguns segundos. O app reabre sozinho. Continuar?')) return;
+  $('update-go').disabled = true;
+  let total = 0, got = 0;
+  try {
+    await upd.downloadAndInstall((e) => {
+      if (e.event === 'Started') total = e.data.contentLength ?? 0;
+      if (e.event === 'Progress') got += e.data.chunkLength;
+      $('update-text').textContent = e.event === 'Finished' ? 'Instalando…' : total ? `Baixando ${Math.round((100 * got) / total)}%…` : 'Baixando…';
+    });
+    await tauri.process?.relaunch();
+  } catch (e) {
+    log(`updater install: ${e}`);
+    offerUpdate(`Versão ${upd.version} do app disponível.`, () => installAppUpdate(upd), 'Tentar de novo');
+    showError(null, `A atualização não terminou: ${e}. O app continua na versão atual.`, { title: 'Atualização falhou' });
+  }
+}
+if (tauri?.updater) setInterval(checkAppUpdate, APP_UPDATE_EVERY_MS);
 
 // ── T12 · Seletor de fonte nativo (app) ──
 async function loadNativeSources() {

@@ -119,14 +119,21 @@ O app fica em `app/` e é feito com Tauri 2. A janela carrega o mesmo site e acr
 
 O instalador NSIS instala por usuário, sem pedir administrador, e cria o atalho no Menu Iniciar.
 
-Para gerar o instalador, no Windows com Rust e Node: `cd app && npm install && npm run build`. Ele sai em `app/src-tauri/target/release/bundle/nsis/`. A URL do servidor não fica no build: vem da linha de comando ou do instalador (abaixo).
+Para gerar o instalador, no Windows com Rust e Node: `cd app && npm install && npm run build`. Ele sai em `app/src-tauri/target/release/bundle/nsis/`. Sem `--server` nem `/SERVER=`, o app abre o servidor público (`https://stream-p2p-k72t.onrender.com`).
 
-Para ligar a atualização automática, gere as chaves com `npx tauri signer generate`, cole a chave pública em `plugins.updater.pubkey`, ponha `createUpdaterArtifacts: true` em `tauri.conf.json` e defina `TAURI_SIGNING_PRIVATE_KEY` no build. A chave privada nunca entra no repositório.
+**Atualização com um clique.** O app procura uma versão nova ao abrir e a cada 30 min. Quando acha, aparece o aviso "Versão X do app disponível" com o botão **Atualizar**: baixa (com a porcentagem), instala e reabre. Em **Configurações → Atualização do app** dá para procurar na hora. Só instala o que foi assinado com a chave do projeto.
+
+Para publicar uma versão nova:
+1. Suba a versão em `app/src-tauri/tauri.conf.json` e `app/src-tauri/Cargo.toml`.
+2. Gere o instalador assinado: `TAURI_SIGNING_PRIVATE_KEY=~/.tauri/stream-p2p.key TAURI_SIGNING_PRIVATE_KEY_PASSWORD= npm run build` (em `app/`).
+3. Publique: `node release.mjs "o que mudou"` (em `app/`). Ele cria o release `vX.Y.Z` no GitHub com o instalador, a assinatura e o `latest.json` que o app consulta.
+
+A chave privada fica em `~/.tauri/stream-p2p.key`, fora do repositório; a pública está em `plugins.updater.pubkey`. Sem a privada não dá para publicar atualizações que os apps instalados aceitem, então guarde uma cópia em lugar seguro.
 
 ### Instalar e controlar pela linha de comando
 Instalador (NSIS):
 ```
-"Stream P2P_0.1.0_x64-setup.exe" /S /SERVER=http://192.168.0.10:3000
+"Stream P2P_0.2.0_x64-setup.exe" /S /SERVER=http://192.168.0.10:3000
 ```
 - `/S` instala em silêncio, por usuário, sem pedir administrador.
 - `/D=<pasta>` escolhe a pasta (precisa ser o último argumento).

@@ -20,8 +20,8 @@ use tauri::{
 };
 use tauri_plugin_window_state::StateFlags;
 
-// Until there is a public server; --server or the installer's /SERVER= override it.
-const DEFAULT_SERVER: &str = "http://localhost:3000";
+// The public server; --server or the installer's /SERVER= override it.
+const DEFAULT_SERVER: &str = "https://stream-p2p-k72t.onrender.com";
 // Same folder Tauri uses for this identifier; the NSIS hook writes server.txt here too.
 const IDENTIFIER: &str = "app.streamp2p.desktop";
 const STATUS_STALE_MS: u128 = 10_000; // the web app refreshes status every 2 s
