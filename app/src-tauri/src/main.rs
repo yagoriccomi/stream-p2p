@@ -4,6 +4,8 @@
 
 mod cli;
 #[cfg(windows)]
+mod picker;
+#[cfg(windows)]
 mod sysaudio;
 
 use base64::{engine::general_purpose::STANDARD, Engine};
@@ -76,6 +78,32 @@ async fn list_sources() -> Result<Vec<Source>, String> {
     })
     .await
     .map_err(|e| e.to_string())?
+}
+
+// The source chosen in the app's grid (an id from list_sources) is picked in Chromium's own
+// picker out of sight (see picker.rs), so the person only sees one selection. Call it right
+// before getDisplayMedia.
+#[cfg(windows)]
+#[tauri::command]
+async fn pick_source(window: tauri::WebviewWindow, id: String) -> Result<(), String> {
+    let target = match id.split_once(':') {
+        Some(("window", hwnd)) => picker::Target::Window(picker::window_title(hwnd.parse().map_err(|_| "id de janela inválido")?)),
+        Some(("monitor", _)) => tauri::async_runtime::spawn_blocking(move || {
+            let monitors = xcap::Monitor::all().map_err(|e| e.to_string())?;
+            let pos = monitors.iter().enumerate().position(|(i, m)| format!("monitor:{}", m.id().unwrap_or(i as u32)) == id);
+            pos.map(picker::Target::Monitor).ok_or_else(|| "monitor não existe mais".to_string())
+        })
+        .await
+        .map_err(|e| e.to_string())??,
+        _ => return Err(format!("fonte desconhecida: {id}")),
+    };
+    picker::arm(window.hwnd().map_err(|e| e.to_string())?.0 as isize, target);
+    Ok(())
+}
+#[cfg(not(windows))]
+#[tauri::command]
+async fn pick_source(_id: String) -> Result<(), String> {
+    Err("escolha pela lista do app só existe no Windows".into())
 }
 
 // System audio for the stream, captured natively (see sysaudio.rs). Chunks of stereo f32 at
@@ -220,7 +248,8 @@ fn allow_ipc(app: &AppHandle, server: &str) {
         .permission("allow-set-tray-live")
         .permission("allow-set-status")
         .permission("allow-system-audio-start")
-        .permission("allow-system-audio-stop");
+        .permission("allow-system-audio-stop")
+        .permission("allow-pick-source");
     if let Err(e) = app.add_capability(cap) {
         eprintln!("capability: {e}");
     }
@@ -272,7 +301,7 @@ fn main() -> ExitCode {
         }))
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
-        .invoke_handler(tauri::generate_handler![list_sources, set_tray_live, set_status, system_audio_start, system_audio_stop])
+        .invoke_handler(tauri::generate_handler![list_sources, set_tray_live, set_status, system_audio_start, system_audio_stop, pick_source])
         .manage(Server(server.clone()))
         .setup(move |app| {
             allow_ipc(app.handle(), &server);

@@ -19,6 +19,7 @@
     "allow-set-tray-live",
     "allow-set-status",
     "allow-system-audio-start",
-    "allow-system-audio-stop"
+    "allow-system-audio-stop",
+    "allow-pick-source"
   ]
 }

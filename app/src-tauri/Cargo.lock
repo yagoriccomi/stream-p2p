@@ -4067,6 +4067,7 @@ dependencies = [
  "tauri-plugin-single-instance",
  "tauri-plugin-updater",
  "wasapi",
+ "windows",
  "windows-sys 0.59.0",
  "xcap",
 ]

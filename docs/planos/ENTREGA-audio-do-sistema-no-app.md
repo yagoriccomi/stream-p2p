@@ -49,3 +49,34 @@ Pedido: "A pessoa que está vendo a transmissão sempre se escuta."
   - O rótulo `window:5440786:0` é a janela do Discord (o mesmo HWND do Windows), e o app abriu o modo da janela sem aviso.
   - Medição direta no Windows: o modo "só Chrome" capturou o Meet (pico 0,03) e o modo "só Discord" ficou em 0, com o Discord em silêncio. O PC inteiro menos o app tinha som (0,04).
 - **Não testado.** Um amigo falando pelo Discord enquanto o jogo é transmitido.
+
+## Um seletor só (2026-10-23)
+
+**Pedido:** "AINDA TEM 2 TELAS DE SELEÇÃO PRA TRANSMISSÃO. UNIFICA NA MAIS BONITA". Escolha: só o nosso (tema do app).
+
+**Como ficou:**
+- A grade do app (T02) é o único seletor. Ao clicar em Transmitir, o app chama `pick_source` com a fonte e só depois o `getDisplayMedia`.
+- **Por que o seletor do Chromium não some de vez:** no WebView2 não há como capturar uma fonte direto. O `getUserMedia` com `chromeMediaSourceId` trava. Então o `getDisplayMedia` sempre abre o seletor do Chromium.
+- **Onde ele fica:** esse seletor não tem janela própria; é desenhado dentro da janela do app (uma `RootView` filha do `Chrome_WidgetWin_1` do WebView2). Por isso não dá para deixá-lo transparente.
+- **`app/src-tauri/src/picker.rs`:**
+  - tira uma foto do app antes do `getDisplayMedia`;
+  - mostra essa foto numa janela por cima de tudo (topmost, em camadas, que não recebe clique nem foco);
+  - pela UI Automation, escolhe a aba (Janela é a primeira, Tela inteira a última), a fonte (janela pelo título, monitor pela posição) e o botão que acende ao escolher (Compartilhar);
+  - espera o seletor sumir, mais 100 ms, e tira a foto.
+- **Se algo falhar:** a foto sai na hora, e o seletor do Chromium fica à vista para a escolha na mão.
+- **Trocar fonte:** ao vivo, abre o nosso diálogo em modo troca (só a seção de fonte; o botão vira "Trocar fonte").
+
+**Verificado (app release, servidor local, espectador headless):**
+
+| Caso | Resultado |
+|---|---|
+| Janela do Discord | Vídeo em 1,4 s, faixa `window:5440786` (é o Discord), som só do Discord |
+| Tela, monitor principal | Vídeo em 1,5 s, `screen:0` |
+| Trocar fonte para o 2º monitor ao vivo | 0,7 s, `screen:1`: a ordem dos monitores do app bate com a do Chromium |
+| Cobertura, por quadros gravados com `CAPTUREBLT` | Sobe em ~20–30 ms, antes do seletor, e fica ~0,6–0,8 s |
+
+- A primeira versão tirava a foto logo após o Compartilhar, e o seletor ainda aparecia por ~60 ms (2 quadros). Agora a foto só sai depois que o seletor fecha.
+
+**Pendências:**
+- **Teste visual final com o app em primeiro plano.** Nos testes o app estava atrás de outras janelas, e o último gravado teve um vídeo por cima.
+- **"Som do PC inteiro" em 2 de 6 transmissões de janela,** ambas sob carga do gravador de quadros; não reproduziu depois. A transmissão segue com o som do PC e avisa. O console agora registra o motivo (`[sp2p] som só da janela`).

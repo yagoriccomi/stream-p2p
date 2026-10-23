@@ -157,6 +157,7 @@ dialog::backdrop { background: rgba(0, 0, 0, .7); }
 .dlg-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .section { display: flex; flex-direction: column; gap: 10px; padding-top: 14px; border-top: 1px solid var(--divider); }
 .src-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; max-height: 280px; overflow: auto; }
+#setup-form.swap > .section + .section { display: none; } /* changing the source live: quality and audio stay as they are */
 .src { background: var(--bg); border: 2px solid var(--border); border-radius: var(--r); padding: 8px; display: flex; flex-direction: column; gap: 6px; text-align: left; }
 .src[aria-pressed="true"] { border-color: var(--violet-border); background: var(--violet-soft); }
 .src img, .src .thumb { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 8px; background: var(--raised); display: grid; place-items: center; color: var(--muted); }

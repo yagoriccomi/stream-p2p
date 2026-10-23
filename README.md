@@ -99,7 +99,10 @@ Aponte **Interactions Endpoint URL** para `PUBLIC_URL/discord/interactions` e re
 
 ## App para Windows (T08, T12–T14)
 O app fica em `app/` e é feito com Tauri 2. A janela carrega o mesmo site e acrescenta:
-- **Seletor nativo (T12):** monitores e janelas com miniatura.
+- **Seletor nativo (T12):** monitores e janelas com miniatura. É o único seletor: o app responde ao seletor do Chromium por baixo, com a mesma fonte, sem que ele apareça.
+  - O WebView2 desenha esse seletor dentro da janela do app. Por um instante (~0,5 s) o app fica coberto por uma foto dele mesmo, enquanto a escolha é feita por automação (UI Automation).
+  - Se algo falhar, a foto sai e o seletor do Chromium fica à vista para a escolha na mão.
+  - **Trocar fonte**, ao vivo, abre o mesmo seletor, só com a parte da fonte.
 - **Bandeja (T13):** ícone verde ao vivo, com os itens Parar transmissão, Silenciar mic e Copiar convite.
 - **Atualização (T14):** baixa e reinicia o app, nunca no meio de uma sessão.
 - **Som do PC pelo app:** o app captura o áudio do Windows por conta própria (WASAPI, convertido para estéreo), fora do seletor.
@@ -178,4 +181,4 @@ O servidor público está em https://stream-p2p-k72t.onrender.com: serviço `str
   - Um piso de buffer proporcional ao jitter foi testado e não ajudou: na comparação com a máquina limpa, dobrou os congelamentos. Detalhes em `docs/planos/ENTREGA-piso-de-buffer.md`.
 - O relay re-codifica no navegador.
 - O app usa o mesmo WebRTC do navegador; ainda não há encoder NVENC/AMF nativo.
-- A fonte escolhida no seletor nativo ainda passa pelo seletor do sistema na hora de capturar.
+- O seletor único depende dos nomes internos do seletor do Chromium (`TabbedPaneTab`, `DesktopMediaSourceView`, `MdTextButton`). Se uma versão do WebView2 mudar esses nomes, o seletor do Chromium volta a aparecer, sem quebrar a transmissão.

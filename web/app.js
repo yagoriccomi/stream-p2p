@@ -524,13 +524,20 @@ $('ov-stream').addEventListener('click', openSetup);
 
 
 // ── T02 · Escolher fonte e qualidade ──
-function openSetup() {
+// `swap`: switching the source of a live stream; in the app the grid is the picker for that too,
+// so the dialog opens with only the source section.
+let swapping = false;
+function openSetup({ swap = false } = {}) {
+  swapping = swap;
+  $('setup-form').classList.toggle('swap', swap);
+  $('setup-h').textContent = swap ? 'Trocar fonte' : 'Transmitir';
+  $('q-start').lastChild.textContent = swap ? 'Trocar fonte' : 'Começar a transmitir';
   $('q-upload').value = st.upload;
   uploadTouched = false;
   renderSetup();
   $('dlg-setup').showModal();
   loadNativeSources();
-  if (!store.get('uploadMeasured', false)) measureUpload(); // first time on this device: measure instead of guessing
+  if (!swap && !store.get('uploadMeasured', false)) measureUpload(); // first time on this device: measure instead of guessing
 }
 closeOnX($('dlg-setup'));
 function renderSetup() {
@@ -543,6 +550,8 @@ function renderSetup() {
   $('src-hint').hidden = Boolean(st.nativeSources);
   if (st.nativeSources) {
     const list = st.nativeSources.filter((x) => x.kind === st.src);
+    // The grid is the only picker in the app: something is always chosen in the open tab.
+    if (!list.some((x) => x.id === st.nativePick)) st.nativePick = list[0]?.id ?? null;
     $('src-grid').replaceChildren(...(list.length ? list.map((x) => h('button', {
       type: 'button', class: 'src', 'aria-pressed': String(st.nativePick === x.id),
       onclick: () => { st.nativePick = x.id; renderSetup(); },
@@ -667,8 +676,19 @@ async function focusWindowAudio(sysAudio, videoTrack) {
   try {
     await sysAudio.focusWindow(Number(hwnd));
   } catch (e) {
-    console.warn('[sp2p] som só da janela', e);
+    console.warn('[sp2p] som só da janela', String(e));
     showError(null, 'Não deu para pegar só o som dessa janela; a transmissão leva o som do PC inteiro, então quem fala no Discord pode se ouvir.', { title: 'Som do PC inteiro', kind: 'info' });
+  }
+}
+
+// In the app the source comes from the grid above; the app answers Chromium's picker with it out
+// of sight (picker.rs). Without a pick, or in an older app, that picker simply shows up.
+async function armPicker() {
+  if (!tauri || !st.nativePick) return;
+  try {
+    await tauri.core.invoke('pick_source', { id: st.nativePick });
+  } catch (e) {
+    log(`pick_source: ${e?.message ?? e}; o seletor do navegador aparece`);
   }
 }
 
@@ -678,6 +698,7 @@ async function capture() {
     return null;
   }
   const sysAudio = await appSystemAudio();
+  await armPicker();
   try {
     const constraints = captureConstraints(st.mode, st.src);
     const stream = await navigator.mediaDevices.getDisplayMedia(sysAudio ? { ...constraints, audio: false, systemAudio: 'exclude' } : constraints);
@@ -704,6 +725,7 @@ $('q-start').addEventListener('click', async () => {
   const stream = await capture();
   if (!stream) return;
   $('dlg-setup').close();
+  if (swapping) return swapSource(stream);
   video.present(stream, st.mode, st.upload * 1000);
   video.setAudio(st.audio);
   $('video').srcObject = stream;
@@ -720,13 +742,16 @@ function audioHint() {
 
 // ── T04 · Controles de quem transmite ──
 $('p-source').addEventListener('click', async () => {
+  if (tauri) return openSetup({ swap: true });
   const next = await capture();
-  if (!next) return;
+  if (next) await swapSource(next);
+});
+async function swapSource(next) {
   await video.replaceSource(next);
   $('video').srcObject = next;
   send({ type: 'streamState', source: st.src });
   if (st.session.presenterState?.audio !== false && !video.hasAudio()) audioHint();
-});
+}
 $('p-pause').addEventListener('click', () => {
   const paused = !st.session.presenterState?.paused;
   video.setPaused(paused);
