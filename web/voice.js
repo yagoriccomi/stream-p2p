@@ -1,4 +1,5 @@
 import { RECOVER_BASE_MS, RECOVER_MAX_MS, connectDeadline } from '/stream.js';
+import { playAt, release, setBoostSink } from '/boost.js';
 
 // Session voice: an audio-only mesh between all members, no jitter target (real time).
 // Every pair has one connection; the lower id offers, so both sides never offer at once.
@@ -18,7 +19,7 @@ export class VoiceMesh {
     this.ptt = false;
     this.pttDown = false;
     this.opts = { noiseSuppression: true, echoCancellation: true, deviceId: '', gain: 1 };
-    this.volumes = new Map(); // id -> 0..1 (local only)
+    this.volumes = new Map(); // id -> 0..2, 1 = as it arrives (local only)
     this.localMute = new Set();
     this.master = 1;
     this.deafened = false;
@@ -121,6 +122,7 @@ export class VoiceMesh {
     pc.ontrack = (e) => {
       el.srcObject = e.streams[0] ?? new MediaStream([e.track]);
       el.play().catch(() => {});
+      this.applyVolume(id); // a boost needs the stream
     };
     this.peers.set(id, { pc, el });
     this.applyVolume(id);
@@ -187,6 +189,7 @@ export class VoiceMesh {
     const p = this.peers.get(id);
     if (!p) return;
     p.pc.close();
+    release(p.el);
     p.el.srcObject = null;
     this.peers.delete(id);
   }
@@ -216,12 +219,12 @@ export class VoiceMesh {
   applyVolume(id) {
     const p = this.peers.get(id);
     if (!p) return;
-    p.el.volume = Math.min(1, (this.volumes.get(id) ?? 1) * this.master);
-    p.el.muted = this.deafened || this.localMute.has(id);
+    playAt(p.el, (this.volumes.get(id) ?? 1) * this.master, this.deafened || this.localMute.has(id));
   }
 
   async setSink(sinkId) {
     this.sinkId = sinkId;
+    setBoostSink(sinkId);
     for (const { el } of this.peers.values()) await el.setSinkId?.(sinkId).catch(() => {});
   }
 

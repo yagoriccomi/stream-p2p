@@ -151,6 +151,9 @@ button.tag[aria-pressed="true"] { border-color: var(--violet-border); }
 .person .who b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .person .who span { font-size: 12px; color: var(--muted); display: flex; gap: 6px; align-items: center; }
 .person .live-dot { color: var(--live); }
+.person .who .person-vol { gap: 8px; }
+.person-vol input[type=range] { flex: 1; min-width: 0; accent-color: var(--violet); }
+.person-vol output { width: 3ch; text-align: right; font-family: var(--mono); }
 .person .btn.icon { width: 40px; min-height: 40px; }
 .messages { flex: 1; overflow: auto; display: flex; flex-direction: column; gap: 10px; min-height: 120px; }
 .msg { font-size: 14px; color: var(--chat); overflow-wrap: anywhere; }

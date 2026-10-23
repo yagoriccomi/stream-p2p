@@ -2,6 +2,7 @@
 import { VideoNet, MODES, captureConstraints, randomId } from '/stream.js';
 import { VoiceMesh } from '/voice.js';
 import { nativeSystemAudio } from '/sysaudio.js';
+import { playAt, release } from '/boost.js';
 import { CAN } from '/session.js';
 import {
   $, h, icon, setIcon, showError, notify, fieldError, wireEye, wireSwitch, setSwitch, screen,
@@ -314,7 +315,8 @@ function renderPeople() {
         h('span', {},
           s.presenterId === m.id ? h('span', { class: 'live-dot', text: '● transmitindo' }) : null,
           s.queue.includes(m.id) ? h('span', { text: `pediu a vez (${s.queue.indexOf(m.id) + 1}º)` }) : null,
-          ...tags)),
+          ...tags),
+        m.id !== st.me ? h('span', { class: 'person-vol' }, icon('volume', 'i sm'), ...personVolume(m, `pvol-${m.id}`)) : null),
       h('span', { class: 'sr-only', text: m.mic ? 'microfone ligado' : 'microfone desligado' }),
       icon(m.mic ? 'mic' : 'mic-off', 'i sm'),
       actions.length ? h('button', {
@@ -808,17 +810,19 @@ const saveAudio = (patch) => { Object.assign(audioPrefs, patch); store.set('audi
 const streamMix = { volume: audioPrefs.stream, muted: audioPrefs.streamMuted };
 function applyStreamMix() {
   const v = $('video');
-  if (st.session?.presenterId === st.me) return; // my own preview stays muted
-  v.volume = streamMix.volume;
-  v.muted = streamMix.muted;
+  if (st.session?.presenterId === st.me) return release(v); // my own preview stays muted
+  playAt(v, streamMix.volume, streamMix.muted);
 }
-function wireRange(id, value, onValue) {
+// Listening sliders: 50 is the sound as it arrives (level 1), 100 doubles it. Levels are what is
+// saved, so a volume chosen before the scale changed still sounds the same.
+const LISTEN_SCALE = 50;
+function wireRange(id, value, onValue, scale = 100) {
   const input = $(id);
   const out = input.nextElementSibling;
-  input.value = out.textContent = Math.round(value * 100);
+  input.value = out.textContent = Math.round(value * scale);
   input.addEventListener('input', () => {
     out.textContent = input.value;
-    onValue(Number(input.value) / 100);
+    onValue(Number(input.value) / scale);
   });
 }
 const paintMute = (id, on) => {
@@ -835,8 +839,8 @@ function wireMute(id, get, set) {
   });
 }
 const voiceLevel = () => (audioPrefs.voiceMuted ? 0 : audioPrefs.voice);
-wireRange('mx-stream', audioPrefs.stream, (v) => { streamMix.volume = v; applyStreamMix(); saveAudio({ stream: v }); });
-wireRange('mx-voice', audioPrefs.voice, (v) => { saveAudio({ voice: v }); voice.setMaster(voiceLevel()); });
+wireRange('mx-stream', audioPrefs.stream, (v) => { streamMix.volume = v; applyStreamMix(); saveAudio({ stream: v }); }, LISTEN_SCALE);
+wireRange('mx-voice', audioPrefs.voice, (v) => { saveAudio({ voice: v }); voice.setMaster(voiceLevel()); }, LISTEN_SCALE);
 wireRange('mic-gain', audioPrefs.gain, (v) => { voice.setGain(v); saveAudio({ gain: v }); });
 wireMute('mx-stream-mute', () => streamMix.muted, (on) => { streamMix.muted = on; applyStreamMix(); saveAudio({ streamMuted: on }); });
 wireMute('mx-voice-mute', () => audioPrefs.voiceMuted, (on) => { saveAudio({ voiceMuted: on }); voice.setMaster(voiceLevel()); });
@@ -876,17 +880,27 @@ $('dev-out').addEventListener('change', async () => {
   await $('video').setSinkId?.($('dev-out').value).catch(() => {});
 });
 
+// One person's voice volume, only for me: in the mixer and under their name in the people list.
+function personVolume(m, id) {
+  const vol = Math.round((voice.volumes.get(m.id) ?? 1) * LISTEN_SCALE);
+  return [
+    h('input', {
+      type: 'range', min: 0, max: 100, value: vol, id, 'aria-label': `Volume de ${m.name} só para mim`,
+      oninput: (e) => { e.target.nextElementSibling.textContent = e.target.value; voice.setVolume(m.id, e.target.value / LISTEN_SCALE); },
+    }),
+    h('output', { for: id, text: String(vol) }),
+  ];
+}
+
 function renderAudio() {
   const s = st.session;
   if (!s) return;
   $('mx-people').replaceChildren(...s.members.filter((m) => m.id !== st.me).map((m) => {
-    const vol = Math.round((voice.volumes.get(m.id) ?? 1) * 100);
     const muted = voice.localMute.has(m.id);
     const id = `vol-${m.id}`;
     return h('div', { class: 'mix-row' },
       h('label', { class: 'name', for: id, text: m.name }),
-      h('input', { type: 'range', min: 0, max: 100, value: vol, id, oninput: (e) => { e.target.nextElementSibling.textContent = e.target.value; voice.setVolume(m.id, e.target.value / 100); } }),
-      h('output', { for: id, text: String(vol) }),
+      ...personVolume(m, id),
       h('button', {
         class: `btn icon${muted ? ' off' : ''}`, type: 'button', 'aria-pressed': String(muted), 'aria-label': `Silenciar ${m.name} só para mim`,
         onclick: () => { voice.setLocalMute(m.id, !muted); renderAudio(); },

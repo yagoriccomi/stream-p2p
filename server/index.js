@@ -29,6 +29,7 @@ const STATIC = {
   '/stream.js': ['web/stream.js', JS],
   '/voice.js': ['web/voice.js', JS],
   '/sysaudio.js': ['web/sysaudio.js', JS],
+  '/boost.js': ['web/boost.js', JS],
   '/sw.js': ['web/sw.js', JS],
   '/session.js': ['server/session.js', JS], // shared CAN matrix: UI and server can't drift
   '/styles.css': ['web/styles.css', 'text/css; charset=utf-8'],
