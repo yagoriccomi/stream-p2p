@@ -282,6 +282,7 @@ export class VideoNet {
     if (!pcs.length) return null;
     let bytes = 0, fps = 0, w = 0, h = 0, codec = '', rttMs = null;
     let lost = 0, received = 0, freezes = 0, limit = 'none', encoder = null;
+    let jbMin = 0, jbCount = 0, rtpJitter = 0; // what our network asks of the jitter buffer
     for (const pc of pcs) {
       const report = await pc.getStats();
       report.forEach((r) => {
@@ -299,13 +300,18 @@ export class VideoNet {
         lost += r.packetsLost ?? 0;
         received += r.packetsReceived ?? 0;
         freezes += r.freezeCount ?? 0;
+        if (r.type === 'inbound-rtp') {
+          jbMin += r.jitterBufferMinimumDelay ?? 0; // s, cumulative: the delay it would pick with no target
+          jbCount += r.jitterBufferEmittedCount ?? 0;
+          rtpJitter = Math.max(rtpJitter, r.jitter ?? 0);
+        }
         if (r.qualityLimitationReason && r.qualityLimitationReason !== 'none') limit = r.qualityLimitationReason;
         if (r.encoderImplementation) encoder = { name: r.encoderImplementation, hw: Boolean(r.powerEfficientEncoder) };
       });
     }
     const capture = this.upstream ? null : this.stream?.getVideoTracks()[0]?.getSettings();
     return {
-      bytes, fps, w, h, codec, rttMs, lost, received, freezes, limit, encoder,
+      bytes, fps, w, h, codec, rttMs, lost, received, freezes, limit, encoder, jbMin, jbCount, rtpJitter,
       capture: capture && { w: capture.width, h: capture.height, fps: Math.round(capture.frameRate ?? 0) },
       children: this.downstream.size, viewer: Boolean(this.upstream),
     };

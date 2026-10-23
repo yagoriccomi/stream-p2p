@@ -377,6 +377,7 @@ async function measure(name, set, viewer, presenter) {
     'rtt ms': b.rttMs != null ? Math.round(b.rttMs) : null,
     'jitter RTP ms': Math.round(b.jitterMs),
     'alvo ms': b.targetMs,
+    'atraso comum ms': await viewer.evaluate(() => window.__app.latency?.targetMs ?? null),
     'latência ms': lat,
     ...sender,
     'descartados proxy': udp.dropped - u0.dropped,
@@ -385,7 +386,7 @@ async function measure(name, set, viewer, presenter) {
   assert.ok(b.relay, 'a mídia precisa passar pelo TURN');
   const r = rows.at(-1);
   const busy = lagMs > PROXY_LAG_MAX_MS ? ` ⚠ proxy atrasou ${lagMs} ms (máquina ocupada): não confiável` : '';
-  console.log(`· ${name}: ${r.fps} fps, ${r.kbps} kbps, latência ${lat} ms, buffer ${r['buffer ms']} ms (alvo ${r['alvo ms']}), ${r.congelamentos} congelamento(s); `
+  console.log(`· ${name}: ${r.fps} fps, ${r.kbps} kbps, latência ${lat} ms, buffer ${r['buffer ms']} ms (alvo ${r['alvo ms']}), atraso comum ${r['atraso comum ms']} ms, ${r.congelamentos} congelamento(s); `
     + `BWE ${r['BWE kbps']} kbps (mín ${r['BWE mín kbps']}), ${r['altura enviada']}p enviado, QP ${r['QP médio']}, limitado por banda ${r['limitado por banda %']}%${busy}`);
 }
 

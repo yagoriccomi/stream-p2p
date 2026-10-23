@@ -160,7 +160,7 @@
     </div>
     <span class="badge live" id="s-live" hidden>Ao vivo</span>
     <span class="badge paused" id="s-paused" hidden>Pausado</span>
-    <span class="small muted latency" id="s-latency" hidden><svg class="i sm" style="vertical-align: -4px"><use href="#i-latency"/></svg> 150 ms · igual para todos</span>
+    <span class="small muted latency" id="s-latency" hidden><svg class="i sm" style="vertical-align: -4px"><use href="#i-latency"/></svg> <span id="s-latency-ms">…</span> · igual para todos</span>
     <span class="grow"></span>
     <span class="small muted mono" id="s-stats" aria-live="off"></span>
   </header>
@@ -317,6 +317,12 @@
       <label class="field">Codec preferido<select id="set-codec"></select></label>
       <p class="small muted" id="set-codec-hint"></p>
       <p class="small muted" id="set-encoder"></p>
+    </div>
+    <div class="section">
+      <h3>Atraso da transmissão</h3>
+      <label class="field">Atraso igual para todos<select id="set-latency" aria-describedby="set-latency-hint set-latency-now"></select></label>
+      <p class="small muted" id="set-latency-hint">Quanto tempo o vídeo leva para aparecer em todo mundo, ao mesmo tempo. Menos atraso deixa a conversa mais natural; com pouco atraso, uma rede instável faz a imagem engasgar. No automático, cada pessoa mede a própria rede e o app usa o menor atraso que não engasga para ninguém. Vale quando você transmite.</p>
+      <p class="small muted" id="set-latency-now"></p>
     </div>
     <div class="section">
       <h3>Rede</h3>

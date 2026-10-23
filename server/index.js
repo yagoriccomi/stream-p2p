@@ -2,7 +2,7 @@ import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { WebSocketServer } from 'ws';
-import { createRoom, addViewer, removeViewer, jitterTargets, setHopRtt, JITTER_STEP_MS, MODES } from './topology.js';
+import { createRoom, addViewer, removeViewer, jitterTargets, setHopRtt, setHopNeed, retarget, autoTarget, validLatency, LATENCY, JITTER_STEP_MS, MODES } from './topology.js';
 import * as S from './session.js';
 import { handleInteraction } from './discord.js';
 import { iceSource } from './ice.js';
@@ -128,7 +128,18 @@ function notifyAssigned(s, id, parent) {
   const jitterMs = jitterTargets(s.room).get(id);
   s.room.nodes.get(id).sentJitter = jitterMs;
   send(id, { type: 'assigned', parent, mode: s.room.mode, jitterMs });
+  send(id, latencyMsg(s.room));
   send(parent, { type: 'child', id });
+}
+
+// The show time everyone shares, and what the measurements recommend (shown in Configurações).
+const latencyMsg = (room) => ({ type: 'latency', targetMs: room.targetMs, recommendedMs: autoTarget(room), auto: room.latency === 'auto' });
+function pushLatency(s) {
+  const msg = latencyMsg(s.room);
+  const key = `${msg.targetMs}/${msg.recommendedMs}/${msg.auto}`;
+  if (s.room.sentLatency === key) return;
+  s.room.sentLatency = key;
+  broadcast(s, msg);
 }
 
 // Any change in the tree or in a measured hop can move everyone's buffer; send only real changes.
@@ -148,10 +159,17 @@ function attachViewer(s, id) {
   pushJitter(s);
 }
 
-function beginTopology(s, presenterId, mode, uploadKbps) {
-  s.room = createRoom(presenterId, mode, uploadKbps);
+function beginTopology(s, presenterId, mode, uploadKbps, latency) {
+  s.room = createRoom(presenterId, mode, uploadKbps, latency);
   for (const id of s.members.keys()) if (id !== presenterId) attachViewer(s, id);
+  pushLatency(s);
 }
+
+const parseLatency = (v) => {
+  const latency = v === undefined || v === 'auto' ? 'auto' : Number(v);
+  if (!validLatency(latency)) throw new S.HttpError(400, `Atraso inválido: ${v}. Use automático ou de ${LATENCY.MIN_MS} a ${LATENCY.MAX_MS} ms.`);
+  return latency;
+};
 
 function endTopology(s) {
   if (!s.room) return;
@@ -167,7 +185,9 @@ function detachViewer(s, id) {
     else send(childId, { type: 'notice', code: 503, reason: 'Sem vaga na árvore depois que um retransmissor saiu.' });
   }
   if (parent) send(parent, { type: 'childGone', id });
+  retarget(s.room); // the shakiest viewer may be the one who left
   pushJitter(s);
+  pushLatency(s);
 }
 
 function grantNotice(s, targetId) {
@@ -255,7 +275,7 @@ function handle(id, msg) {
       const upload = Number(msg.uploadKbps);
       if (!(upload > 0)) throw new S.HttpError(400, 'Informe o upload em Mbps (maior que zero).');
       S.startStream(inSession(), id, { mode: msg.mode, audio: msg.audio !== false, source: msg.source ?? 'monitor' });
-      beginTopology(s, id, msg.mode, upload);
+      beginTopology(s, id, msg.mode, upload, parseLatency(msg.latency));
       return publish(s);
     }
     case 'streamState': {
@@ -322,8 +342,19 @@ function handle(id, msg) {
     case 'hopRtt': {
       const ms = Number(msg.ms);
       if (!Number.isFinite(ms) || ms < 0 || ms > MAX_RTT_MS) throw new S.HttpError(400, `RTT inválido: ${msg.ms}.`);
-      if (s?.room && setHopRtt(s.room, id, ms)) pushJitter(s); // a late report after the stream ended is harmless
-      return;
+      if (!s?.room || !setHopRtt(s.room, id, ms)) return; // a late report after the stream ended is harmless
+      const need = Number(msg.needMs);
+      if (msg.needMs !== undefined && Number.isFinite(need) && need >= 0) setHopNeed(s.room, id, Math.min(need, MAX_RTT_MS));
+      retarget(s.room);
+      pushJitter(s);
+      return pushLatency(s);
+    }
+    case 'setLatency': {
+      if (inSession().presenterId !== id || !s.room) throw new S.HttpError(403, 'Só quem transmite muda o atraso.');
+      s.room.latency = parseLatency(msg.latency);
+      retarget(s.room);
+      pushJitter(s);
+      return pushLatency(s);
     }
     case 'srcStats': {
       // What leaves the presenter, so viewers can compare it with what arrives.

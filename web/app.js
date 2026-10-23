@@ -30,7 +30,8 @@ const st = {
   paused: false,
   nativeSources: null,
   nativePick: null,
-  settings: { codec: store.get('codec', '') },
+  settings: { codec: store.get('codec', ''), latency: store.get('latency', 'auto') },
+  latency: null, // { targetMs, recommendedMs, auto } from the server while a stream is on
 };
 window.__app = st; // read by e2e
 
@@ -120,6 +121,9 @@ async function handle(msg) {
       return renderStage();
     case 'jitter':
       return video.setJitter(msg.jitterMs);
+    case 'latency':
+      st.latency = msg;
+      return renderHeader();
     case 'child':
       return video.child(msg.id);
     case 'childGone':
@@ -129,6 +133,8 @@ async function handle(msg) {
     case 'vsignal':
       return voice.signal(msg.from, msg.data);
     case 'streamEnded':
+      st.latency = null;
+      needs.length = 0;
       video.reset();
       $('video').srcObject = null;
       st.paused = false;
@@ -248,6 +254,8 @@ function renderHeader() {
   $('s-live').hidden = !live || s.presenterState?.paused;
   $('s-paused').hidden = !live || !s.presenterState?.paused;
   $('s-latency').hidden = !live;
+  const lat = st.latency;
+  $('s-latency-ms').textContent = lat ? `${lat.targetMs} ms${lat.auto ? ' (automático)' : ''}` : '…';
 }
 
 function renderStage() {
@@ -742,7 +750,7 @@ $('q-start').addEventListener('click', async () => {
   video.setAudio(st.audio);
   $('video').srcObject = stream;
   $('video').muted = true; // no echo of my own stream
-  send({ type: 'startStream', mode: st.mode, uploadKbps: st.upload * 1000, audio: st.audio, source: st.src });
+  send({ type: 'startStream', mode: st.mode, uploadKbps: st.upload * 1000, audio: st.audio, source: st.src, latency: st.settings.latency });
   if (st.audio && !video.hasAudio()) audioHint();
 });
 
@@ -928,6 +936,7 @@ function renderMatrix() {
 }
 
 // ── T11 · Configurações ──
+const LATENCY_FIXED = [[80, 'menor atraso, pede rede boa (cabo ou Wi-Fi perto)'], [150, 'equilibrado'], [300, 'rede ruim ou celular']];
 $('f-settings').addEventListener('click', () => {
   const caps = window.RTCRtpSender?.getCapabilities?.('video')?.codecs ?? [];
   const names = [...new Set(caps.map((c) => c.mimeType.split('/')[1].toLowerCase()).filter((c) => ['vp8', 'vp9', 'h264', 'av1', 'h265'].includes(c)))];
@@ -941,6 +950,15 @@ $('f-settings').addEventListener('click', () => {
   $('set-encoder').textContent = enc
     ? `Codificando agora com ${enc.name}, ${enc.hw ? 'na placa de vídeo' : 'no processador (CPU)'}.`
     : 'Ao transmitir, aqui aparece se o vídeo é codificado na placa de vídeo ou no processador.';
+  const lat = st.latency;
+  const opts = [['auto', lat ? `Automático (agora: ${lat.recommendedMs} ms)` : 'Automático (recomendado)'], ...LATENCY_FIXED.map(([ms, text]) => [String(ms), `${ms} ms: ${text}`])];
+  $('set-latency').replaceChildren(...opts.map(([value, text]) => h('option', { value, text })));
+  $('set-latency').value = String(st.settings.latency);
+  $('set-latency-now').textContent = !lat
+    ? 'Durante uma transmissão, aqui aparece o atraso recomendado para a rede de quem está assistindo.'
+    : lat.auto
+      ? `Esta transmissão está no automático: ${lat.targetMs} ms, o menor que a rede de todo mundo aguenta agora.`
+      : `Esta transmissão está fixa em ${lat.targetMs} ms. Pela rede de quem assiste, o recomendado agora é ${lat.recommendedMs} ms.`;
   $('set-upload').value = st.upload;
   const yes = (ok, text) => h('li', { text: `${ok ? '✓' : '✗'} ${text}` });
   $('set-support').replaceChildren(
@@ -955,6 +973,9 @@ $('f-settings').addEventListener('click', () => {
 closeOnX($('dlg-settings'));
 $('set-save').addEventListener('click', () => {
   st.settings.codec = $('set-codec').value;
+  st.settings.latency = $('set-latency').value === 'auto' ? 'auto' : Number($('set-latency').value);
+  store.set('latency', st.settings.latency);
+  if (st.session?.presenterId === st.me) send({ type: 'setLatency', latency: st.settings.latency }); // live: applies now
   st.upload = Number($('set-upload').value) || st.upload;
   store.set('codec', st.settings.codec);
   store.set('upload', st.upload);
@@ -964,7 +985,20 @@ $('set-save').addEventListener('click', () => {
 
 // ── stats ──
 window.__stats = null; // read by e2e
-let last = { bytes: 0, at: 0, lost: 0, received: 0 };
+let last = { bytes: 0, at: 0, lost: 0, received: 0, jbMin: 0, jbCount: 0 };
+// Buffer this viewer's network needs: the jitter buffer's own minimum over the last 2 s,
+// or 3× the RTP jitter where that stat is missing. The server gets the worst of the last 30 s,
+// so the shared latency rises at once and only comes down after a calm half minute.
+const NEED_WINDOW = 15;
+const needs = [];
+function measureNeed(s) {
+  const dCount = s.jbCount - last.jbCount, dMin = s.jbMin - last.jbMin;
+  const ms = dCount > 0 && dMin >= 0 && s.jbMin > 0 ? (1000 * dMin) / dCount : s.rtpJitter > 0 ? 3000 * s.rtpJitter : null;
+  if (ms === null) return null;
+  needs.push(ms);
+  if (needs.length > NEED_WINDOW) needs.shift();
+  return Math.round(Math.max(...needs));
+}
 const SRC_STALE_MS = 6000; // three missed reports: the origin column goes blank
 const LIMITS = { none: 'nenhum', cpu: 'CPU', bandwidth: 'rede', other: 'outro' };
 const rate = (kbps) => (kbps >= 1000 ? `${(kbps / 1000).toFixed(1)} Mbps` : `${kbps} kbps`);
@@ -1010,15 +1044,16 @@ setInterval(async () => {
   const now = performance.now();
   const kbps = last.at ? Math.max(0, Math.round(((s.bytes - last.bytes) * 8) / (now - last.at))) : 0;
   const lossPct = (s.lost - last.lost) > 0 ? (100 * (s.lost - last.lost)) / Math.max(1, s.lost - last.lost + s.received - last.received) : 0;
-  last = { bytes: s.bytes, at: now, lost: s.lost, received: s.received };
+  const needMs = s.viewer ? measureNeed(s) : null;
+  last = { bytes: s.bytes, at: now, lost: s.lost, received: s.received, jbMin: s.jbMin, jbCount: s.jbCount };
   if (!s.viewer && s.children) send({ type: 'srcStats', capture: s.capture, w: s.w, h: s.h, fps: s.fps, kbps: Math.round(kbps / s.children), codec: s.codec, limit: s.limit });
   $('m-toggle').hidden = !s.viewer;
   if (s.viewer) {
     if ($('m-toggle').getAttribute('aria-pressed') !== String(store.get('metricsShown', false))) showMetrics(store.get('metricsShown', false));
     if (!$('metrics').hidden) renderMetrics(s, kbps, lossPct);
   } else $('metrics').hidden = true;
-  if (s.rttMs !== null) send({ type: 'hopRtt', ms: Math.round(s.rttMs) }); // server turns it into buffers
-  window.__stats = { kbps, fps: s.fps, w: s.w, h: s.h, codec: s.codec, encoder: s.encoder, jitterMs: video.jitterMs, rttMs: s.rttMs, parent: video.parentId };
+  if (s.rttMs !== null) send({ type: 'hopRtt', ms: Math.round(s.rttMs), ...(needMs !== null && { needMs }) }); // server turns it into buffers
+  window.__stats = { kbps, fps: s.fps, w: s.w, h: s.h, codec: s.codec, encoder: s.encoder, jitterMs: video.jitterMs, rttMs: s.rttMs, needMs, parent: video.parentId };
   reportStatus();
   const route = s.viewer ? `buffer ${video.jitterMs} ms` : `${s.children} direto(s)`;
   $('s-stats').textContent = `${s.w}×${s.h} · ${s.fps} fps · ${kbps} kbps${s.codec ? ` · ${s.codec}` : ''} · ${route}`;

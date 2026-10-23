@@ -1,6 +1,6 @@
 # Stream P2P
 
-Transmissão de tela P2P entre amigos, sem login. Voz em tempo real em malha; vídeo em árvore com relay e ~150 ms de atraso uniforme. Arquitetura em `handoff_stream_p2p_architecture.md`; telas em `docs/planos/PLANO-telas-T01-T14.md`; design (identidade, telas T01–T14 e ícones) no canvas https://claude.ai/artifact/PyEQWUdc5AsX4rGRARdC8S.
+Transmissão de tela P2P entre amigos, sem login. Voz em tempo real em malha; vídeo em árvore com relay e atraso igual para todos, automático (o menor que a rede de quem assiste aguenta, de 60 a 400 ms) ou fixo em Configurações. Arquitetura em `handoff_stream_p2p_architecture.md`; telas em `docs/planos/PLANO-telas-T01-T14.md`; design (identidade, telas T01–T14 e ícones) no canvas https://claude.ai/artifact/PyEQWUdc5AsX4rGRARdC8S.
 
 ## Rodar
 ```bash
@@ -15,6 +15,7 @@ npm start    # http://localhost:3000  (PORT para mudar)
 3. **Sessão (T03):**
    - Qualquer pessoa clica **Transmitir**. Só uma transmite por vez; as outras clicam **Pedir a vez**.
    - Na tela de fonte e qualidade (T02), escolha 720p30, 1080p60 ou 1440p60 e informe seu upload.
+   - **Atraso igual para todos**: no Automático (padrão), cada pessoa que assiste mede quanto a própria rede precisa de reserva (`jitterBufferMinimumDelay`) e o servidor usa o menor atraso que não engasga para ninguém, com folga de 20 ms. Sobe na hora quando a rede piora e só desce depois de 30 s calma. Em **Configurações** dá para fixar 80, 150 ou 300 ms, e ali aparece o recomendado para a sessão; quem transmite muda ao vivo.
    - As escolhas ficam salvas neste aparelho: nome, qualidade, upload, codec, aba de fonte, som da transmissão, volumes, mic, saída, ganho, supressão de ruído, eco, apertar para falar, chat e métricas abertos ou fechados. No app, também o tamanho, a posição e se a janela estava maximizada.
    - O botão **Chat**, no rodapé, esconde o chat e a lista de pessoas, e o vídeo ocupa a largura toda. Uma bolinha avisa de mensagem nova.
    - Quem assiste abre **Métricas**, sobre o vídeo: o que sai de quem transmite (captura, resolução, fps, bitrate, codec e o que limita, CPU ou rede) ao lado do que chega (o mesmo, mais perda, congelamentos e atraso).

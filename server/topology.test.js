@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createRoom, addViewer, removeViewer, directQuota, depth, jitterTargets, setHopRtt } from './topology.js';
+import { createRoom, addViewer, removeViewer, directQuota, depth, jitterTargets, setHopRtt, setHopNeed, autoTarget, retarget, LATENCY } from './topology.js';
 
 test('quota: 1440p60 on 20 Mbps upload allows 1 direct viewer', () => {
   assert.equal(directQuota(20000, '1440p60'), 1);
@@ -110,4 +110,53 @@ test('re-parenting forgets the measured hop of the old edge', () => {
   removeViewer(room, 'a'); // b moves up to the host
   assert.equal(room.nodes.get('b').hopMs, null);
   assert.equal(setHopRtt(room, 'h', 10), false, 'host has no upstream edge');
+});
+
+test('auto latency stays at the safe default until a viewer measures its network', () => {
+  const room = createRoom('h', '1080p60', 20000);
+  addViewer(room, 'a');
+  assert.equal(autoTarget(room), LATENCY.DEFAULT_MS);
+  assert.equal(retarget(room), false);
+});
+
+test('auto latency drops to the hop plus what the network needs, with a margin', () => {
+  const room = createRoom('h', '1080p60', 20000);
+  addViewer(room, 'a');
+  setHopRtt(room, 'a', 10); // 5 ms one way
+  setHopNeed(room, 'a', 30);
+  assert.equal(autoTarget(room), 60); // 5 + 30 + 20 → 55, rounded up to 60
+  assert.equal(retarget(room), true);
+  assert.deepEqual([...jitterTargets(room)], [['a', 55]]);
+});
+
+test('the shakiest viewer sets the latency for everyone, within the bounds', () => {
+  const room = createRoom('h', '1080p60', 20000);
+  ['a', 'b'].forEach((id) => addViewer(room, id));
+  ['a', 'b'].forEach((id) => setHopRtt(room, id, 20));
+  setHopNeed(room, 'a', 20);
+  setHopNeed(room, 'b', 140);
+  assert.equal(autoTarget(room), 170); // 10 + 140 + 20
+  setHopNeed(room, 'b', 2000);
+  assert.equal(autoTarget(room), LATENCY.MAX_MS);
+});
+
+test('a relay forwards early enough to leave its child the buffer it needs', () => {
+  const room = createRoom('h', '1440p60', 20000); // quota 1 → b under a
+  ['a', 'b'].forEach((id) => addViewer(room, id));
+  setHopRtt(room, 'a', 10); // 5
+  setHopRtt(room, 'b', 10); // 5 + 20 relay
+  setHopNeed(room, 'a', 10);
+  setHopNeed(room, 'b', 50);
+  retarget(room);
+  assert.equal(room.targetMs, 110); // 5 + 10 (a) + 25 + 50 (b) + 20 margin
+  assert.deepEqual(Object.fromEntries(jitterTargets(room)), { a: 30, b: 50 }); // b gets exactly what it asked for
+  assert.equal(shownAt(room, (id) => room.nodes.get(id).hopMs).get('b'), 110);
+});
+
+test('a fixed latency ignores the measurements', () => {
+  const room = createRoom('h', '1080p60', 20000, 300);
+  addViewer(room, 'a');
+  setHopNeed(room, 'a', 10);
+  assert.equal(retarget(room), false);
+  assert.equal(room.targetMs, 300);
 });
