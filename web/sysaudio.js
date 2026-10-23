@@ -41,11 +41,17 @@ registerProcessor('sysaudio', SysAudio);
 // capture does not start. Call it straight from a click: the AudioContext needs the gesture.
 export async function nativeSystemAudio({ core }) {
   const ctx = new AudioContext({ sampleRate: 48000, latencyHint: 'interactive' });
-  const out = new core.Channel();
   let node = null;
-  out.onmessage = (data) => {
-    const buf = data instanceof ArrayBuffer ? data : new Uint8Array(data).buffer;
-    node?.port.postMessage(buf, [buf]);
+  // One channel per start: Tauri numbers a channel's messages from 0 for each Rust side, and the
+  // page holds back any message out of that order. Reusing the channel after a restart (switching
+  // to the shared window) left every new chunk waiting forever: silence.
+  const channel = () => {
+    const ch = new core.Channel();
+    ch.onmessage = (data) => {
+      const buf = data instanceof ArrayBuffer ? data : new Uint8Array(data).buffer;
+      node?.port.postMessage(buf, [buf]);
+    };
+    return ch;
   };
   try {
     const url = URL.createObjectURL(new Blob([WORKLET], { type: 'text/javascript' }));
@@ -57,7 +63,7 @@ export async function nativeSystemAudio({ core }) {
     });
     const dest = ctx.createMediaStreamDestination();
     node.connect(dest);
-    await core.invoke('system_audio_start', { out });
+    await core.invoke('system_audio_start', { out: channel() });
     await ctx.resume();
     const [track] = dest.stream.getAudioTracks();
     // Narrows the sound to the program behind a shared window (its HWND), so the voice chat,
@@ -65,9 +71,9 @@ export async function nativeSystemAudio({ core }) {
     // comes back: the stream keeps sound, and the caller is told.
     track.focusWindow = async (window) => {
       try {
-        await core.invoke('system_audio_start', { out, window });
+        await core.invoke('system_audio_start', { out: channel(), window });
       } catch (e) {
-        await core.invoke('system_audio_start', { out });
+        await core.invoke('system_audio_start', { out: channel() });
         throw e;
       }
     };
