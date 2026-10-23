@@ -9,7 +9,11 @@ import { iceServers } from './ice.js';
 
 const PORT = Number(process.env.PORT) || 3000;
 const MAX_MSG_BYTES = 64 * 1024; // SDP + ICE fit easily; blocks memory abuse [#65]
-const RATE_PER_SEC = 20; // ICE bursts stay well under this
+const RATE_PER_SEC = 20; // actions: chat, moderation, stream controls
+// WebRTC signaling has its own bucket: a PC with many network adapters sends dozens of ICE
+// candidates at once for video and voice, and dropping any of them leaves the call unconnected.
+const SIGNAL_RATE_PER_SEC = 200;
+const SIGNALS = new Set(['signal', 'vsignal']);
 const MAX_RTT_MS = 5000; // a hop RTT above this is a broken report, not a network
 const SPEEDTEST_MAX_BYTES = 32 * 1024 * 1024; // [#65]
 const SPEEDTEST_WINDOW_MS = 10_000;
@@ -331,25 +335,30 @@ function handle(id, msg) {
 }
 
 // Token bucket per client → 429 instead of letting one tab flood the session.
-function allow(client) {
+function allow(bucket, rate) {
   const now = Date.now();
-  client.tokens = Math.min(RATE_PER_SEC, client.tokens + ((now - client.at) / 1000) * RATE_PER_SEC);
-  client.at = now;
-  if (client.tokens < 1) return false;
-  client.tokens -= 1;
+  bucket.tokens = Math.min(rate, bucket.tokens + ((now - bucket.at) / 1000) * rate);
+  bucket.at = now;
+  if (bucket.tokens < 1) return false;
+  bucket.tokens -= 1;
   return true;
 }
 
 new WebSocketServer({ server: http, maxPayload: MAX_MSG_BYTES }).on('connection', (ws) => {
   const id = randomUUID();
-  clients.set(id, { ws, code: null, tokens: RATE_PER_SEC, at: Date.now() });
+  clients.set(id, {
+    ws, code: null,
+    actions: { tokens: RATE_PER_SEC, at: Date.now() },
+    signals: { tokens: SIGNAL_RATE_PER_SEC, at: Date.now() },
+  });
   ws.send(JSON.stringify({ type: 'hello', id, modes: MODES }));
   ws.on('message', (raw) => {
     const client = clients.get(id);
     let msg = {};
     try {
       msg = JSON.parse(raw);
-      if (!allow(client)) throw new S.HttpError(429, 'Muitas ações em pouco tempo. Espere um segundo e tente de novo.');
+      const ok = SIGNALS.has(msg.type) ? allow(client.signals, SIGNAL_RATE_PER_SEC) : allow(client.actions, RATE_PER_SEC);
+      if (!ok) throw new S.HttpError(429, 'Muitas ações em pouco tempo. Espere um segundo e tente de novo.');
       handle(id, msg);
     } catch (err) {
       fail(id, msg.type, err.code ?? 400, err instanceof S.HttpError ? err.message : `Mensagem inválida: ${err.message}`);
