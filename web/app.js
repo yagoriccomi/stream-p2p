@@ -35,7 +35,7 @@ const st = {
 window.__app = st; // read by e2e
 
 // ── ICE: the server's STUN/TURN (/ice.json) plus an optional personal TURN from T11 ──
-const ICE_REFRESH_MS = 60 * 60_000; // server TURN credentials last 6 h
+const ICE_REFRESH_MS = 60 * 60_000; // server TURN credentials last 6 h (coturn) to 12 h (Cloudflare)
 let serverIce = [{ urls: 'stun:stun.l.google.com:19302' }]; // until /ice.json answers
 async function loadIce() {
   try {

@@ -26,3 +26,39 @@ export function iceServers(env = process.env, now = Date.now()) {
   }
   return servers; // TURN without credentials would only fail the ICE checks
 }
+
+// Cloudflare Realtime TURN: the key (CF_TURN_KEY_ID + CF_TURN_API_TOKEN) is a long-term secret
+// that stays on the server; clients get short-lived credentials from Cloudflare's API. One set is
+// shared and renewed well before it expires (clients reload /ice.json every hour).
+export const CF_TURN_API = 'https://rtc.live.cloudflare.com/v1/turn/keys';
+export const CF_TTL_S = 24 * 3600;
+const CF_RENEW_AFTER_S = 12 * 3600;
+const BROWSER_BLOCKED_PORT = /:53(\?|$)/; // browsers block port 53: that URL only times out
+
+export function iceSource(env = process.env, fetchFn = fetch) {
+  const id = env.CF_TURN_KEY_ID;
+  const token = env.CF_TURN_API_TOKEN;
+  if (!id || !token) return async (now = Date.now()) => iceServers(env, now);
+  let cache = null; // { servers, renewAt, expiresAt }
+  return async (now = Date.now()) => {
+    if (cache && now < cache.renewAt) return cache.servers;
+    try {
+      const res = await fetchFn(`${CF_TURN_API}/${encodeURIComponent(id)}/credentials/generate-ice-servers`, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+        body: JSON.stringify({ ttl: CF_TTL_S }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const turn = (await res.json()).iceServers
+        .filter((s) => s.username)
+        .map((s) => ({ ...s, urls: [].concat(s.urls).filter((u) => !BROWSER_BLOCKED_PORT.test(u)) }));
+      if (!turn.length) throw new Error('resposta sem servidor TURN');
+      cache = { servers: [{ urls: DEFAULT_STUN }, ...turn], renewAt: now + CF_RENEW_AFTER_S * 1000, expiresAt: now + CF_TTL_S * 1000 };
+      return cache.servers;
+    } catch (e) {
+      console.warn(JSON.stringify({ level: 'warn', msg: 'turn cloudflare', err: e.message }));
+      if (cache && now < cache.expiresAt) return cache.servers; // the last set still works
+      return iceServers(env, now);
+    }
+  };
+}

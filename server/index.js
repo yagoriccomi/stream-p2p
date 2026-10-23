@@ -5,7 +5,7 @@ import { WebSocketServer } from 'ws';
 import { createRoom, addViewer, removeViewer, jitterTargets, setHopRtt, JITTER_STEP_MS, MODES } from './topology.js';
 import * as S from './session.js';
 import { handleInteraction } from './discord.js';
-import { iceServers } from './ice.js';
+import { iceSource } from './ice.js';
 
 const PORT = Number(process.env.PORT) || 3000;
 const MAX_MSG_BYTES = 64 * 1024; // SDP + ICE fit easily; blocks memory abuse [#65]
@@ -84,13 +84,15 @@ async function speedtest(req, res) {
   return reply(200, { bytes, ms: first ? performance.now() - first : 0 });
 }
 
+const ice = iceSource();
+
 const http = createServer(async (req, res) => {
   const path = new URL(req.url, 'http://x').pathname;
   if (path === '/health') return res.end('ok'); // [#82]
   if (path === '/speedtest' && req.method === 'POST') return speedtest(req, res);
   if (path === '/ice.json') {
     res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
-    return res.end(JSON.stringify({ iceServers: iceServers() }));
+    return res.end(JSON.stringify({ iceServers: await ice() }));
   }
   if (path === '/discord/interactions' && req.method === 'POST') {
     const chunks = [];

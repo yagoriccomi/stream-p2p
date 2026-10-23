@@ -66,7 +66,15 @@ npm start    # http://localhost:3000  (PORT para mudar)
 - **Manual, LAN:** quem transmite abre em `localhost`, porque a captura exige contexto seguro. Os amigos abrem `http://<seu-IP>:3000/?code=<código>`. Fora da LAN, use o TURN do servidor (abaixo) ou um TURN pessoal em **Configurações** (T11).
 
 ## TURN para fora da LAN
-O servidor entrega a lista de ICE em `/ice.json`: sempre o STUN do Google e, se configurado, um TURN. Sem TURN, quem está atrás de NAT simétrico (rede móvel, empresa) não recebe vídeo nem voz.
+O servidor entrega a lista de ICE em `/ice.json`: sempre o STUN do Google e, se configurado, um TURN. Sem TURN, quem está atrás de NAT simétrico (rede móvel, empresa, CGNAT de operadora) não recebe vídeo nem voz.
+
+**Cloudflare TURN (recomendado, sem servidor próprio):** 1.000 GB/mês grátis, depois US$ 0,05/GB.
+- `CF_TURN_KEY_ID` e `CF_TURN_API_TOKEN`: o ID e o token da chave TURN criada no painel (Realtime › TURN).
+- O servidor pede à Cloudflare credenciais de 24 h e as renova a cada 12 h. A chave nunca vai para o navegador.
+- Se a Cloudflare não responder, o servidor segue com a última credencial válida, ou só com STUN, e registra um aviso no log.
+- Rodando local, guarde as duas no `.env` (fora do Git) e suba com `node --env-file=.env server/index.js`. No Render, elas vão nas variáveis de ambiente do serviço.
+
+**Outro TURN (coturn ou provedor com usuário e senha):**
 - `TURN_URLS`: uma ou mais URLs separadas por vírgula, por exemplo `turn:turn.seu-dominio.com:3478,turns:turn.seu-dominio.com:5349`.
 - `TURN_SECRET` (recomendado): o mesmo `static-auth-secret` do coturn com `use-auth-secret`. Cada cliente recebe uma credencial que vale 6 h.
 - `TURN_USERNAME` e `TURN_CREDENTIAL`: para provedores que dão usuário e senha fixos. Só valem quando não há `TURN_SECRET`.
