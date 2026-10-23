@@ -730,10 +730,16 @@ $('q-measure').addEventListener('click', measureUpload);
 // In the app the system audio comes from WASAPI (sysaudio.js), so the picker only gives the video:
 // Chromium's own loopback fails on some devices ("Could not start audio source", e.g. a 7.1
 // headset) and drops the screen with it. An older app without the command falls back to Chromium.
+function allowedAudioPids() {
+  if (st.src !== 'monitor') return null; // Janela isolates by HWND already, no allowlist to send
+  const sessions = st.audioSessions ?? [];
+  return sessions.filter((s) => st.audioAllow[s.name] ?? true).map((s) => s.pid);
+}
+
 async function appSystemAudio() {
   if (!tauri) return null;
   try {
-    return await nativeSystemAudio(tauri);
+    return await nativeSystemAudio(tauri, allowedAudioPids());
   } catch (e) {
     log(`áudio do sistema pelo app: ${e?.message ?? e}; usando o do navegador`);
     return null;
