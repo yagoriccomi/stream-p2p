@@ -135,6 +135,14 @@ Comportamento:
 
 A página `/download` explica a instalação para quem baixa.
 
+### Servidor público (Render)
+O servidor público está em https://stream-p2p-k72t.onrender.com: serviço `stream-p2p` no Render, plano free, região Virginia.
+- **Build e start:** `npm ci --omit=dev` e `npm start`, com `NODE_VERSION=24` e `PUBLIC_URL` igual a essa URL.
+- **Deploy automático:** cada push no `main` faz um novo deploy. O servidor reinicia, e as sessões abertas (que ficam só na memória) caem.
+- **Plano free:** o serviço dorme depois de um tempo sem acesso, e o primeiro acesso depois disso leva perto de 1 min.
+- **Instalar o app apontando para ele:** `.\Stream-P2P_0.1.0_x64-setup.exe /SERVER=https://stream-p2p-k72t.onrender.com`.
+- **Sem TURN configurado:** quem estiver atrás de uma rede muito fechada (alguns 4G e redes corporativas) pode não conseguir conectar. Ver "TURN para fora da LAN".
+
 ### Servidor na rede local, sem HTTPS
 - **No app:** o servidor configurado (`/SERVER=` ou `--server`) é tratado como origem segura. Captura de tela e microfone funcionam em `http://192.168.x.x:3000`.
   - Trocar o servidor com `--server` enquanto o app está aberto não aplica essa liberação. Feche o app (`--quit`) e abra de novo.
