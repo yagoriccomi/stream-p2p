@@ -100,10 +100,15 @@ export class VoiceMesh {
     t?.sender.replaceTrack(this.out ?? null).catch((e) => this.log(`voz replaceTrack: ${e.message}`));
   }
 
-  newPc(id) {
+  // Only the offering side adds the transceiver. The answering side must use the one the
+  // offer creates: a transceiver added before setRemoteDescription is never matched to the
+  // offer, so its mic would go nowhere (one-way voice).
+  newPc(id, offering = true) {
     const pc = new RTCPeerConnection({ iceServers: this.getIce() });
-    pc.addTransceiver('audio', { direction: 'sendrecv' });
-    this.attachMic(pc);
+    if (offering) {
+      pc.addTransceiver('audio', { direction: 'sendrecv' });
+      this.attachMic(pc);
+    }
     pc.onicecandidate = (e) => e.candidate && this.send({ type: 'vsignal', to: id, data: { candidate: e.candidate } });
     pc.onconnectionstatechange = () => {
       this.log(`voz ${id.slice(0, 6)}: ${pc.connectionState}`);
@@ -164,8 +169,11 @@ export class VoiceMesh {
     let pc = this.peers.get(from)?.pc;
     if (sdp?.type === 'offer') {
       this.drop(from);
-      pc = this.newPc(from);
+      pc = this.newPc(from, false);
       await pc.setRemoteDescription(sdp);
+      const t = pc.getTransceivers()[0];
+      if (t) t.direction = 'sendrecv';
+      this.attachMic(pc);
       const answer = await pc.createAnswer();
       if (this.peers.get(from)?.pc !== pc) return;
       await pc.setLocalDescription(answer);

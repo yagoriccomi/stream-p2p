@@ -58,7 +58,7 @@ const browser = await puppeteer.launch({
   headless: process.env.HEADFUL ? false : 'new',
   args: [
     ...(process.getuid?.() === 0 ? ['--no-sandbox'] : []),
-    '--autoplay-policy=no-user-gesture-required', '--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream',
+    '--autoplay-policy=no-user-gesture-required', '--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', '--mute-audio',
     '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows',
   ],
 });
@@ -171,6 +171,19 @@ try {
 
   // T02 · Ana streams 1440p60 with 20 Mbps → quota 1: one direct, two relayed
   assert.equal(await ana.evaluate(() => window.__app.voice.peers.size), 3, 'voz em malha com os 3');
+  // Connected is not heard: every member must receive sound from every other one (both ends of each pair).
+  for (const [n, p] of Object.entries({ Ana: ana, ...people })) {
+    const silent = await p.evaluate(async () => {
+      const energy = async (pc) => { let e = 0; for (const s of (await pc.getStats()).values()) if (s.type === 'inbound-rtp' && s.kind === 'audio') e += s.totalAudioEnergy ?? 0; return e; };
+      const peers = [...window.__app.voice.peers.entries()];
+      const before = await Promise.all(peers.map(([, { pc }]) => energy(pc)));
+      await new Promise((r) => setTimeout(r, 2500));
+      const after = await Promise.all(peers.map(([, { pc }]) => energy(pc)));
+      return peers.filter((_, i) => after[i] - before[i] < 0.01).map(([id]) => id.slice(0, 6));
+    });
+    assert.deepEqual(silent, [], `${n} não ouve a voz de: ${silent.join(', ')}`);
+  }
+  console.log('voz ok: todos ouvem todos');
   await startStream(ana, '1440p60', { firstTime: true });
   for (const [n, p] of Object.entries(people)) await waitFor(p, hasVideo, `vídeo em ${n}`);
   await sleep(4000);

@@ -79,7 +79,7 @@ const video = new VideoNet({
   getCodec: () => st.settings.codec,
   onStream: (stream) => {
     $('video').srcObject = stream;
-    $('video').muted = false;
+    applyStreamMix(); // the saved volume and mute from the first frame
     $('video').play().catch(() => {});
     renderStage();
   },
