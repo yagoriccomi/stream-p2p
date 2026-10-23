@@ -94,6 +94,11 @@ O app fica em `app/` e é feito com Tauri 2. A janela carrega o mesmo site e acr
 - **Seletor nativo (T12):** monitores e janelas com miniatura.
 - **Bandeja (T13):** ícone verde ao vivo, com os itens Parar transmissão, Silenciar mic e Copiar convite.
 - **Atualização (T14):** baixa e reinicia o app, nunca no meio de uma sessão.
+- **Som do PC pelo app:** o app captura o áudio do Windows por conta própria (WASAPI, convertido para estéreo), fora do seletor.
+  - O seletor pede só a imagem, então o áudio vem de qualquer fonte, janela inclusive.
+  - O som do próprio app (a voz do chat) fica de fora, para não dar eco em quem assiste.
+  - O áudio do sistema do Chromium falha em alguns aparelhos, como um headset 7.1, com "Could not start audio source", e derruba a tela junto.
+  - No navegador, o erro agora explica isso e sugere desligar "Compartilhar áudio do sistema" ou usar o app.
 
 O instalador NSIS instala por usuário, sem pedir administrador, e cria o atalho no Menu Iniciar.
 

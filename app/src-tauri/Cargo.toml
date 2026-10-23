@@ -22,4 +22,5 @@ lto = true
 strip = true
 
 [target.'cfg(windows)'.dependencies]
+wasapi = "0.26.0"
 windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_System_Console", "Win32_UI_WindowsAndMessaging"] }

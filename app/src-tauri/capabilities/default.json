@@ -17,6 +17,8 @@
     "process:allow-restart",
     "allow-list-sources",
     "allow-set-tray-live",
-    "allow-set-status"
+    "allow-set-status",
+    "allow-system-audio-start",
+    "allow-system-audio-stop"
   ]
 }

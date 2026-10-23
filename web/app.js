@@ -1,6 +1,7 @@
 // Stream P2P client: screens (T01–T14), session state, and wiring between VideoNet and VoiceMesh.
 import { VideoNet, MODES, captureConstraints, randomId } from '/stream.js';
 import { VoiceMesh } from '/voice.js';
+import { nativeSystemAudio } from '/sysaudio.js';
 import { CAN } from '/session.js';
 import {
   $, h, icon, setIcon, showError, notify, fieldError, wireEye, wireSwitch, setSwitch, screen,
@@ -644,21 +645,40 @@ async function measureUpload() {
 }
 $('q-measure').addEventListener('click', measureUpload);
 
+// In the app the system audio comes from WASAPI (sysaudio.js), so the picker only gives the video:
+// Chromium's own loopback fails on some devices ("Could not start audio source", e.g. a 7.1
+// headset) and drops the screen with it. An older app without the command falls back to Chromium.
+async function appSystemAudio() {
+  if (!tauri) return null;
+  try {
+    return await nativeSystemAudio(tauri);
+  } catch (e) {
+    log(`áudio do sistema pelo app: ${e?.message ?? e}; usando o do navegador`);
+    return null;
+  }
+}
+
 async function capture() {
   if (!window.isSecureContext) {
     showError(403, 'A captura de tela só funciona em HTTPS ou em localhost. Abra pelo endereço seguro ou use o app.', { title: 'Captura bloqueada' });
     return null;
   }
+  const sysAudio = await appSystemAudio();
   try {
-    const stream = await navigator.mediaDevices.getDisplayMedia(captureConstraints(st.mode, st.src));
+    const constraints = captureConstraints(st.mode, st.src);
+    const stream = await navigator.mediaDevices.getDisplayMedia(sysAudio ? { ...constraints, audio: false, systemAudio: 'exclude' } : constraints);
+    if (sysAudio) stream.addTrack(sysAudio);
     stream.getVideoTracks()[0].addEventListener('ended', () => st.session?.presenterId === st.me && send({ type: 'stopStream' }));
     return stream;
   } catch (e) {
+    sysAudio?.stop();
     // Closing the picker is a choice, not an error. A system/policy block is.
     if (e.name === 'NotAllowedError' && !/system/i.test(e.message)) return null;
     showError(403, e.name === 'NotAllowedError'
       ? 'O sistema bloqueou a gravação de tela. No Windows: Configurações › Privacidade › Captura de tela. No macOS: Ajustes › Privacidade › Gravação de Tela.'
-      : `O navegador não conseguiu capturar: ${e.message}`, { title: 'Captura bloqueada' });
+      : e.name === 'NotReadableError' && /audio/i.test(e.message)
+        ? 'O navegador não conseguiu abrir o som do PC (acontece com alguns fones 7.1). Desligue "Compartilhar áudio do sistema" no seletor, ou use o app, que pega o som do PC por conta própria.'
+        : `O navegador não conseguiu capturar: ${e.message}`, { title: 'Captura bloqueada' });
     return null;
   }
 }

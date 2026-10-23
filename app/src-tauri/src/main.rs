@@ -3,6 +3,8 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod cli;
+#[cfg(windows)]
+mod sysaudio;
 
 use base64::{engine::general_purpose::STANDARD, Engine};
 use serde::Serialize;
@@ -74,6 +76,26 @@ async fn list_sources() -> Result<Vec<Source>, String> {
     })
     .await
     .map_err(|e| e.to_string())?
+}
+
+// System audio for the stream, captured natively (see sysaudio.rs). Chunks of stereo f32 at
+// sysaudio::RATE go to `out`; the page checks for these commands, so an older app still works.
+#[cfg(windows)]
+#[tauri::command]
+async fn system_audio_start(out: tauri::ipc::Channel<tauri::ipc::InvokeResponseBody>) -> Result<usize, String> {
+    tauri::async_runtime::spawn_blocking(move || sysaudio::start(out)).await.map_err(|e| e.to_string())??;
+    Ok(sysaudio::RATE)
+}
+#[cfg(not(windows))]
+#[tauri::command]
+async fn system_audio_start(_out: tauri::ipc::Channel<tauri::ipc::InvokeResponseBody>) -> Result<usize, String> {
+    Err("áudio do sistema pelo app só existe no Windows".into())
+}
+
+#[tauri::command]
+fn system_audio_stop() {
+    #[cfg(windows)]
+    sysaudio::stop();
 }
 
 struct Tray(TrayIcon);
@@ -195,7 +217,9 @@ fn allow_ipc(app: &AppHandle, server: &str) {
         .permission("process:allow-restart")
         .permission("allow-list-sources")
         .permission("allow-set-tray-live")
-        .permission("allow-set-status");
+        .permission("allow-set-status")
+        .permission("allow-system-audio-start")
+        .permission("allow-system-audio-stop");
     if let Err(e) = app.add_capability(cap) {
         eprintln!("capability: {e}");
     }
@@ -247,7 +271,7 @@ fn main() -> ExitCode {
         }))
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
-        .invoke_handler(tauri::generate_handler![list_sources, set_tray_live, set_status])
+        .invoke_handler(tauri::generate_handler![list_sources, set_tray_live, set_status, system_audio_start, system_audio_stop])
         .manage(Server(server.clone()))
         .setup(move |app| {
             allow_ipc(app.handle(), &server);
