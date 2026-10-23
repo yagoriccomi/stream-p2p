@@ -18,6 +18,7 @@ use tauri::{
     tray::{MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent},
     AppHandle, Emitter, Manager, RunEvent, State, WebviewUrl, WebviewWindowBuilder,
 };
+use tauri_plugin_window_state::StateFlags;
 
 // Until there is a public server; --server or the installer's /SERVER= override it.
 const DEFAULT_SERVER: &str = "http://localhost:3000";
@@ -301,6 +302,9 @@ fn main() -> ExitCode {
         }))
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
+        // Size, position and maximized come back on the next launch; visibility does not, so a
+        // quit from the tray never reopens hidden.
+        .plugin(tauri_plugin_window_state::Builder::default().with_state_flags(StateFlags::all() - StateFlags::VISIBLE).build())
         .invoke_handler(tauri::generate_handler![list_sources, set_tray_live, set_status, system_audio_start, system_audio_stop, pick_source])
         .manage(Server(server.clone()))
         .setup(move |app| {

@@ -15,6 +15,7 @@ npm start    # http://localhost:3000  (PORT para mudar)
 3. **Sessão (T03):**
    - Qualquer pessoa clica **Transmitir**. Só uma transmite por vez; as outras clicam **Pedir a vez**.
    - Na tela de fonte e qualidade (T02), escolha 720p30, 1080p60 ou 1440p60 e informe seu upload.
+   - As escolhas ficam salvas neste aparelho: nome, qualidade, upload, codec, aba de fonte, som da transmissão, volumes, mic, saída, ganho, supressão de ruído, eco, apertar para falar, chat e métricas abertos ou fechados. No app, também o tamanho, a posição e se a janela estava maximizada.
    - O botão **Chat**, no rodapé, esconde o chat e a lista de pessoas, e o vídeo ocupa a largura toda. Uma bolinha avisa de mensagem nova.
    - Quem assiste abre **Métricas**, sobre o vídeo: o que sai de quem transmite (captura, resolução, fps, bitrate, codec e o que limita, CPU ou rede) ao lado do que chega (o mesmo, mais perda, congelamentos e atraso).
 4. **Quem transmite (T04)** troca a fonte e a qualidade ao vivo, pausa, liga ou desliga o áudio e passa a vez sem derrubar ninguém.

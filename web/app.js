@@ -23,10 +23,10 @@ const st = {
   pending: null, // op we are waiting an answer for
   pendingRename: null,
   codeShown: false,
-  src: 'monitor',
+  src: store.get('src', 'monitor'),
   mode: store.get('mode', '1080p60'),
   upload: store.get('upload', 20),
-  audio: true,
+  audio: store.get('streamAudio', true),
   paused: false,
   nativeSources: null,
   nativePick: null,
@@ -582,14 +582,14 @@ function renderSetup() {
   $('q-quota').classList.toggle('warn', upload > 0 && quota === 1 && others > 1);
   setSwitch($('q-audio'), st.audio);
 }
-for (const tab of $('src-tabs').children) tab.addEventListener('click', () => { st.src = tab.dataset.src; renderSetup(); });
+for (const tab of $('src-tabs').children) tab.addEventListener('click', () => { st.src = tab.dataset.src; store.set('src', st.src); renderSetup(); });
 $('q-upload').addEventListener('input', () => {
   uploadTouched = true;
   st.upload = Number($('q-upload').value) || st.upload;
   store.set('upload', st.upload);
   renderSetup();
 });
-wireSwitch($('q-audio'), (on) => { st.audio = on; });
+wireSwitch($('q-audio'), (on) => { st.audio = on; store.set('streamAudio', on); });
 
 // ── T02 · upload measurement: a small probe sizes the real test to ~3 s on this connection ──
 const SPEEDTEST_PROBE_BYTES = 1 << 20;
@@ -794,39 +794,55 @@ $('f-audio').addEventListener('click', async () => {
 });
 closeOnX($('dlg-audio'));
 
-const streamMix = { volume: 1, muted: false };
+// Mixer and mic settings outlive the session: restored on load, saved on every change.
+const audioPrefs = { stream: 1, streamMuted: false, voice: 1, voiceMuted: false, gain: 1, ns: true, ec: true, ptt: false, in: '', out: '', ...store.get('audio', {}) };
+const saveAudio = (patch) => { Object.assign(audioPrefs, patch); store.set('audio', audioPrefs); };
+const streamMix = { volume: audioPrefs.stream, muted: audioPrefs.streamMuted };
 function applyStreamMix() {
   const v = $('video');
   if (st.session?.presenterId === st.me) return; // my own preview stays muted
   v.volume = streamMix.volume;
   v.muted = streamMix.muted;
 }
-function wireRange(id, onValue) {
+function wireRange(id, value, onValue) {
   const input = $(id);
   const out = input.nextElementSibling;
+  input.value = out.textContent = Math.round(value * 100);
   input.addEventListener('input', () => {
     out.textContent = input.value;
     onValue(Number(input.value) / 100);
   });
 }
-wireRange('mx-stream', (v) => { streamMix.volume = v; applyStreamMix(); });
-wireRange('mx-voice', (v) => voice.setMaster(v));
-wireRange('mic-gain', (v) => voice.setGain(v));
+const paintMute = (id, on) => {
+  $(id).setAttribute('aria-pressed', String(on));
+  $(id).classList.toggle('off', on);
+  setIcon($(id), on ? 'mute' : 'volume');
+};
 function wireMute(id, get, set) {
+  paintMute(id, get());
   $(id).addEventListener('click', () => {
     const on = !get();
     set(on);
-    $(id).setAttribute('aria-pressed', String(on));
-    $(id).classList.toggle('off', on);
-    setIcon($(id), on ? 'mute' : 'volume');
+    paintMute(id, on);
   });
 }
-wireMute('mx-stream-mute', () => streamMix.muted, (on) => { streamMix.muted = on; applyStreamMix(); });
-let voiceMuted = false;
-wireMute('mx-voice-mute', () => voiceMuted, (on) => { voiceMuted = on; voice.setMaster(on ? 0 : Number($('mx-voice').value) / 100); });
-wireSwitch($('opt-ns'), (on) => voice.reconfigure({ noiseSuppression: on }));
-wireSwitch($('opt-ec'), (on) => voice.reconfigure({ echoCancellation: on }));
-wireSwitch($('opt-ptt'), (on) => voice.setPtt(on));
+const voiceLevel = () => (audioPrefs.voiceMuted ? 0 : audioPrefs.voice);
+wireRange('mx-stream', audioPrefs.stream, (v) => { streamMix.volume = v; applyStreamMix(); saveAudio({ stream: v }); });
+wireRange('mx-voice', audioPrefs.voice, (v) => { saveAudio({ voice: v }); voice.setMaster(voiceLevel()); });
+wireRange('mic-gain', audioPrefs.gain, (v) => { voice.setGain(v); saveAudio({ gain: v }); });
+wireMute('mx-stream-mute', () => streamMix.muted, (on) => { streamMix.muted = on; applyStreamMix(); saveAudio({ streamMuted: on }); });
+wireMute('mx-voice-mute', () => audioPrefs.voiceMuted, (on) => { saveAudio({ voiceMuted: on }); voice.setMaster(voiceLevel()); });
+Object.assign(voice.opts, { noiseSuppression: audioPrefs.ns, echoCancellation: audioPrefs.ec, deviceId: audioPrefs.in, gain: audioPrefs.gain });
+voice.setMaster(voiceLevel());
+voice.setPtt(audioPrefs.ptt);
+voice.sinkId = audioPrefs.out;
+if (audioPrefs.out) $('video').setSinkId?.(audioPrefs.out).catch(() => {});
+setSwitch($('opt-ns'), audioPrefs.ns);
+setSwitch($('opt-ec'), audioPrefs.ec);
+setSwitch($('opt-ptt'), audioPrefs.ptt);
+wireSwitch($('opt-ns'), (on) => { voice.reconfigure({ noiseSuppression: on }); saveAudio({ ns: on }); });
+wireSwitch($('opt-ec'), (on) => { voice.reconfigure({ echoCancellation: on }); saveAudio({ ec: on }); });
+wireSwitch($('opt-ptt'), (on) => { voice.setPtt(on); saveAudio({ ptt: on }); });
 const typing = (e) => e.target.closest?.('input, textarea, select, [contenteditable]');
 addEventListener('keydown', (e) => e.code === 'KeyV' && !e.repeat && !typing(e) && voice.setPttDown(true));
 addEventListener('keyup', (e) => e.code === 'KeyV' && voice.setPttDown(false));
@@ -845,8 +861,9 @@ async function fillDevices() {
   $('dev-out').value = voice.sinkId;
   $('dev-out').disabled = !('setSinkId' in HTMLMediaElement.prototype);
 }
-$('dev-in').addEventListener('change', () => voice.reconfigure({ deviceId: $('dev-in').value }));
+$('dev-in').addEventListener('change', () => { voice.reconfigure({ deviceId: $('dev-in').value }); saveAudio({ in: $('dev-in').value }); });
 $('dev-out').addEventListener('change', async () => {
+  saveAudio({ out: $('dev-out').value });
   await voice.setSink($('dev-out').value);
   await $('video').setSinkId?.($('dev-out').value).catch(() => {});
 });

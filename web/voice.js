@@ -38,6 +38,12 @@ export class VoiceMesh {
           },
         });
       } catch (e) {
+        // A saved mic that is no longer plugged in: fall back to the system default.
+        if (this.opts.deviceId && ['OverconstrainedError', 'NotFoundError'].includes(e.name)) {
+          this.log(`mic salvo indisponível (${e.name}); usando o padrão`);
+          this.opts.deviceId = '';
+          return this.enableMic();
+        }
         this.onError(e);
         return false;
       }
