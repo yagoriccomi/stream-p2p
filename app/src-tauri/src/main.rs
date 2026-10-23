@@ -80,15 +80,16 @@ async fn list_sources() -> Result<Vec<Source>, String> {
 
 // System audio for the stream, captured natively (see sysaudio.rs). Chunks of stereo f32 at
 // sysaudio::RATE go to `out`; the page checks for these commands, so an older app still works.
+// With `window` (the shared window's HWND) only that program's sound goes out.
 #[cfg(windows)]
 #[tauri::command]
-async fn system_audio_start(out: tauri::ipc::Channel<tauri::ipc::InvokeResponseBody>) -> Result<usize, String> {
-    tauri::async_runtime::spawn_blocking(move || sysaudio::start(out)).await.map_err(|e| e.to_string())??;
+async fn system_audio_start(out: tauri::ipc::Channel<tauri::ipc::InvokeResponseBody>, window: Option<u64>) -> Result<usize, String> {
+    tauri::async_runtime::spawn_blocking(move || sysaudio::start(out, window)).await.map_err(|e| e.to_string())??;
     Ok(sysaudio::RATE)
 }
 #[cfg(not(windows))]
 #[tauri::command]
-async fn system_audio_start(_out: tauri::ipc::Channel<tauri::ipc::InvokeResponseBody>) -> Result<usize, String> {
+async fn system_audio_start(_out: tauri::ipc::Channel<tauri::ipc::InvokeResponseBody>, _window: Option<u64>) -> Result<usize, String> {
     Err("áudio do sistema pelo app só existe no Windows".into())
 }
 

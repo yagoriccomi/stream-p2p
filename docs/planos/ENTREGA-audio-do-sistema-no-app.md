@@ -37,3 +37,15 @@ Tudo pelo terminal: o seletor foi acionado por UI Automation, sem mouse.
 - O instalador `/S` da mesma versão (0.1.0) sai com código 0, mas não troca o executável.
 - O `stream-p2p.exe` novo foi copiado por cima do instalado e confirmado pelo hash. O áudio nativo funcionou nele.
 - Para distribuir, a versão precisa subir (0.1.1) para o instalador e o atualizador trocarem o app.
+
+## Som só da janela compartilhada (2026-10-23)
+Pedido: "A pessoa que está vendo a transmissão sempre se escuta."
+- **Causa.** O som do PC excluía só o próprio app. A voz que chega pelo Discord (ou por outro programa) entrava na transmissão e voltava para quem falou. Vocês usam os dois chats.
+- **Mudança.**
+  - Ao compartilhar uma janela, a página lê o HWND do rótulo da faixa (`window:<hwnd>:0`) e reinicia a captura nativa só com a árvore de processos daquele programa (`PROCESS_LOOPBACK_MODE_INCLUDE_TARGET_PROCESS_TREE`).
+  - Tela inteira continua com o PC inteiro menos o app.
+  - Se o modo da janela falhar, volta ao PC inteiro e avisa na tela.
+- **Verificação.**
+  - O rótulo `window:5440786:0` é a janela do Discord (o mesmo HWND do Windows), e o app abriu o modo da janela sem aviso.
+  - Medição direta no Windows: o modo "só Chrome" capturou o Meet (pico 0,03) e o modo "só Discord" ficou em 0, com o Discord em silêncio. O PC inteiro menos o app tinha som (0,04).
+- **Não testado.** Um amigo falando pelo Discord enquanto o jogo é transmitido.

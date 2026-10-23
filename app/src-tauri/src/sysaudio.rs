@@ -22,11 +22,35 @@ const START_TIMEOUT: Duration = Duration::from_secs(3);
 // so starting again (switching the source) or stopping ends the previous one.
 static GENERATION: AtomicU32 = AtomicU32::new(0);
 
-pub fn start(out: Channel<InvokeResponseBody>) -> Result<(), String> {
+#[link(name = "user32")]
+extern "system" {
+    fn GetWindowThreadProcessId(hwnd: isize, pid: *mut u32) -> u32;
+}
+
+// Whose sound goes out. Excluding only the app leaves any other voice chat (Discord, WhatsApp) in
+// the mix, and the friend hears themselves back; a shared window narrows it to that program.
+enum Source {
+    AllButApp,
+    Program(u32),
+}
+
+// `window` is the HWND of the shared window (Chromium's window source id), if one was picked.
+pub fn start(out: Channel<InvokeResponseBody>, window: Option<u64>) -> Result<(), String> {
+    let source = match window {
+        None => Source::AllButApp,
+        Some(hwnd) => {
+            let mut pid = 0;
+            unsafe { GetWindowThreadProcessId(hwnd as isize, &mut pid) };
+            if pid == 0 {
+                return Err("a janela escolhida não existe mais".into());
+            }
+            Source::Program(pid)
+        }
+    };
     let gen = GENERATION.fetch_add(1, Ordering::SeqCst) + 1;
     let (ready, started) = mpsc::channel();
     thread::spawn(move || {
-        if let Err(e) = capture(gen, &out, &ready) {
+        if let Err(e) = capture(gen, source, &out, &ready) {
             let _ = ready.send(Err(e)); // ignored once started: the page sees the chunks stop
         }
     });
@@ -37,17 +61,23 @@ pub fn stop() {
     GENERATION.fetch_add(1, Ordering::SeqCst);
 }
 
-fn capture(gen: u32, out: &Channel<InvokeResponseBody>, ready: &mpsc::Sender<Result<(), String>>) -> Result<(), String> {
+fn capture(gen: u32, source: Source, out: &Channel<InvokeResponseBody>, ready: &mpsc::Sender<Result<(), String>>) -> Result<(), String> {
     let err = |e: wasapi::WasapiError| e.to_string();
     wasapi::initialize_mta().ok().map_err(|e| e.to_string())?;
     let format = WaveFormat::new(32, 32, &SampleType::Float, RATE, CHANNELS, None);
     let mode = StreamMode::EventsShared { autoconvert: true, buffer_duration_hns: BUFFER_HNS };
-    // Process loopback (Windows 10 2004+) leaves our own sound out; capturing a render device
-    // (Direction::Capture on it) is the fallback, and includes it.
-    let client = match AudioClient::new_application_loopback_client(std::process::id(), false)
+    // Process loopback (Windows 10 2004+): the shared program's tree only, or everything but our
+    // own tree. Capturing a render device (Direction::Capture on it) is the fallback for the
+    // latter, and includes our sound; a program has no fallback, the page goes back to AllButApp.
+    let (pid, include_tree) = match source {
+        Source::Program(pid) => (pid, true),
+        Source::AllButApp => (std::process::id(), false),
+    };
+    let client = match AudioClient::new_application_loopback_client(pid, include_tree)
         .and_then(|mut c| c.initialize_client(&format, &Direction::Capture, &mode).map(|_| c))
     {
         Ok(c) => c,
+        Err(e) if include_tree => return Err(format!("som da janela: {e}")),
         Err(e) => {
             eprintln!("sysaudio: loopback por processo falhou ({e}); usando o dispositivo inteiro");
             let device = DeviceEnumerator::new().map_err(err)?.get_default_device(&Direction::Render).map_err(err)?;

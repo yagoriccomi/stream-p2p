@@ -658,6 +658,20 @@ async function appSystemAudio() {
   }
 }
 
+// A shared window sends only its program's sound. The label of a window track carries the HWND
+// ("window:<hwnd>:0"); a screen keeps the whole PC minus the app, and an app without the window
+// parameter ignores it and does the same.
+async function focusWindowAudio(sysAudio, videoTrack) {
+  const hwnd = /^window:(\d+):/.exec(videoTrack.label)?.[1];
+  if (!hwnd || !sysAudio.focusWindow) return;
+  try {
+    await sysAudio.focusWindow(Number(hwnd));
+  } catch (e) {
+    console.warn('[sp2p] som só da janela', e);
+    showError(null, 'Não deu para pegar só o som dessa janela; a transmissão leva o som do PC inteiro, então quem fala no Discord pode se ouvir.', { title: 'Som do PC inteiro', kind: 'info' });
+  }
+}
+
 async function capture() {
   if (!window.isSecureContext) {
     showError(403, 'A captura de tela só funciona em HTTPS ou em localhost. Abra pelo endereço seguro ou use o app.', { title: 'Captura bloqueada' });
@@ -667,7 +681,10 @@ async function capture() {
   try {
     const constraints = captureConstraints(st.mode, st.src);
     const stream = await navigator.mediaDevices.getDisplayMedia(sysAudio ? { ...constraints, audio: false, systemAudio: 'exclude' } : constraints);
-    if (sysAudio) stream.addTrack(sysAudio);
+    if (sysAudio) {
+      stream.addTrack(sysAudio);
+      await focusWindowAudio(sysAudio, stream.getVideoTracks()[0]);
+    }
     stream.getVideoTracks()[0].addEventListener('ended', () => st.session?.presenterId === st.me && send({ type: 'stopStream' }));
     return stream;
   } catch (e) {

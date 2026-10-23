@@ -60,6 +60,17 @@ export async function nativeSystemAudio({ core }) {
     await core.invoke('system_audio_start', { out });
     await ctx.resume();
     const [track] = dest.stream.getAudioTracks();
+    // Narrows the sound to the program behind a shared window (its HWND), so the voice chat,
+    // ours or Discord's, does not go back to the friend. On failure the whole PC minus the app
+    // comes back: the stream keeps sound, and the caller is told.
+    track.focusWindow = async (window) => {
+      try {
+        await core.invoke('system_audio_start', { out, window });
+      } catch (e) {
+        await core.invoke('system_audio_start', { out });
+        throw e;
+      }
+    };
     const stop = track.stop.bind(track);
     track.stop = () => {
       stop();
