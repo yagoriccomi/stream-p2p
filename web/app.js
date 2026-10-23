@@ -31,6 +31,10 @@ const st = {
   paused: false,
   nativeSources: null,
   nativePick: null,
+  audioSessions: null, // last list_audio_sessions() answer, while dlg-setup is open on Monitor
+  // Allowlist by process NAME (a PID is reused by nothing, by each run of the same program): a
+  // name missing here means "allowed" (today's behaviour, until the person unchecks it once).
+  audioAllow: store.get('audioAllow', {}),
   settings: { codec: store.get('codec', ''), latency: store.get('latency', 'auto') },
   latency: null, // { targetMs, recommendedMs, auto } from the server while a stream is on
 };
@@ -559,9 +563,48 @@ function openSetup({ swap = false } = {}) {
   renderSetup();
   $('dlg-setup').showModal();
   loadNativeSources();
+  startAudioPoll();
   if (!swap && !store.get('uploadMeasured', false)) measureUpload(); // first time on this device: measure instead of guessing
 }
 closeOnX($('dlg-setup'));
+$('dlg-setup').addEventListener('close', stopAudioPoll); // every way the dialog closes fires this
+
+// The app only (list_audio_sessions/pids are native commands): while the dialog is open and the
+// Monitor tab is the active one, poll for who has sound right now. No event exists for "a session
+// appeared/disappeared", and apps open/close rarely compared to the dialog being open.
+const AUDIO_POLL_MS = 2000;
+let audioPollTimer = null;
+function startAudioPoll() {
+  if (!tauri?.core?.invoke || audioPollTimer) return;
+  loadAudioSessions();
+  audioPollTimer = setInterval(loadAudioSessions, AUDIO_POLL_MS);
+}
+function stopAudioPoll() {
+  clearInterval(audioPollTimer);
+  audioPollTimer = null;
+}
+async function loadAudioSessions() {
+  if (st.src !== 'monitor') return; // Janela has no list; avoid a pointless native call
+  try {
+    st.audioSessions = await tauri.core.invoke('list_audio_sessions');
+    renderSetup();
+  } catch (e) {
+    log(`list_audio_sessions: ${e}`);
+  }
+}
+// One line per process with sound right now; a process that drops off the list keeps its saved
+// choice (by name: a PID is only good for the run that had it), so a brief hiccup never forgets it.
+function renderAudioApps() {
+  const sessions = st.audioSessions ?? [];
+  $('apps-hint').hidden = sessions.length > 0;
+  $('apps-list').replaceChildren(...sessions.map((s) => {
+    const on = st.audioAllow[s.name] ?? true; // unseen name: allowed, same as today's behaviour
+    const btn = h('button', { class: 'switch', type: 'button', role: 'switch', 'aria-checked': String(on) },
+      h('span', { text: s.name }), h('span', { class: 'track' }));
+    wireSwitch(btn, (allow) => { st.audioAllow = { ...st.audioAllow, [s.name]: allow }; store.set('audioAllow', st.audioAllow); });
+    return btn;
+  }));
+}
 function renderSetup() {
   for (const tab of $('src-tabs').children) {
     tab.setAttribute('aria-selected', String(tab.dataset.src === st.src));
@@ -591,8 +634,16 @@ function renderSetup() {
     : 'Informe o upload para calcular quantas pessoas recebem direto.';
   $('q-quota').classList.toggle('warn', upload > 0 && quota === 1 && others > 1);
   setSwitch($('q-audio'), st.audio);
+  // Only Monitor leaks other apps' sound; Janela already isolates by HWND (see focusWindowAudio).
+  $('apps-section').hidden = !tauri?.core?.invoke || st.src !== 'monitor';
+  renderAudioApps();
 }
-for (const tab of $('src-tabs').children) tab.addEventListener('click', () => { st.src = tab.dataset.src; store.set('src', st.src); renderSetup(); });
+for (const tab of $('src-tabs').children) tab.addEventListener('click', () => {
+  st.src = tab.dataset.src;
+  store.set('src', st.src);
+  renderSetup();
+  if (st.src === 'monitor') loadAudioSessions(); // switching into Monitor: show the list right away
+});
 $('q-upload').addEventListener('input', () => {
   uploadTouched = true;
   st.upload = Number($('q-upload').value) || st.upload;
