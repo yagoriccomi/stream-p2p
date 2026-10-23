@@ -281,6 +281,7 @@ export class VideoNet {
     const pcs = this.upstream ? [this.upstream] : [...this.downstream.values()];
     if (!pcs.length) return null;
     let bytes = 0, fps = 0, w = 0, h = 0, codec = '', rttMs = null;
+    let lost = 0, received = 0, freezes = 0, limit = 'none', encoder = null;
     for (const pc of pcs) {
       const report = await pc.getStats();
       report.forEach((r) => {
@@ -295,8 +296,18 @@ export class VideoNet {
         w = Math.max(w, r.frameWidth ?? 0);
         h = Math.max(h, r.frameHeight ?? 0);
         if (r.codecId) codec = report.get(r.codecId)?.mimeType?.split('/')[1] ?? codec;
+        lost += r.packetsLost ?? 0;
+        received += r.packetsReceived ?? 0;
+        freezes += r.freezeCount ?? 0;
+        if (r.qualityLimitationReason && r.qualityLimitationReason !== 'none') limit = r.qualityLimitationReason;
+        if (r.encoderImplementation) encoder = { name: r.encoderImplementation, hw: Boolean(r.powerEfficientEncoder) };
       });
     }
-    return { bytes, fps, w, h, codec, rttMs, children: this.downstream.size, viewer: Boolean(this.upstream) };
+    const capture = this.upstream ? null : this.stream?.getVideoTracks()[0]?.getSettings();
+    return {
+      bytes, fps, w, h, codec, rttMs, lost, received, freezes, limit, encoder,
+      capture: capture && { w: capture.width, h: capture.height, fps: Math.round(capture.frameRate ?? 0) },
+      children: this.downstream.size, viewer: Boolean(this.upstream),
+    };
   }
 }

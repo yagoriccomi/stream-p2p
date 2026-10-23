@@ -30,7 +30,7 @@ const st = {
   paused: false,
   nativeSources: null,
   nativePick: null,
-  settings: { codec: store.get('codec', ''), turn: store.get('turn', '') },
+  settings: { codec: store.get('codec', '') },
 };
 window.__app = st; // read by e2e
 
@@ -48,12 +48,8 @@ async function loadIce() {
 loadIce();
 setInterval(loadIce, ICE_REFRESH_MS);
 
-function getIce() {
-  const ice = [...serverIce];
-  const m = /^turns?:(?:([^:@]+):([^@]+)@)?(.+)$/.exec(st.settings.turn.trim());
-  if (m) ice.push({ urls: `${st.settings.turn.startsWith('turns') ? 'turns' : 'turn'}:${m[3]}`, username: m[1], credential: m[2] });
-  return ice;
-}
+// The server hands out STUN and short-lived TURN credentials (/ice.json): nothing to set up here.
+const getIce = () => [...serverIce];
 
 // ── socket with reconnect (T05: "Reconectando") ──
 let ws;
@@ -139,6 +135,9 @@ async function handle(msg) {
       return renderStage();
     case 'chat':
       return addChat(msg);
+    case 'srcStats':
+      st.origin = { ...msg.stats, at: performance.now() };
+      return;
     case 'peerLeft':
       return voice.drop(msg.id);
     case 'yourTurn':
@@ -396,7 +395,20 @@ function addChat({ name, text, at, system }) {
     : h('p', { class: 'msg' }, h('b', { text: name }), h('time', { text: time(at) }), h('br'), text));
   while (box.children.length > 300) box.firstElementChild.remove();
   if (nearBottom) box.scrollTop = box.scrollHeight;
+  if (!system && !sideShown()) $('f-unread').hidden = false;
 }
+
+// Chat and people panel: hidden on demand, so the stream gets the whole width. Remembered per device.
+const sideShown = () => !document.querySelector('.session').classList.contains('side-off');
+function showSide(on) {
+  document.querySelector('.session').classList.toggle('side-off', !on);
+  $('f-side').setAttribute('aria-pressed', String(on));
+  $('f-side').setAttribute('aria-label', on ? 'Esconder o chat' : 'Mostrar o chat');
+  if (on) $('f-unread').hidden = true;
+  store.set('sideShown', on);
+}
+showSide(store.get('sideShown', true));
+$('f-side').addEventListener('click', () => showSide(!sideShown()));
 
 // ── T01 · Início ──
 $('create-name').value = st.name;
@@ -902,14 +914,17 @@ function renderMatrix() {
 $('f-settings').addEventListener('click', () => {
   const caps = window.RTCRtpSender?.getCapabilities?.('video')?.codecs ?? [];
   const names = [...new Set(caps.map((c) => c.mimeType.split('/')[1].toLowerCase()).filter((c) => ['vp8', 'vp9', 'h264', 'av1', 'h265'].includes(c)))];
-  $('set-codec').replaceChildren(h('option', { value: '', text: 'Automático (o navegador escolhe)' }), ...names.map((n) => h('option', { value: n, text: n.toUpperCase() })));
+  // Automatic says what it lands on: the codec on air now, or the browser's first choice.
+  const live = window.__stats?.codec?.toUpperCase();
+  const auto = live ? `Automático (agora: ${live})` : names.length ? `Automático (normalmente ${names[0].toUpperCase()})` : 'Automático';
+  $('set-codec').replaceChildren(h('option', { value: '', text: auto }), ...names.map((n) => h('option', { value: n, text: n.toUpperCase() })));
   $('set-codec').value = names.includes(st.settings.codec) ? st.settings.codec : '';
   $('set-codec-hint').textContent = 'Vale para a próxima transmissão ou retransmissão. H.264 costuma usar a placa de vídeo; AV1 e VP9 dão mais qualidade por Mbps, com mais CPU.';
-  $('set-encoder').textContent = tauri
-    ? 'App: codificação por NVENC, AMF ou QuickSync quando a placa suporta.'
-    : 'Navegador: a placa de vídeo é usada só quando o navegador permite. O app usa NVENC, AMF ou QuickSync direto.';
+  const enc = window.__stats?.encoder;
+  $('set-encoder').textContent = enc
+    ? `Codificando agora com ${enc.name}, ${enc.hw ? 'na placa de vídeo' : 'no processador (CPU)'}.`
+    : 'Ao transmitir, aqui aparece se o vídeo é codificado na placa de vídeo ou no processador.';
   $('set-upload').value = st.upload;
-  $('set-turn').value = st.settings.turn;
   const yes = (ok, text) => h('li', { text: `${ok ? '✓' : '✗'} ${text}` });
   $('set-support').replaceChildren(
     yes(canCapture(), 'Transmitir a tela (getDisplayMedia)'),
@@ -923,10 +938,8 @@ $('f-settings').addEventListener('click', () => {
 closeOnX($('dlg-settings'));
 $('set-save').addEventListener('click', () => {
   st.settings.codec = $('set-codec').value;
-  st.settings.turn = $('set-turn').value.trim();
   st.upload = Number($('set-upload').value) || st.upload;
   store.set('codec', st.settings.codec);
-  store.set('turn', st.settings.turn);
   store.set('upload', st.upload);
   $('dlg-settings').close();
   notify('Configurações salvas neste navegador.', 'ok');
@@ -934,20 +947,61 @@ $('set-save').addEventListener('click', () => {
 
 // ── stats ──
 window.__stats = null; // read by e2e
-let last = { bytes: 0, at: 0 };
+let last = { bytes: 0, at: 0, lost: 0, received: 0 };
+const SRC_STALE_MS = 6000; // three missed reports: the origin column goes blank
+const LIMITS = { none: 'nenhum', cpu: 'CPU', bandwidth: 'rede', other: 'outro' };
+const rate = (kbps) => (kbps >= 1000 ? `${(kbps / 1000).toFixed(1)} Mbps` : `${kbps} kbps`);
+
+// Viewer's table: what leaves the presenter (sent by them every 2 s) next to what arrives here.
+function renderMetrics(s, kbps, lossPct) {
+  const src = st.origin && performance.now() - st.origin.at < SRC_STALE_MS ? st.origin : null;
+  const dash = '—';
+  const rows = [
+    ['Resolução', src ? `${src.w}×${src.h}` : dash, `${s.w}×${s.h}`, src && s.w < src.w],
+    ['Captura', src?.capture.w ? `${src.capture.w}×${src.capture.h} · ${src.capture.fps} fps` : dash, ''],
+    ['FPS', src ? String(src.fps) : dash, String(s.fps), src && s.fps < src.fps - 5],
+    ['Bitrate', src ? rate(src.kbps) : dash, rate(kbps), src && kbps < src.kbps * 0.7],
+    ['Codec', src?.codec || dash, s.codec || dash],
+    ['Limitado por', src ? LIMITS[src.limit] ?? src.limit : dash, ''],
+    ['Perda', '', `${lossPct.toFixed(1)}%`, lossPct >= 2],
+    ['Congelamentos', '', String(s.freezes), s.freezes > 0],
+    ['Atraso', '', s.rttMs === null ? `buffer ${video.jitterMs} ms` : `${Math.round(s.rttMs / 2)} ms rede + ${video.jitterMs} ms buffer`],
+  ];
+  $('metrics-body').replaceChildren(...rows.map(([name, from, here, worse]) => h('tr', {},
+    h('th', { scope: 'row', text: name }), h('td', { text: from }), h('td', { class: worse ? 'worse' : '', text: here }))));
+  const relayed = st.session?.presenterId && video.parentId && video.parentId !== st.session.presenterId;
+  const note = !src ? 'Esperando os números de quem transmite…' : relayed ? 'Chega por outra pessoa (retransmissor), que codifica o vídeo de novo.' : '';
+  $('metrics-note').textContent = note;
+  $('metrics-note').hidden = !note;
+}
+function showMetrics(on) {
+  $('metrics').hidden = !on;
+  $('m-toggle').setAttribute('aria-pressed', String(on));
+  store.set('metricsShown', on);
+}
+$('m-toggle').addEventListener('click', () => showMetrics($('metrics').hidden));
 setInterval(async () => {
   const s = await video.stats();
   if (!s) {
     $('s-stats').textContent = '';
+    $('m-toggle').hidden = $('metrics').hidden = true;
+    st.origin = null;
     window.__stats = null;
     reportStatus(); // also the heartbeat: --status calls the app closed after 10 s of silence
     return;
   }
   const now = performance.now();
   const kbps = last.at ? Math.max(0, Math.round(((s.bytes - last.bytes) * 8) / (now - last.at))) : 0;
-  last = { bytes: s.bytes, at: now };
+  const lossPct = (s.lost - last.lost) > 0 ? (100 * (s.lost - last.lost)) / Math.max(1, s.lost - last.lost + s.received - last.received) : 0;
+  last = { bytes: s.bytes, at: now, lost: s.lost, received: s.received };
+  if (!s.viewer && s.children) send({ type: 'srcStats', capture: s.capture, w: s.w, h: s.h, fps: s.fps, kbps: Math.round(kbps / s.children), codec: s.codec, limit: s.limit });
+  $('m-toggle').hidden = !s.viewer;
+  if (s.viewer) {
+    if ($('m-toggle').getAttribute('aria-pressed') !== String(store.get('metricsShown', false))) showMetrics(store.get('metricsShown', false));
+    if (!$('metrics').hidden) renderMetrics(s, kbps, lossPct);
+  } else $('metrics').hidden = true;
   if (s.rttMs !== null) send({ type: 'hopRtt', ms: Math.round(s.rttMs) }); // server turns it into buffers
-  window.__stats = { kbps, fps: s.fps, w: s.w, h: s.h, codec: s.codec, jitterMs: video.jitterMs, rttMs: s.rttMs, parent: video.parentId };
+  window.__stats = { kbps, fps: s.fps, w: s.w, h: s.h, codec: s.codec, encoder: s.encoder, jitterMs: video.jitterMs, rttMs: s.rttMs, parent: video.parentId };
   reportStatus();
   const route = s.viewer ? `buffer ${video.jitterMs} ms` : `${s.children} direto(s)`;
   $('s-stats').textContent = `${s.w}×${s.h} · ${s.fps} fps · ${kbps} kbps${s.codec ? ` · ${s.codec}` : ''} · ${route}`;

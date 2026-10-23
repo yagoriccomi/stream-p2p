@@ -172,7 +172,18 @@
       <button class="btn primary" type="button" id="req-yes">Passar a vez</button>
       <button class="btn" type="button" id="req-no">Agora não</button>
     </div>
-    <div class="stage-meta"><span class="tag" id="s-who" hidden></span></div>
+    <div class="stage-meta">
+      <span class="tag" id="s-who" hidden></span>
+      <button class="tag" type="button" id="m-toggle" aria-pressed="false" aria-controls="metrics" hidden><svg class="i sm"><use href="#i-signal"/></svg>Métricas</button>
+    </div>
+    <!-- What leaves the presenter vs what arrives here (viewers only) -->
+    <div class="metrics" id="metrics" hidden>
+      <table>
+        <thead><tr><th scope="col"><span class="sr-only">Métrica</span></th><th scope="col">Origem</th><th scope="col">Chega</th></tr></thead>
+        <tbody id="metrics-body"></tbody>
+      </table>
+      <p class="small muted" id="metrics-note" hidden></p>
+    </div>
     <video id="video" autoplay playsinline></video>
     <div class="overlay" id="ov-empty">
       <svg class="i" style="width: 48px; height: 48px; color: var(--muted)"><use href="#i-screen-share"/></svg>
@@ -194,7 +205,7 @@
     </div>
   </section>
 
-  <aside class="side" data-tab="chat">
+  <aside class="side" id="side" data-tab="chat">
     <div class="seg tabs" role="tablist" aria-label="Painel">
       <button role="tab" type="button" data-tab="chat" aria-selected="true">Chat</button>
       <button role="tab" type="button" data-tab="people" aria-selected="false">Pessoas <span id="people-count"></span></button>
@@ -220,6 +231,7 @@
     <button class="btn" type="button" id="f-audio"><svg class="i"><use href="#i-volume"/></svg><span class="label-sm">Áudio</span></button>
     <button class="btn" type="button" id="f-stream"><svg class="i"><use href="#i-screen-share"/></svg><span>Transmitir</span></button>
     <span class="grow"></span>
+    <button class="btn toggle" type="button" id="f-side" aria-pressed="true" aria-controls="side"><svg class="i"><use href="#i-chat"/></svg><span class="label-sm">Chat</span><span class="unread" id="f-unread" hidden></span></button>
     <button class="btn icon" type="button" id="f-full" aria-label="Tela cheia"><svg class="i"><use href="#i-fullscreen"/></svg></button>
     <button class="btn icon" type="button" id="f-settings" aria-label="Configurações"><svg class="i"><use href="#i-settings"/></svg></button>
     <button class="btn danger" type="button" id="f-leave"><svg class="i"><use href="#i-leave"/></svg><span class="label-sm">Sair</span></button>
@@ -308,9 +320,8 @@
     </div>
     <div class="section">
       <h3>Rede</h3>
-      <label class="field">Upload padrão (Mbps)<input type="number" id="set-upload" min="1" max="1000" value="20"></label>
-      <label class="field">Servidor TURN (opcional)<input type="text" id="set-turn" placeholder="turn:usuario:senha@host:3478" autocomplete="off" spellcheck="false"></label>
-      <p class="small muted">Sem TURN, quem está atrás de NAT simétrico pode não conectar fora da rede local.</p>
+      <label class="field">Velocidade de envio da sua internet (Mbps)<input type="number" id="set-upload" min="1" max="1000" value="20" aria-describedby="set-upload-hint"></label>
+      <p class="small muted" id="set-upload-hint">É o "upload" do teste de velocidade. Decide quantas pessoas recebem o vídeo direto de você: cada uma leva uns 8 Mbps em 1080p60. Quem não cabe recebe de outra pessoa, que repassa. Dá para medir na hora de transmitir, no botão Medir.</p>
     </div>
     <div class="section">
       <h3>O que este navegador suporta</h3>

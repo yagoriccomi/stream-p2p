@@ -325,6 +325,17 @@ function handle(id, msg) {
       if (s?.room && setHopRtt(s.room, id, ms)) pushJitter(s); // a late report after the stream ended is harmless
       return;
     }
+    case 'srcStats': {
+      // What leaves the presenter, so viewers can compare it with what arrives.
+      if (inSession().presenterId !== id) return; // a late report after the stream ended is harmless
+      const n = (v, max) => (Number.isFinite(Number(v)) ? Math.min(max, Math.max(0, Math.round(Number(v)))) : 0);
+      const stats = {
+        capture: { w: n(msg.capture?.w, 8192), h: n(msg.capture?.h, 8192), fps: n(msg.capture?.fps, 240) },
+        w: n(msg.w, 8192), h: n(msg.h, 8192), fps: n(msg.fps, 240), kbps: n(msg.kbps, 1e6),
+        codec: String(msg.codec ?? '').slice(0, 16), limit: String(msg.limit ?? '').slice(0, 16),
+      };
+      return broadcast(s, { type: 'srcStats', stats, at: Date.now() }, id);
+    }
     case 'signal':
     case 'vsignal': {
       // only relay between members of the same session

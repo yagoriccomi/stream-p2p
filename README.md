@@ -15,6 +15,8 @@ npm start    # http://localhost:3000  (PORT para mudar)
 3. **Sessão (T03):**
    - Qualquer pessoa clica **Transmitir**. Só uma transmite por vez; as outras clicam **Pedir a vez**.
    - Na tela de fonte e qualidade (T02), escolha 720p30, 1080p60 ou 1440p60 e informe seu upload.
+   - O botão **Chat**, no rodapé, esconde o chat e a lista de pessoas, e o vídeo ocupa a largura toda. Uma bolinha avisa de mensagem nova.
+   - Quem assiste abre **Métricas**, sobre o vídeo: o que sai de quem transmite (captura, resolução, fps, bitrate, codec e o que limita, CPU ou rede) ao lado do que chega (o mesmo, mais perda, congelamentos e atraso).
 4. **Quem transmite (T04)** troca a fonte e a qualidade ao vivo, pausa, liga ou desliga o áudio e passa a vez sem derrubar ninguém.
 5. **Áudio e papéis (T10):**
    - O áudio da transmissão e a voz têm volumes separados, e há volume por pessoa, escolha de dispositivos e aperte-para-falar (V).
@@ -63,7 +65,7 @@ npm start    # http://localhost:3000  (PORT para mudar)
     - `NETSIM_START_IN=bad` (ou `badQueue`) começa a transmissão numa rede ruim, para medir o início quando o upload medido é otimista;
     - `NETSIM_DEBUG=1` mostra o log das páginas.
   - A carga da máquina contamina os números. Rode `base` junto (`NETSIM_ONLY=base,bad`) e descarte a rodada se o `base` não sair com jitter RTP perto de 0 e sem congelamentos.
-- **Manual, LAN:** quem transmite abre em `localhost`, porque a captura exige contexto seguro. Os amigos abrem `http://<seu-IP>:3000/?code=<código>`. Fora da LAN, use o TURN do servidor (abaixo) ou um TURN pessoal em **Configurações** (T11).
+- **Manual, LAN:** quem transmite abre em `localhost`, porque a captura exige contexto seguro. Os amigos abrem `http://<seu-IP>:3000/?code=<código>`. Fora da LAN, vale o TURN do servidor (abaixo).
 
 ## TURN para fora da LAN
 O servidor entrega a lista de ICE em `/ice.json`: sempre o STUN do Google e, se configurado, um TURN. Sem TURN, quem está atrás de NAT simétrico (rede móvel, empresa, CGNAT de operadora) não recebe vídeo nem voz.
