@@ -137,6 +137,7 @@
         <button type="button" class="voice-opt" role="radio" data-voice="listen" aria-checked="false"><b>Só ouvindo</b><span class="small muted">Nenhuma permissão agora. Liga o microfone quando quiser.</span></button>
       </div>
       <button class="btn primary big" type="submit">Entrar</button>
+      <a class="btn" id="join-app" href="#" hidden>Abrir no app do Windows</a>
       <button class="btn ghost" type="button" id="join-back">Voltar</button>
     </form>
     <aside class="card">
@@ -283,7 +284,7 @@
     <div class="dlg-head"><h2 id="audio-h">Áudio e sessão</h2><button class="btn ghost icon" type="button" data-close aria-label="Fechar"><svg class="i"><use href="#i-close"/></svg></button></div>
     <div class="section" style="border: 0; padding: 0">
       <h3>Mixer</h3>
-      <div class="mix-row"><span class="name">Transmissão</span><input type="range" min="0" max="100" value="50" id="mx-stream" aria-label="Volume da transmissão"><output for="mx-stream">50</output><button class="btn icon" type="button" id="mx-stream-mute" aria-pressed="false" aria-label="Silenciar transmissão"><svg class="i"><use href="#i-volume"/></svg></button></div>
+      <div class="mix-row"><span class="name">Transmissão</span><input type="range" min="0" max="400" value="50" id="mx-stream" aria-label="Volume da transmissão"><output for="mx-stream">50</output><button class="btn icon" type="button" id="mx-stream-mute" aria-pressed="false" aria-label="Silenciar transmissão"><svg class="i"><use href="#i-volume"/></svg></button></div>
       <div class="mix-row"><span class="name">Voz da sessão</span><input type="range" min="0" max="100" value="50" id="mx-voice" aria-label="Volume da voz"><output for="mx-voice">50</output><button class="btn icon" type="button" id="mx-voice-mute" aria-pressed="false" aria-label="Silenciar voz"><svg class="i"><use href="#i-volume"/></svg></button></div>
     </div>
     <div class="section">
