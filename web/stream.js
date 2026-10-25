@@ -277,19 +277,23 @@ export class VideoNet {
     Object.assign(this, { upstream: null, parentId: null, stream: null, presenting: false });
   }
 
+  // routes: how each connection travels, e.g. { 'TURN turn.cloudflare.com (udp)': 1, 'direto': 2 }.
   async stats() {
     const pcs = this.upstream ? [this.upstream] : [...this.downstream.values()];
     if (!pcs.length) return null;
     let bytes = 0, fps = 0, w = 0, h = 0, codec = '', rttMs = null;
     let lost = 0, received = 0, freezes = 0, limit = 'none', encoder = null;
     let jbMin = 0, jbCount = 0, rtpJitter = 0; // what our network asks of the jitter buffer
+    const routes = {};
     for (const pc of pcs) {
       const report = await pc.getStats();
       report.forEach((r) => {
-        // RTT of the hop from our parent: the selected pair of the upstream connection.
-        if (pc === this.upstream && r.type === 'transport' && r.selectedCandidatePairId) {
+        if (r.type === 'transport' && r.selectedCandidatePairId) {
+          const via = route(report, r.selectedCandidatePairId);
+          if (via) routes[via] = (routes[via] ?? 0) + 1;
+          // RTT of the hop from our parent: the selected pair of the upstream connection.
           const rtt = report.get(r.selectedCandidatePairId)?.currentRoundTripTime;
-          if (rtt !== undefined) rttMs = rtt * 1000;
+          if (pc === this.upstream && rtt !== undefined) rttMs = rtt * 1000;
         }
         if (r.kind !== 'video' || (r.type !== 'inbound-rtp' && r.type !== 'outbound-rtp')) return;
         bytes += r.bytesReceived ?? r.bytesSent ?? 0;
@@ -311,9 +315,23 @@ export class VideoNet {
     }
     const capture = this.upstream ? null : this.stream?.getVideoTracks()[0]?.getSettings();
     return {
-      bytes, fps, w, h, codec, rttMs, lost, received, freezes, limit, encoder, jbMin, jbCount, rtpJitter,
+      bytes, fps, w, h, codec, rttMs, lost, received, freezes, limit, encoder, jbMin, jbCount, rtpJitter, routes,
       capture: capture && { w: capture.width, h: capture.height, fps: Math.round(capture.frameRate ?? 0) },
       children: this.downstream.size, viewer: Boolean(this.upstream),
     };
   }
+}
+
+// Which path the selected candidate pair takes: our own TURN relay (the url says which server),
+// the other side's relay, or straight peer to peer (host/srflx/prflx).
+function route(report, pairId) {
+  const pair = report.get(pairId);
+  const local = report.get(pair?.localCandidateId), remote = report.get(pair?.remoteCandidateId);
+  if (!local || !remote) return null;
+  if (local.candidateType === 'relay') {
+    const host = /^turns?:(\[[^\]]+\]|[^:?]+)/.exec(local.url ?? '')?.[1] ?? '?';
+    const proto = local.relayProtocol ?? local.protocol;
+    return `TURN ${host}${proto ? ` (${proto})` : ''}`;
+  }
+  return remote.candidateType === 'relay' ? 'TURN do outro lado' : 'direto';
 }

@@ -1093,7 +1093,9 @@ function renderMetrics(s, kbps, lossPct) {
   const src = mine ? { ...s, kbps: Math.round(kbps / Math.max(1, s.children)) }
     : st.origin && performance.now() - st.origin.at < SRC_STALE_MS ? st.origin : null;
   const dash = '—';
+  const via = Object.entries(s.routes).map(([k, n]) => (n > 1 ? `${k} ×${n}` : k)).join(', ') || dash;
   const rows = [
+    ['Conexão', mine ? via : '', via],
     ['Resolução', src ? `${src.w}×${src.h}` : dash, `${s.w}×${s.h}`, src && s.w < src.w],
     ['Captura', src?.capture.w ? `${src.capture.w}×${src.capture.h} · ${src.capture.fps} fps` : dash, ''],
     ['FPS', src ? String(src.fps) : dash, String(s.fps), src && s.fps < src.fps - 5],
@@ -1138,7 +1140,7 @@ setInterval(async () => {
   if ($('m-toggle').getAttribute('aria-pressed') !== String(store.get('metricsShown', false))) showMetrics(store.get('metricsShown', false));
   if (!$('metrics').hidden) renderMetrics(s, kbps, lossPct);
   if (s.rttMs !== null) send({ type: 'hopRtt', ms: Math.round(s.rttMs), ...(needMs !== null && { needMs }) }); // server turns it into buffers
-  window.__stats = { kbps, fps: s.fps, w: s.w, h: s.h, codec: s.codec, encoder: s.encoder, jitterMs: video.jitterMs, rttMs: s.rttMs, needMs, parent: video.parentId };
+  window.__stats = { kbps, fps: s.fps, w: s.w, h: s.h, codec: s.codec, encoder: s.encoder, jitterMs: video.jitterMs, rttMs: s.rttMs, needMs, routes: s.routes, parent: video.parentId };
   reportStatus();
   const route = s.viewer ? `buffer ${video.jitterMs} ms` : `${s.children} direto(s)`;
   $('s-stats').textContent = `${s.w}×${s.h} · ${s.fps} fps · ${kbps} kbps${s.codec ? ` · ${s.codec}` : ''} · ${route}`;
