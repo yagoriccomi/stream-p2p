@@ -225,6 +225,15 @@ export function moderate(s, actorId, action, targetId) {
   }
 }
 
+// The crown moves without asking anyone (owner link of the Discord bot). The former owner keeps
+// session powers as a moderator, like transferOwner.
+export function crown(s, id) {
+  const prev = s.members.get(s.ownerId);
+  if (prev) prev.role = 'mod';
+  member(s, id).role = 'owner';
+  s.ownerId = id;
+}
+
 export function updateSettings(s, actorId, patch) {
   const keys = Object.keys(patch ?? {});
   if (!keys.length || keys.some((k) => !(k in s.settings) || typeof patch[k] !== 'boolean')) {
@@ -244,6 +253,8 @@ export function snapshot(s) {
     grant: s.grant && { id: s.grant.id, until: s.grant.until },
     queue: [...s.queue],
     settings: { ...s.settings },
+    suggestedMode: s.suggestedMode ?? null, // /stream criar qualidade:
+
     members: [...s.members.values()].map(({ id, name, role, mic }) => ({ id, name, role, mic })),
   };
 }

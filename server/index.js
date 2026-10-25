@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { WebSocketServer } from 'ws';
 import { createRoom, addViewer, removeViewer, jitterTargets, setHopRtt, setHopNeed, retarget, autoTarget, validLatency, LATENCY, JITTER_STEP_MS, MODES } from './topology.js';
 import * as S from './session.js';
-import { handleInteraction } from './discord.js';
+import { handleInteraction, joinButton } from './discord.js';
 import { iceSource } from './ice.js';
 
 const PORT = Number(process.env.PORT) || 3000;
@@ -87,6 +87,33 @@ async function speedtest(req, res) {
 
 const ice = iceSource();
 
+// Bot REST calls (live notice in the channel, DM). Optional: without DISCORD_BOT_TOKEN they are skipped.
+async function discordApi(path, body) {
+  const token = process.env.DISCORD_BOT_TOKEN;
+  if (!token) return null;
+  const res = await fetch(`https://discord.com/api/v10${path}`, {
+    method: 'POST',
+    headers: { authorization: `Bot ${token}`, 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`Discord ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  return res.json();
+}
+const warn = (what) => (e) => console.warn(`discord ${what}: ${e.message}`);
+function discordDm(userId, message) {
+  discordApi('/users/@me/channels', { recipient_id: userId })
+    .then((ch) => ch && discordApi(`/channels/${ch.id}/messages`, message))
+    .catch(warn('dm'));
+}
+function announceLive(s) {
+  if (!s.discord?.channel) return;
+  const name = s.members.get(s.presenterId)?.name;
+  discordApi(`/channels/${s.discord.channel}/messages`, {
+    content: `🔴 **${name}** está ao vivo na sessão de ${s.discord.authorName}.`,
+    components: [joinButton(s.code)],
+  }).catch(warn('ao vivo'));
+}
+
 const http = createServer(async (req, res) => {
   const path = new URL(req.url, 'http://x').pathname;
   if (path === '/health') return res.end('ok'); // [#82]
@@ -103,7 +130,18 @@ const http = createServer(async (req, res) => {
       publicKey: process.env.DISCORD_PUBLIC_KEY,
       baseUrl: base,
       // The bot "holds" the session until the first real person arrives; nobody sees this placeholder.
-      createSession: () => Object.assign(createSessionFor(`discord:${randomUUID()}`, 'Stream P2P (bot)', null), { botPending: true }),
+      createSession: ({ owner, ...meta }) => Object.assign(createSessionFor(`discord:${randomUUID()}`, 'Stream P2P (bot)', null), {
+        botPending: true,
+        suggestedMode: meta.mode,
+        discord: { ...meta, ownerToken: owner ? randomUUID() : null, ownerName: owner ? meta.authorName : null },
+      }),
+      sessionsIn: (scope) => [...sessions.values()].filter((s) => s.discord?.scope === scope).reverse().map((s) => ({
+        code: s.code, ...s.discord,
+        members: s.botPending ? 0 : s.members.size,
+        presenter: s.presenterId && s.members.get(s.presenterId)?.name,
+      })),
+      endSession: (code, by) => sessions.has(code) && endSession(sessions.get(code), `${by} encerrou a sessão pelo Discord.`),
+      dm: (userId, message) => discordDm(userId, message),
     });
     res.writeHead(out.status, { 'content-type': 'application/json' });
     return res.end(JSON.stringify(out.body ?? {}));
@@ -252,6 +290,12 @@ function handle(id, msg) {
         S.removeMember(target, target.ownerId);
         target.botPending = false;
       }
+      // The /stream criar author's link carries a one-time token: they take the crown on arrival.
+      const ownerToken = target.discord?.ownerToken;
+      if (ownerToken && msg.owner === ownerToken) {
+        target.discord.ownerToken = null;
+        if (target.ownerId !== id) S.crown(target, id);
+      }
       client.code = target.code;
       if (target.room) attachViewer(target, id);
       return publish(target);
@@ -277,6 +321,7 @@ function handle(id, msg) {
       if (!(upload > 0)) throw new S.HttpError(400, 'Informe o upload em Mbps (maior que zero).');
       S.startStream(inSession(), id, { mode: msg.mode, audio: msg.audio !== false, source: msg.source ?? 'monitor' });
       beginTopology(s, id, msg.mode, upload, parseLatency(msg.latency));
+      announceLive(s);
       return publish(s);
     }
     case 'streamState': {

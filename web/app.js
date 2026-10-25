@@ -210,6 +210,7 @@ function onSession(s) {
     st.rejoin = null;
     st.auto = false; // only the session the command line asked for skips the mic prompt
     store.set('name', myName());
+    if (MODES[s.suggestedMode]) st.mode = s.suggestedMode; // this session only; not saved
     history.replaceState(null, '', `/?code=${s.code}`);
     screen('session');
     $('dlg-rename').close();
@@ -451,6 +452,12 @@ function openJoin(code, name) {
   fieldError('join-name', 'join-name-err');
   screen('join');
   ($('join-code').value ? $('join-name') : $('join-code')).focus();
+  // In a Windows browser, a link with the code hands the session to the installed app.
+  const link = new URL('streamp2p://join/');
+  if (code) link.searchParams.set('code', code);
+  if (name) link.searchParams.set('name', name);
+  $('join-app').href = link.href;
+  $('join-app').hidden = Boolean(tauri) || !code || !/Windows/.test(navigator.userAgent);
 }
 wireEye(document.querySelector('[data-eye="join-code"]'), $('join-code'));
 for (const opt of document.querySelectorAll('.voice-opt')) {
@@ -475,7 +482,7 @@ $('join-form').addEventListener('submit', async (e) => {
   st.name = name;
   if (st.voicePref === 'mic' && !voice.raw && !st.auto) await voice.enableMic();
   st.pending = 'join';
-  send({ type: 'join', code, name, device: st.device });
+  send({ type: 'join', code, name, device: st.device, owner: params.get('owner') ?? undefined });
 });
 
 // ── T03 · Sessão ──

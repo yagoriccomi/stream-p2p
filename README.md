@@ -101,7 +101,19 @@ Crie um app em https://discord.com/developers e defina estas variáveis:
 - `DISCORD_PUBLIC_KEY`: a chave pública do app.
 - `PUBLIC_URL`: a URL pública deste servidor.
 
-Aponte **Interactions Endpoint URL** para `PUBLIC_URL/discord/interactions` e registre o comando `/stream criar`. O bot posta um botão **Entrar**, que gera um link pessoal já com o apelido que a pessoa usa no servidor.
+Aponte **Interactions Endpoint URL** para `PUBLIC_URL/discord/interactions` e registre o comando `/stream criar` uma vez: com `DISCORD_ID` (Application ID) e `DISCORD_BOT_TOKEN` (aba Bot) no `.env`, rode `node --env-file=.env server/discord-register.js`. O bot posta um botão **Entrar**, que gera um link pessoal já com o apelido que a pessoa usa no servidor.
+
+| Comando | O que faz |
+|---|---|
+| `/stream criar [dono] [qualidade]` | Abre a sessão. Quem cria vira dono (o link dele leva um token de uso único); com `dono: False`, vira quem entra primeiro. `qualidade` pré-seleciona o modo em T02. |
+| `/stream status` | Sessões abertas no servidor: quantas pessoas e quem transmite |
+| `/stream convite` | Posta de novo o botão da última sessão |
+| `/stream encerrar` | Encerra a última sessão que a pessoa criou ali |
+| `/stream app` | Link de `/download` |
+| `/stream help` | Ajuda |
+| Clique direito › Apps › **Chamar para stream** | Menciona a pessoa com o botão e manda o link por mensagem privada |
+
+Com `DISCORD_BOT_TOKEN` também no Render, o bot avisa no canal quando alguém começa a transmitir ("🔴 Fulano está ao vivo") e manda a mensagem privada do **Chamar para stream**. Sem o token, esses dois são pulados. Para postar no canal, o bot precisa estar no servidor: instale com `scope=bot+applications.commands`.
 
 ## App para Windows (T08, T12–T14)
 O app fica em `app/` e é feito com Tauri 2. A janela carrega o mesmo site e acrescenta:

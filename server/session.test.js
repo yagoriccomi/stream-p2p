@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   createSession, addMember, rename, removeMember, startStream, stopStream, requestTurn, passTurn,
-  moderate, updateSettings, newCode, normalizeCode, CAN, HttpError, MAX_MEMBERS, TURN_GRANT_MS,
+  moderate, updateSettings, crown, newCode, normalizeCode, CAN, HttpError, MAX_MEMBERS, TURN_GRANT_MS,
 } from './session.js';
 
 const code = (fn) => {
@@ -135,4 +135,12 @@ test('presenter leaving clears the stream', () => {
   startStream(s, 'bruno', {}, 0);
   removeMember(s, 'bruno');
   assert.equal(s.presenterId, null);
+});
+
+test('crown makes someone owner and the former owner a moderator', () => {
+  const s = room();
+  crown(s, 'dani');
+  assert.equal(s.ownerId, 'dani');
+  assert.equal(s.members.get('dani').role, 'owner');
+  assert.equal(s.members.get('ana').role, 'mod');
 });

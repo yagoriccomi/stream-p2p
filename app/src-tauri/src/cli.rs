@@ -24,6 +24,8 @@ Consultar (não abre janela):
 
 Códigos de saída: 0 ok · 2 argumento inválido · 3 app não está aberto";
 
+pub const SCHEME: &str = "streamp2p";
+
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Query {
     Help,
@@ -112,6 +114,15 @@ pub fn parse(argv: impl IntoIterator<Item = String>) -> Result<Cli, String> {
             "--copy-invite" => cli.remote.push(Remote::CopyInvite),
             "--leave" => cli.remote.push(Remote::Leave),
             "--quit" => cli.remote.push(Remote::Quit),
+            // Link "Abrir no app" of the web join screen (scheme registered by hooks.nsh).
+            // ponytail: the server is not taken from the link, so a link can't repoint the app;
+            // the app opens the code on its own server.
+            link if link.starts_with(&format!("{SCHEME}:")) => {
+                let url = tauri::Url::parse(link).map_err(|_| format!("link inválido: {link}"))?;
+                let get = |k: &str| url.query_pairs().find(|(q, _)| q == k).map(|(_, v)| v.trim().to_string()).filter(|v| !v.is_empty());
+                join = Some(valid_code(&get("code").ok_or("link sem código")?)?);
+                name = get("name");
+            }
             other => return Err(format!("argumento desconhecido: {other}")),
         }
     }
@@ -186,6 +197,16 @@ mod tests {
         assert_eq!(cli.open, Some(Open::Join { code: "abcd-ef".into(), name: Some("Bia".into()) }));
         assert!(p(&["--join", "abc"]).is_err());
         assert!(p(&["--join"]).is_err());
+    }
+
+    #[test]
+    fn web_link_joins_with_the_name_and_ignores_a_server() {
+        let cli = p(&["streamp2p://join/?code=ABCD-EF&name=Z%C3%A9&server=http://evil"]).unwrap();
+        assert_eq!(cli.open, Some(Open::Join { code: "abcd-ef".into(), name: Some("Zé".into()) }));
+        assert_eq!(cli.server, None);
+        assert_eq!(p(&["streamp2p://join/?code=abcd-ef"]).unwrap().open, Some(Open::Join { code: "abcd-ef".into(), name: None }));
+        assert!(p(&["streamp2p://join/?code=nope"]).is_err());
+        assert!(p(&["streamp2p://join/"]).is_err());
     }
 
     #[test]

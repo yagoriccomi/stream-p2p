@@ -21,4 +21,13 @@
   ${EndIf}
   Pop $1
   Pop $0
+  ; Link "Abrir no app" da tela de entrar da web: streamp2p://join/?code=...&name=... (cli.rs).
+  WriteRegStr HKCU "Software\Classes\streamp2p" "" "URL:Stream P2P"
+  WriteRegStr HKCU "Software\Classes\streamp2p" "URL Protocol" ""
+  WriteRegStr HKCU "Software\Classes\streamp2p\DefaultIcon" "" "$INSTDIR\stream-p2p.exe,0"
+  WriteRegStr HKCU "Software\Classes\streamp2p\shell\open\command" "" '"$INSTDIR\stream-p2p.exe" "%1"'
+!macroend
+
+!macro NSIS_HOOK_POSTUNINSTALL
+  DeleteRegKey HKCU "Software\Classes\streamp2p"
 !macroend
