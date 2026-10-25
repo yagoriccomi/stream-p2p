@@ -1,0 +1,346 @@
+<!doctype html>
+<!--
+  Checkpoint de raciocínio (skill design-de-interface-projeto):
+  - Minimalista? Cada layout usa só os elementos que a composição exige — sem ornamento (KISS [#7]).
+    Avatares, chat e controles são o MESMO componente reusado em 5 arranjos (coesão alta [#13]).
+  - Funciona no único tema (dark-only, ver web/styles.css linha 1)? Sim — toda cor vem de
+    var(--token); nenhum hex cravado em regra nenhuma [#3][#6]. Não foi criado tema claro.
+  - Erro simulado avisa o usuário? Sim (layout 7, botão "Simular erro de conexão"): loga
+    console.warn estruturado e mostra toast .err com mensagem limpa, nunca stack trace [#93].
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Stream P2P — Layouts Discord (6–10)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  color-scheme: dark;
+  --bg:#0a0a0b; --surface:#141416; --raised:#1c1c20; --border:#2a2a30; --divider:#23232a; --input:#52525b;
+  --text:#f2f2f4; --muted:#a1a1aa; --chat:#c9c9d0;
+  --violet:#7f00ff; --violet-border:#9a3dff; --violet-text:#b266ff; --violet-hover:#cc99ff; --violet-soft:#22103d;
+  --live:#2ee59d; --error:#ff4d4d; --warn:#ffb020;
+  --r:12px; --r-lg:20px;
+  --font-title: Archivo, 'Arial Narrow', system-ui, sans-serif;
+  --font: Inter, system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin:0; min-height:100%; background:var(--bg); color:var(--text); font:15px/1.4 var(--font); }
+[hidden] { display:none !important; }
+h1,h2,h3 { font-family:var(--font-title); font-stretch:75%; text-transform:uppercase; margin:0; line-height:1.1; }
+p { margin:0; }
+.muted { color:var(--muted); }
+.small { font-size:12px; }
+svg.i { width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.75; stroke-linecap:round; stroke-linejoin:round; flex:none; }
+svg.i.sm { width:16px; height:16px; }
+button, .btn { font:inherit; color:inherit; cursor:pointer; }
+.btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:44px; padding:0 16px; border-radius:var(--r); border:1px solid var(--border); background:var(--raised); color:var(--text); font-weight:600; white-space:nowrap; }
+.btn:hover { border-color:var(--input); }
+.btn.primary { background:var(--violet); border-color:var(--violet); color:#fff; }
+.btn.primary:hover { background:#8f1fff; }
+.btn.danger { background:transparent; border-color:var(--error); color:var(--error); }
+.btn.icon { width:44px; padding:0; }
+.avatar { width:40px; height:40px; border-radius:50%; background:var(--raised); display:grid; place-items:center; font-weight:700; font-size:14px; flex:none; color:var(--violet-hover); border:2px solid var(--border); position:relative; }
+.avatar.speaking { border-color:var(--live); box-shadow:0 0 0 3px rgba(46,229,157,.25); animation:pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{ box-shadow:0 0 0 3px rgba(46,229,157,.25); } 50%{ box-shadow:0 0 0 6px rgba(46,229,157,.12); } }
+.avatar .mute-badge { position:absolute; right:-4px; bottom:-4px; width:18px; height:18px; border-radius:50%; background:var(--error); display:grid; place-items:center; border:2px solid var(--bg); }
+.avatar .mute-badge svg { width:11px; height:11px; stroke:#fff; stroke-width:2.2; }
+.badge { display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:700; letter-spacing:.04em; padding:3px 9px; border-radius:999px; text-transform:uppercase; }
+.badge.live { background:rgba(46,229,157,.12); color:var(--live); }
+.badge.live::before { content:''; width:7px; height:7px; border-radius:50%; background:var(--live); }
+.msg { font-size:13px; color:var(--chat); overflow-wrap:anywhere; }
+.msg b { color:var(--text); font-weight:600; }
+.msg time { color:var(--muted); font-size:11px; margin-left:6px; }
+.msg.system { color:var(--muted); font-style:italic; }
+
+/* ── top chrome: layout switcher + device toggle ── */
+#top { position:sticky; top:0; z-index:40; background:var(--surface); border-bottom:1px solid var(--border); padding:10px 14px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+#top h1 { font-size:15px; }
+#picker { display:flex; gap:6px; flex-wrap:wrap; }
+#picker button { min-height:38px; padding:0 12px; border-radius:9px; border:1px solid var(--border); background:var(--raised); color:var(--muted); font-weight:600; font-size:12.5px; }
+#picker button[aria-pressed="true"] { background:var(--violet-soft); border-color:var(--violet-border); color:var(--text); }
+#device { margin-left:auto; display:flex; gap:4px; padding:3px; background:var(--bg); border:1px solid var(--border); border-radius:10px; }
+#device button { min-height:32px; padding:0 12px; border:0; border-radius:7px; background:transparent; color:var(--muted); font-weight:600; font-size:12.5px; }
+#device button[aria-pressed="true"] { background:var(--raised); color:var(--text); }
+
+#stageWrap { display:flex; justify-content:center; padding:24px 14px 60px; }
+.preview { width:100%; max-width:1100px; border:1px solid var(--border); border-radius:var(--r-lg); overflow:hidden; background:#000; transition:max-width .2s; }
+.preview.mobile { max-width:375px; }
+[data-layout] { display:none; }
+[data-layout].on { display:block; }
+
+/* ── 6: Stage Channel ── */
+.stage6 { background:var(--bg); min-height:560px; display:flex; flex-direction:column; }
+.stage6 .top-bar { padding:10px 14px; border-bottom:1px solid var(--divider); display:flex; gap:10px; align-items:center; }
+.stage6 .center { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; }
+.stage6 .big-avatar { width:120px; height:120px; border-radius:50%; background:var(--raised); display:grid; place-items:center; font-size:40px; font-weight:800; color:var(--violet-hover); border:4px solid var(--live); box-shadow:0 0 0 8px rgba(46,229,157,.1); }
+.stage6 .audience { display:flex; gap:10px; padding:16px; flex-wrap:wrap; justify-content:center; border-top:1px solid var(--divider); }
+.stage6 .bottom-bar { padding:12px 14px; border-top:1px solid var(--divider); display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
+
+/* ── 7: Grid de chamada + Screen Share ── */
+.stage7 { background:var(--bg); min-height:560px; display:grid; grid-template-columns:140px 1fr; }
+.stage7 .grid-col { border-right:1px solid var(--divider); padding:10px; display:flex; flex-direction:column; gap:8px; overflow:auto; }
+.stage7 .grid-cell { background:var(--surface); border-radius:var(--r); aspect-ratio:1; display:grid; place-items:center; position:relative; border:1px solid var(--border); }
+.stage7 .grid-cell span.nm { position:absolute; bottom:4px; left:6px; font-size:10px; color:var(--text); background:rgba(0,0,0,.5); padding:0 4px; border-radius:4px; }
+.stage7 .share { display:flex; flex-direction:column; min-height:0; }
+.stage7 .share-video { flex:1; background:linear-gradient(135deg,#1c1c20,#0a0a0b); display:grid; place-items:center; color:var(--muted); }
+.stage7 .share-bar { padding:10px 14px; border-top:1px solid var(--divider); display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+@media (max-width:860px) { .stage7 { grid-template-columns:1fr; grid-template-rows:96px 1fr; } .stage7 .grid-col { flex-direction:row; border-right:0; border-bottom:1px solid var(--divider); } .stage7 .grid-cell { width:76px; aspect-ratio:1; flex:none; } }
+
+/* ── 8: Painel lateral docked ── */
+.stage8 { background:var(--bg); min-height:560px; display:grid; grid-template-columns:1fr 280px; }
+.stage8 .main { display:flex; flex-direction:column; min-height:0; }
+.stage8 .vid { flex:1; background:linear-gradient(135deg,#1c1c20,#0a0a0b); display:grid; place-items:center; color:var(--muted); }
+.stage8 .ctl { padding:10px 14px; border-top:1px solid var(--divider); display:flex; gap:8px; flex-wrap:wrap; }
+.stage8 .dock { border-left:1px solid var(--divider); display:flex; flex-direction:column; min-height:0; }
+.stage8 .dock .people { flex:0 0 auto; max-height:40%; overflow:auto; padding:10px; border-bottom:1px solid var(--divider); display:flex; flex-direction:column; gap:8px; }
+.stage8 .dock .person-row { display:flex; align-items:center; gap:8px; font-size:13px; }
+.stage8 .dock .chat { flex:1; overflow:auto; padding:10px; display:flex; flex-direction:column; gap:8px; min-height:0; }
+@media (max-width:860px) { .stage8 { grid-template-columns:1fr; grid-template-rows:55vh auto; } .stage8 .dock { border-left:0; border-top:1px solid var(--divider); } }
+
+/* ── 9: Mobile bottom-tab ── */
+.stage9 { background:var(--bg); min-height:560px; display:flex; flex-direction:column; }
+.stage9 .pane { flex:1; display:none; min-height:0; overflow:auto; }
+.stage9 .pane.on { display:flex; flex-direction:column; }
+.stage9 .pane.video { align-items:center; justify-content:center; background:linear-gradient(135deg,#1c1c20,#0a0a0b); color:var(--muted); }
+.stage9 .pane.chat, .stage9 .pane.people { padding:12px; gap:10px; }
+.stage9 .tabbar { display:flex; border-top:1px solid var(--divider); background:var(--surface); }
+.stage9 .tabbar button { flex:1; flex-direction:column; min-height:56px; border-radius:0; border:0; background:transparent; color:var(--muted); font-size:11px; font-weight:600; gap:4px; }
+.stage9 .tabbar button[aria-pressed="true"] { color:var(--violet-text); }
+
+/* ── 10: Focus Mode ── */
+.stage10 { background:#000; min-height:560px; position:relative; display:flex; align-items:center; justify-content:center; }
+.stage10 .vid { position:absolute; inset:0; background:linear-gradient(135deg,#1c1c20,#050506); }
+.pill { position:relative; z-index:2; display:flex; gap:10px; padding:8px; background:rgba(20,20,22,.85); border:1px solid var(--border); border-radius:999px; backdrop-filter:blur(6px); }
+.pill .btn.icon { border-radius:999px; min-height:48px; width:48px; }
+
+/* toasts (padrão real do projeto, web/styles.css) */
+#toasts { position:fixed; right:16px; bottom:16px; z-index:60; display:flex; flex-direction:column; gap:10px; width:min(420px, calc(100vw - 32px)); }
+.err { background:var(--surface); border:1px solid var(--border); border-left:4px solid var(--error); border-radius:var(--r); padding:14px 16px; display:flex; flex-direction:column; gap:6px; box-shadow:0 12px 32px rgba(0,0,0,.5); }
+.err .t { display:flex; align-items:center; gap:8px; font-weight:700; }
+.err .chip-code { font-family:var(--mono); font-weight:500; padding:1px 6px; border-radius:6px; border:1px solid currentColor; font-size:12px; color:var(--error); }
+.err .why { font-size:13px; color:var(--chat); }
+.err .acts { display:flex; gap:8px; margin-top:4px; }
+.err .acts .btn { min-height:36px; }
+
+#summary { max-width:980px; margin:0 auto 60px; padding:0 14px; }
+#summary .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:20px; }
+#summary h2 { font-size:18px; margin-bottom:12px; }
+#summary ol { margin:0; padding-left:20px; display:flex; flex-direction:column; gap:8px; color:var(--chat); font-size:13px; }
+#summary b { color:var(--text); }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-screen-share" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4M12 13V7M9 10l3-3 3 3"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></symbol>
+  <symbol id="i-mic-off" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M4 4l16 16"/></symbol>
+  <symbol id="i-headphones" viewBox="0 0 24 24"><path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="4.5" height="6" rx="1.5"/><rect x="16.5" y="14" width="4.5" height="6" rx="1.5"/></symbol>
+  <symbol id="i-request-turn" viewBox="0 0 24 24"><path d="M8 13V6a1.5 1.5 0 0 1 3 0v5M11 11V4.5a1.5 1.5 0 0 1 3 0V11M14 11V6a1.5 1.5 0 0 1 3 0v7a7 7 0 0 1-7 7h-.5A5.5 5.5 0 0 1 5 15.5V12a1.5 1.5 0 0 1 3 0"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></symbol>
+  <symbol id="i-participants" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/></symbol>
+  <symbol id="i-watching" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-owner" viewBox="0 0 24 24"><path d="M4 18h16M5 15L4 7l5 4 3-6 3 6 5-4-1 8z"/></symbol>
+  <symbol id="i-moderator" viewBox="0 0 24 24"><path d="M12 3l7.5 3v5.5c0 4.5-3.2 8.2-7.5 9.5-4.3-1.3-7.5-5-7.5-9.5V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="i-leave" viewBox="0 0 24 24"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M10 8l-4 4 4 4M6 12h10"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3l9.5 17h-19z"/><path d="M12 10v4M12 17v.5"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-volume" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01" stroke-width="3"/></symbol>
+</svg>
+
+<div id="top">
+  <h1>Stream P2P · Layouts Discord</h1>
+  <div id="picker" role="tablist" aria-label="Layout">
+    <button data-layout="6" aria-pressed="true">6 · Stage Channel</button>
+    <button data-layout="7">7 · Grid + Screen Share</button>
+    <button data-layout="8">8 · Painel docked</button>
+    <button data-layout="9">9 · Bottom-tab mobile</button>
+    <button data-layout="10">10 · Focus Mode</button>
+  </div>
+  <div id="device" role="group" aria-label="Dispositivo">
+    <button data-device="desktop" aria-pressed="true">Desktop</button>
+    <button data-device="mobile">Mobile</button>
+  </div>
+</div>
+
+<div id="stageWrap">
+  <div class="preview" id="preview">
+
+    <!-- 6: Stage Channel -->
+    <section data-layout="6" class="on stage6">
+      <div class="top-bar"><span class="badge live">Ao vivo</span><span class="muted small">Sessão xk3f-9q</span></div>
+      <div class="center">
+        <div class="big-avatar">A</div>
+        <p><b>Ana</b> está no palco</p>
+        <button class="btn primary"><svg class="i"><use href="#i-request-turn"/></svg>Pedir a vez</button>
+      </div>
+      <div class="audience" id="s6-audience"></div>
+      <div class="bottom-bar">
+        <button class="btn icon" aria-pressed="false"><svg class="i"><use href="#i-mic"/></svg></button>
+        <button class="btn icon"><svg class="i"><use href="#i-headphones"/></svg></button>
+        <button class="btn danger"><svg class="i"><use href="#i-leave"/></svg>Sair</button>
+      </div>
+    </section>
+
+    <!-- 7: Grid de chamada + Screen Share -->
+    <section data-layout="7" class="stage7">
+      <div class="grid-col" id="s7-grid"></div>
+      <div class="share">
+        <div class="share-video">Tela compartilhada — Ana</div>
+        <div class="share-bar">
+          <button class="btn icon"><svg class="i"><use href="#i-mic-off"/></svg></button>
+          <button class="btn icon"><svg class="i"><use href="#i-headphones"/></svg></button>
+          <button class="btn" id="s7-err-btn"><svg class="i"><use href="#i-alert"/></svg>Simular erro de conexão</button>
+          <button class="btn danger" style="margin-left:auto"><svg class="i"><use href="#i-leave"/></svg>Sair</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 8: Painel lateral docked -->
+    <section data-layout="8" class="stage8">
+      <div class="main">
+        <div class="vid">Tela compartilhada — Ana</div>
+        <div class="ctl">
+          <button class="btn icon"><svg class="i"><use href="#i-mic"/></svg></button>
+          <button class="btn icon"><svg class="i"><use href="#i-headphones"/></svg></button>
+          <button class="btn danger"><svg class="i"><use href="#i-leave"/></svg>Sair</button>
+        </div>
+      </div>
+      <div class="dock">
+        <div class="people" id="s8-people"></div>
+        <div class="chat" id="s8-chat"></div>
+      </div>
+    </section>
+
+    <!-- 9: Mobile bottom-tab navigation -->
+    <section data-layout="9" class="stage9">
+      <div class="pane video on" data-pane="video">Tela compartilhada — Ana</div>
+      <div class="pane chat" data-pane="chat" id="s9-chat"></div>
+      <div class="pane people" data-pane="people" id="s9-people"></div>
+      <div class="tabbar">
+        <button data-tab="video" aria-pressed="true"><svg class="i"><use href="#i-screen-share"/></svg>Vídeo</button>
+        <button data-tab="chat" aria-pressed="false"><svg class="i"><use href="#i-chat"/></svg>Chat</button>
+        <button data-tab="people" aria-pressed="false"><svg class="i"><use href="#i-participants"/></svg>Pessoas</button>
+      </div>
+    </section>
+
+    <!-- 10: Focus Mode / Hide Names -->
+    <section data-layout="10" class="stage10">
+      <div class="vid"></div>
+      <div class="pill">
+        <button class="btn icon" aria-pressed="false"><svg class="i"><use href="#i-mic"/></svg></button>
+        <button class="btn icon"><svg class="i"><use href="#i-pause"/></svg></button>
+        <button class="btn icon" style="color:var(--error)"><svg class="i"><use href="#i-leave"/></svg></button>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<div id="summary">
+  <div class="card">
+    <h2>Resumo — grupo Discord</h2>
+    <ol>
+      <li><b>6 · Stage Channel</b> — resolve a necessidade de foco total em quem transmite, com a audiência visível mas secundária; bom para apresentações/aulas.</li>
+      <li><b>7 · Grid + Screen Share</b> — resolve "quero ver as caras de todo mundo falando enquanto alguém compartilha a tela", como uma chamada normal com tela extra.</li>
+      <li><b>8 · Painel lateral docked</b> — resolve "não quero trocar de aba pra ver o chat ou a lista de pessoas", mantendo os dois sempre visíveis ao lado do vídeo.</li>
+      <li><b>9 · Mobile bottom-tab</b> — resolve a navegação em telas pequenas sem sobrepor conteúdo: cada destino é uma tela cheia e dedicada.</li>
+      <li><b>10 · Focus Mode</b> — resolve "zero distração visual", útil para quem só quer assistir sem nomes, avatares ou listas por cima do conteúdo.</li>
+    </ol>
+  </div>
+</div>
+
+<div id="toasts" aria-live="assertive"></div>
+
+<script>
+// Dados mockados compartilhados entre os 5 layouts.
+const PEOPLE = [
+  { name: 'Ana',   initials: 'A', speaking: true,  muted: false, role: 'owner' },
+  { name: 'Caio',  initials: 'C', speaking: false, muted: true,  role: 'mod' },
+  { name: 'Dani',  initials: 'D', speaking: false, muted: false, role: null },
+  { name: 'Theo',  initials: 'T', speaking: false, muted: true,  role: null },
+  { name: 'Bia',   initials: 'B', speaking: false, muted: false, role: null },
+];
+const MESSAGES = [
+  { who: 'Caio', text: 'boa noite! chegando agora', time: '21:04' },
+  { who: 'Dani', text: 'esse jogo tá ótimo', time: '21:05' },
+  { who: 'sistema', text: 'Theo entrou na sessão', time: '21:06', system: true },
+  { who: 'Bia', text: 'dá pra subir o volume um pouco?', time: '21:07' },
+];
+const LATENCY_MS = 138;
+
+const icon = (name, cls = 'i sm') => `<svg class="${cls}"><use href="#i-${name}"/></svg>`;
+const avatarHtml = (p) => `
+  <div class="avatar${p.speaking ? ' speaking' : ''}" title="${p.name}">
+    ${p.initials}
+    ${p.muted ? `<span class="mute-badge">${icon('mic-off', 'i')}</span>` : ''}
+  </div>`;
+const personRowHtml = (p) => `
+  <div class="person-row">
+    ${avatarHtml(p)}
+    <span>${p.name}</span>
+    ${p.role === 'owner' ? icon('owner', 'i sm') : p.role === 'mod' ? icon('moderator', 'i sm') : ''}
+  </div>`;
+const msgHtml = (m) => m.system
+  ? `<p class="msg system">${m.text}</p>`
+  : `<p class="msg"><b>${m.who}:</b> ${m.text}<time>${m.time}</time></p>`;
+
+document.getElementById('s6-audience').innerHTML = PEOPLE.map(avatarHtml).join('');
+document.getElementById('s7-grid').innerHTML = PEOPLE.map((p) => `
+  <div class="grid-cell">${p.initials}<span class="nm">${p.name}</span></div>`).join('');
+document.getElementById('s8-people').innerHTML = PEOPLE.map(personRowHtml).join('');
+document.getElementById('s8-chat').innerHTML = MESSAGES.map(msgHtml).join('');
+document.getElementById('s9-people').innerHTML = PEOPLE.map(personRowHtml).join('');
+document.getElementById('s9-chat').innerHTML = MESSAGES.map(msgHtml).join('');
+
+// Seletor de layout
+document.getElementById('picker').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-layout]');
+  if (!btn) return;
+  for (const b of document.querySelectorAll('#picker button')) b.setAttribute('aria-pressed', String(b === btn));
+  for (const s of document.querySelectorAll('[data-layout]')) s.classList.toggle('on', s.dataset.layout === btn.dataset.layout);
+});
+
+// Toggle desktop/mobile
+document.getElementById('device').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-device]');
+  if (!btn) return;
+  for (const b of document.querySelectorAll('#device button')) b.setAttribute('aria-pressed', String(b === btn));
+  document.getElementById('preview').classList.toggle('mobile', btn.dataset.device === 'mobile');
+});
+
+// Tabs do layout 9 (navegação real entre telas cheias)
+document.querySelector('.stage9 .tabbar').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-tab]');
+  if (!btn) return;
+  for (const b of document.querySelectorAll('.stage9 .tabbar button')) b.setAttribute('aria-pressed', String(b === btn));
+  for (const p of document.querySelectorAll('.stage9 .pane')) p.classList.toggle('on', p.dataset.pane === btn.dataset.tab);
+});
+
+// Toast de erro (padrão .err/.toasts do projeto real) — mensagem limpa, log estruturado, sem stack trace [#93]
+function showToast(code, title, reason) {
+  const card = document.createElement('div');
+  card.className = 'err';
+  card.setAttribute('role', 'alert');
+  card.innerHTML = `
+    <div class="t">${icon('alert')}<span class="chip-code">${code}</span><span>${title}</span></div>
+    <p class="why">${reason}</p>
+    <div class="acts"><button class="btn ghost" type="button">Fechar</button></div>`;
+  card.querySelector('.acts button').addEventListener('click', () => card.remove());
+  document.getElementById('toasts').prepend(card);
+  setTimeout(() => card.remove(), 9000);
+}
+document.getElementById('s7-err-btn').addEventListener('click', () => {
+  console.warn(JSON.stringify({ level: 'WARN', code: 503, scope: 'webrtc-mesh', msg: 'simulated-connection-drop' }));
+  showToast(503, 'Sem vaga', 'A malha P2P está cheia agora. A conexão com quem compartilha a tela foi perdida — tente de novo em alguns segundos.');
+});
+</script>
+</body>
+</html>
