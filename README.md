@@ -113,7 +113,7 @@ O app fica em `app/` e é feito com Tauri 2. A janela carrega o mesmo site e acr
 - **Atualização (T14):** baixa e reinicia o app, nunca no meio de uma sessão.
 - **Som do PC pelo app:** o app captura o áudio do Windows por conta própria (WASAPI, convertido para estéreo), fora do seletor.
   - **Janela compartilhada:** só o som do programa dela vai na transmissão. Discord, WhatsApp e o chat de voz ficam de fora, e quem fala não se ouve de volta.
-  - **Tela inteira:** vai o som do PC todo, menos o do próprio app. A voz de outro programa (o Discord, por exemplo) entra junto.
+  - **Tela inteira:** uma lista mostra quem tem som tocando agora, e a pessoa escolhe o que entra na transmissão (desmarcar Discord e WhatsApp evita que eles vazem). Por padrão todos vêm marcados, como antes.
   - O seletor pede só a imagem, então o áudio vem de qualquer fonte, janela inclusive.
   - O som do próprio app (a voz do chat) fica de fora, para não dar eco em quem assiste.
   - O áudio do sistema do Chromium falha em alguns aparelhos, como um headset 7.1, com "Could not start audio source", e derruba a tela junto.
