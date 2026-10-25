@@ -176,10 +176,10 @@
       <span class="tag" id="s-who" hidden></span>
       <button class="tag" type="button" id="m-toggle" aria-pressed="false" aria-controls="metrics" hidden><svg class="i sm"><use href="#i-signal"/></svg>Métricas</button>
     </div>
-    <!-- What leaves the presenter vs what arrives here (viewers only) -->
+    <!-- What leaves the presenter vs what arrives here (the presenter sees only Origem) -->
     <div class="metrics" id="metrics" hidden>
       <table>
-        <thead><tr><th scope="col"><span class="sr-only">Métrica</span></th><th scope="col">Origem</th><th scope="col">Chega</th></tr></thead>
+        <thead><tr><th scope="col"><span class="sr-only">Métrica</span></th><th scope="col">Origem</th><th scope="col" id="metrics-here">Chega</th></tr></thead>
         <tbody id="metrics-body"></tbody>
       </table>
       <p class="small muted" id="metrics-note" hidden></p>

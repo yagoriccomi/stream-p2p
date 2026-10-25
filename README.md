@@ -83,6 +83,8 @@ O servidor entrega a lista de ICE em `/ice.json`: sempre o STUN do Google e, se 
 - `TURN_SECRET` (recomendado): o mesmo `static-auth-secret` do coturn com `use-auth-secret`. Cada cliente recebe uma credencial que vale 6 h.
 - `TURN_USERNAME` e `TURN_CREDENTIAL`: para provedores que dão usuário e senha fixos. Só valem quando não há `TURN_SECRET`.
 
+**Os dois juntos:** o TURN próprio vai primeiro na lista e o da Cloudflare depois. O navegador prefere o primeiro, então a Cloudflare só leva a mídia quando o próprio falha.
+
 Exemplo mínimo de `turnserver.conf` para o coturn:
 ```
 listening-port=3478

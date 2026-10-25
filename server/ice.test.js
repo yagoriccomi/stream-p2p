@@ -70,6 +70,12 @@ test('cloudflare: a failed renewal keeps the last set while it lasts, then falls
   assert.deepEqual(await ice(NOW + CF_TTL_S * 1000 + 1), [{ urls: DEFAULT_STUN }]);
 });
 
+test('own TURN comes first, cloudflare after it as backup', async () => {
+  const env = { ...CF_ENV, TURN_URLS: 'turn:own.example.com:3478', TURN_SECRET: 's' };
+  const servers = await iceSource(env, cfReply(201, CF_BODY))(NOW);
+  assert.deepEqual(servers.map((s) => [].concat(s.urls)[0]), [DEFAULT_STUN, 'turn:own.example.com:3478', 'turn:turn.cloudflare.com:3478?transport=udp']);
+});
+
 test('cloudflare: without the key the env TURN settings are used', async () => {
   assert.deepEqual(await iceSource({}, async () => assert.fail('no call'))(NOW), [{ urls: DEFAULT_STUN }]);
 });

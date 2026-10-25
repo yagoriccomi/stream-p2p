@@ -35,13 +35,16 @@ export const CF_TTL_S = 24 * 3600;
 const CF_RENEW_AFTER_S = 12 * 3600;
 const BROWSER_BLOCKED_PORT = /:53(\?|$)/; // browsers block port 53: that URL only times out
 
+// With both set, the own TURN (TURN_URLS) goes first and Cloudflare after it: Chrome ranks relay
+// candidates by server order, so Cloudflare only carries media when the own TURN fails.
 export function iceSource(env = process.env, fetchFn = fetch) {
   const id = env.CF_TURN_KEY_ID;
   const token = env.CF_TURN_API_TOKEN;
   if (!id || !token) return async (now = Date.now()) => iceServers(env, now);
-  let cache = null; // { servers, renewAt, expiresAt }
+  let cache = null; // { turn, renewAt, expiresAt }
   return async (now = Date.now()) => {
-    if (cache && now < cache.renewAt) return cache.servers;
+    const own = iceServers(env, now); // fresh REST credential every call
+    if (cache && now < cache.renewAt) return [...own, ...cache.turn];
     try {
       const res = await fetchFn(`${CF_TURN_API}/${encodeURIComponent(id)}/credentials/generate-ice-servers`, {
         method: 'POST',
@@ -53,12 +56,12 @@ export function iceSource(env = process.env, fetchFn = fetch) {
         .filter((s) => s.username)
         .map((s) => ({ ...s, urls: [].concat(s.urls).filter((u) => !BROWSER_BLOCKED_PORT.test(u)) }));
       if (!turn.length) throw new Error('resposta sem servidor TURN');
-      cache = { servers: [{ urls: DEFAULT_STUN }, ...turn], renewAt: now + CF_RENEW_AFTER_S * 1000, expiresAt: now + CF_TTL_S * 1000 };
-      return cache.servers;
+      cache = { turn, renewAt: now + CF_RENEW_AFTER_S * 1000, expiresAt: now + CF_TTL_S * 1000 };
+      return [...own, ...turn];
     } catch (e) {
       console.warn(JSON.stringify({ level: 'warn', msg: 'turn cloudflare', err: e.message }));
-      if (cache && now < cache.expiresAt) return cache.servers; // the last set still works
-      return iceServers(env, now);
+      if (cache && now < cache.expiresAt) return [...own, ...cache.turn]; // the last set still works
+      return own;
     }
   };
 }

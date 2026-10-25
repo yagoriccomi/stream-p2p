@@ -1087,8 +1087,11 @@ const LIMITS = { none: 'nenhum', cpu: 'CPU', bandwidth: 'rede', other: 'outro' }
 const rate = (kbps) => (kbps >= 1000 ? `${(kbps / 1000).toFixed(1)} Mbps` : `${kbps} kbps`);
 
 // Viewer's table: what leaves the presenter (sent by them every 2 s) next to what arrives here.
+// The presenter sees only the origin column, from their own encoder.
 function renderMetrics(s, kbps, lossPct) {
-  const src = st.origin && performance.now() - st.origin.at < SRC_STALE_MS ? st.origin : null;
+  const mine = !s.viewer;
+  const src = mine ? { ...s, kbps: Math.round(kbps / Math.max(1, s.children)) }
+    : st.origin && performance.now() - st.origin.at < SRC_STALE_MS ? st.origin : null;
   const dash = '—';
   const rows = [
     ['Resolução', src ? `${src.w}×${src.h}` : dash, `${s.w}×${s.h}`, src && s.w < src.w],
@@ -1101,10 +1104,11 @@ function renderMetrics(s, kbps, lossPct) {
     ['Congelamentos', '', String(s.freezes), s.freezes > 0],
     ['Atraso', '', s.rttMs === null ? `buffer ${video.jitterMs} ms` : `${Math.round(s.rttMs / 2)} ms rede + ${video.jitterMs} ms buffer`],
   ];
-  $('metrics-body').replaceChildren(...rows.map(([name, from, here, worse]) => h('tr', {},
-    h('th', { scope: 'row', text: name }), h('td', { text: from }), h('td', { class: worse ? 'worse' : '', text: here }))));
+  $('metrics-here').hidden = mine;
+  $('metrics-body').replaceChildren(...rows.filter(([, from]) => !mine || from).map(([name, from, here, worse]) => h('tr', {},
+    h('th', { scope: 'row', text: name }), h('td', { text: from }), mine ? null : h('td', { class: worse ? 'worse' : '', text: here }))));
   const relayed = st.session?.presenterId && video.parentId && video.parentId !== st.session.presenterId;
-  const note = !src ? 'Esperando os números de quem transmite…' : relayed ? 'Chega por outra pessoa (retransmissor), que codifica o vídeo de novo.' : '';
+  const note = mine ? `Saindo para ${s.children} pessoa(s) direto.` : !src ? 'Esperando os números de quem transmite…' : relayed ? 'Chega por outra pessoa (retransmissor), que codifica o vídeo de novo.' : '';
   $('metrics-note').textContent = note;
   $('metrics-note').hidden = !note;
 }
@@ -1130,11 +1134,9 @@ setInterval(async () => {
   const needMs = s.viewer ? measureNeed(s) : null;
   last = { bytes: s.bytes, at: now, lost: s.lost, received: s.received, jbMin: s.jbMin, jbCount: s.jbCount };
   if (!s.viewer && s.children) send({ type: 'srcStats', capture: s.capture, w: s.w, h: s.h, fps: s.fps, kbps: Math.round(kbps / s.children), codec: s.codec, limit: s.limit });
-  $('m-toggle').hidden = !s.viewer;
-  if (s.viewer) {
-    if ($('m-toggle').getAttribute('aria-pressed') !== String(store.get('metricsShown', false))) showMetrics(store.get('metricsShown', false));
-    if (!$('metrics').hidden) renderMetrics(s, kbps, lossPct);
-  } else $('metrics').hidden = true;
+  $('m-toggle').hidden = false;
+  if ($('m-toggle').getAttribute('aria-pressed') !== String(store.get('metricsShown', false))) showMetrics(store.get('metricsShown', false));
+  if (!$('metrics').hidden) renderMetrics(s, kbps, lossPct);
   if (s.rttMs !== null) send({ type: 'hopRtt', ms: Math.round(s.rttMs), ...(needMs !== null && { needMs }) }); // server turns it into buffers
   window.__stats = { kbps, fps: s.fps, w: s.w, h: s.h, codec: s.codec, encoder: s.encoder, jitterMs: video.jitterMs, rttMs: s.rttMs, needMs, parent: video.parentId };
   reportStatus();
