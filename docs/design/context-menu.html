@@ -1,0 +1,528 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Stream P2P — Protótipo: menu de contexto, skeletons, atalhos, toasts</title>
+<!--
+  CHECKPOINT DE RACIOCÍNIO (obrigatório antes do código, skill design-de-interface-projeto)
+  - Minimalista? Sim: reaproveita literalmente .menu/.person/.err/.toasts/.btn de web/styles.css,
+    zero ornamento novo além do ícone i-pin (mesmo estilo stroke 24x24 dos outros ícones do app) [#7][#13].
+  - Dark mode? App é dark-only por decisão de produto; todas as cores vêm de var(--token), nenhum
+    hex cravado em regra de componente [#3][#6].
+  - Tela congela se algo falhar? Não: toda falha passa por logError() (console.warn estruturado,
+    nível WARN para erro de conexão contornável, ERROR para os demais) [#91][#92], e a UI nunca
+    recebe stack trace — só título + motivo limpo [#93]. Loading nunca fica em branco: skeletons
+    cobrem pessoas e chat durante "reconectando".
+-->
+<style>
+  :root {
+    color-scheme: dark;
+    --bg:#0a0a0b; --surface:#141416; --raised:#1c1c20; --border:#2a2a30; --divider:#23232a; --input:#52525b;
+    --text:#f2f2f4; --muted:#a1a1aa; --chat:#c9c9d0;
+    --violet:#7f00ff; --violet-border:#9a3dff; --violet-text:#b266ff; --violet-hover:#cc99ff; --violet-soft:#22103d;
+    --live:#2ee59d; --error:#ff4d4d; --warn:#ffb020;
+    --r:12px; --r-lg:20px;
+    --font-title: Archivo, 'Arial Narrow', system-ui, sans-serif;
+    --font: Inter, system-ui, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; min-height:100%; background:var(--bg); color:var(--text); font:16px/1.45 var(--font); }
+  [hidden] { display:none !important; }
+  h1,h2,h3 { font-family:var(--font-title); font-stretch:75%; text-transform:uppercase; margin:0; line-height:1.1; }
+  h1 { font-weight:900; font-size:clamp(22px,4vw,30px); }
+  h2 { font-weight:800; font-size:18px; }
+  h3 { font-weight:700; font-size:14px; letter-spacing:.02em; }
+  p { margin:0; }
+  .muted { color:var(--muted); }
+  .small { font-size:13px; }
+  .mono { font-family:var(--mono); }
+  :focus-visible { outline:3px solid var(--violet-text); outline-offset:3px; }
+  svg.i { width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.75; stroke-linecap:round; stroke-linejoin:round; flex:none; }
+  svg.i.sm { width:16px; height:16px; }
+
+  button, .btn { font:inherit; color:inherit; cursor:pointer; }
+  .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:44px; padding:0 16px;
+    border-radius:var(--r); border:1px solid var(--border); background:var(--raised); color:var(--text); font-weight:600; }
+  .btn:hover { border-color:var(--input); }
+  .btn.primary { background:var(--violet); border-color:var(--violet); color:#fff; }
+  .btn.primary:hover { background:#8f1fff; }
+  .btn.ghost { background:transparent; border-color:transparent; }
+  .btn.danger { background:transparent; border-color:var(--error); color:var(--error); }
+  .btn.icon { width:44px; padding:0; }
+  .btn[aria-pressed="true"] { background:var(--violet-soft); border-color:var(--violet-border); }
+  .btn:disabled { opacity:.45; cursor:not-allowed; }
+
+  .page { max-width:1040px; margin:0 auto; padding:28px 20px 80px; display:flex; flex-direction:column; gap:20px; }
+  .top { display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between; }
+  .top .ctrls { display:flex; flex-wrap:wrap; gap:8px; }
+  .back { color:var(--violet-text); font-size:14px; text-decoration:none; }
+  .back:hover { color:var(--violet-hover); }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:20px; display:flex; flex-direction:column; gap:14px; }
+  .card > p.hint { font-size:13px; color:var(--muted); }
+
+  /* ── person / source rows, copiados de web/styles.css ── */
+  .people-list { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px; }
+  .person { display:flex; align-items:center; gap:10px; min-height:52px; padding:4px 8px; border-radius:10px; cursor:context-menu; user-select:none; -webkit-touch-callout:none; }
+  .person:hover { background:var(--raised); }
+  .avatar { width:32px; height:32px; border-radius:50%; background:var(--raised); display:grid; place-items:center; font-weight:700; font-size:14px; flex:none; color:var(--violet-hover); }
+  .person .who { flex:1; min-width:0; display:flex; flex-direction:column; }
+  .person .who b { font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .person .who span { font-size:12px; color:var(--muted); display:flex; gap:6px; align-items:center; }
+  .person .vol-tag { font-size:12px; color:var(--muted); font-family:var(--mono); flex:none; }
+  .badge.role { background:var(--violet-soft); color:var(--violet-hover); font-size:11px; font-weight:600; padding:2px 8px; border-radius:999px; }
+  .pinned-mark { color:var(--violet-text); }
+  .muted-mark { color:var(--error); }
+
+  /* ── menu de contexto (mesmo padrão de web/styles.css + web/ui.js openMenu) ── */
+  .menu { position:fixed; z-index:50; background:var(--raised); border:1px solid var(--border); border-radius:var(--r);
+    padding:8px; min-width:240px; display:flex; flex-direction:column; gap:4px; box-shadow:0 12px 32px rgba(0,0,0,.5); }
+  .menu button { min-height:42px; display:flex; align-items:center; gap:10px; padding:0 10px; border:0; background:none;
+    border-radius:8px; text-align:left; width:100%; }
+  .menu button:hover:not(:disabled), .menu button:focus-visible { background:var(--surface); }
+  .menu button.red { color:var(--error); }
+  .menu .vol-row { display:flex; align-items:center; gap:10px; padding:6px 10px 10px; border-bottom:1px solid var(--divider); margin-bottom:4px; }
+  .menu .vol-row input[type=range] { flex:1; accent-color:var(--violet); min-width:80px; }
+  .menu .vol-row output { width:4ch; text-align:right; font-family:var(--mono); font-size:13px; color:var(--muted); }
+  .menu .sep { height:1px; background:var(--divider); margin:4px 2px; }
+
+  /* ── skeletons (usam --raised/--border, nunca tela em branco) [#92][#93] ── */
+  @keyframes pulse { 0%,100% { opacity:.55; } 50% { opacity:1; } }
+  .sk { background:var(--raised); border:1px solid var(--border); border-radius:8px; animation:pulse 1.3s ease-in-out infinite; }
+  .sk-row { display:flex; align-items:center; gap:10px; padding:4px 8px; min-height:52px; }
+  .sk-avatar { width:32px; height:32px; border-radius:50%; flex:none; }
+  .sk-lines { flex:1; display:flex; flex-direction:column; gap:6px; }
+  .sk-line { height:10px; border-radius:4px; }
+  .sk-bubble { height:34px; border-radius:10px; }
+  .reconnect-note { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--warn); }
+
+  /* ── toasts ── */
+  .toasts { position:fixed; right:16px; bottom:16px; z-index:60; display:flex; flex-direction:column; gap:10px; width:min(380px, calc(100vw - 32px)); }
+  .err { background:var(--surface); border:1px solid var(--border); border-left:4px solid var(--error); border-radius:var(--r);
+    padding:12px 14px; display:flex; flex-direction:column; gap:6px; box-shadow:0 12px 32px rgba(0,0,0,.5); cursor:default; }
+  .err.info { border-left-color:var(--violet-border); }
+  .err.group { cursor:pointer; }
+  .err .t { display:flex; align-items:center; gap:8px; font-weight:700; font-size:14px; }
+  .err .t .chip-code { font-family:var(--mono); font-weight:500; padding:1px 6px; border-radius:6px; border:1px solid currentColor; font-size:12px; color:var(--error); }
+  .err.info .t .chip-code { color:var(--violet-text); }
+  .err .why { font-size:13px; color:var(--chat); }
+  .err .details { display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--muted); padding-top:4px; border-top:1px solid var(--divider); }
+  .err .acts { display:flex; gap:8px; margin-top:2px; }
+  .err .acts .btn { min-height:34px; font-size:13px; padding:0 12px; }
+
+  /* ── shortcuts dialog ── */
+  dialog { background:var(--surface); color:var(--text); border:1px solid var(--border); border-radius:var(--r-lg);
+    padding:0; width:min(420px, calc(100vw - 32px)); }
+  dialog::backdrop { background:rgba(0,0,0,.7); }
+  .dlg { display:flex; flex-direction:column; gap:14px; padding:22px; }
+  .dlg-head { display:flex; align-items:center; justify-content:space-between; }
+  .kmap { display:flex; flex-direction:column; gap:10px; }
+  .kmap .row { display:flex; align-items:center; justify-content:space-between; font-size:14px; }
+  kbd { font-family:var(--mono); font-size:12px; background:var(--raised); border:1px solid var(--border); border-radius:6px; padding:3px 8px; }
+
+  /* ── preview: desktop vs mobile ── */
+  .frame { transition:max-width .15s; }
+  body.mobile .frame { max-width:390px; margin:0 auto; border:1px solid var(--border); border-radius:20px; padding:12px; }
+  body.mobile .grid { grid-template-columns:1fr; }
+</style>
+</head>
+<body>
+<div class="page">
+  <a class="back" href="index.html">&larr; voltar ao hub de protótipos</a>
+  <div class="top">
+    <div>
+      <h1>Menu de contexto, skeletons, atalhos e toasts</h1>
+      <p class="muted small">Clique com o botão direito (ou pressione e mantenha no mobile) numa pessoa ou numa fonte do mixer.</p>
+    </div>
+    <div class="ctrls">
+      <button class="btn" type="button" id="toggle-view" aria-pressed="false">📱 Ver como mobile</button>
+      <button class="btn" type="button" id="toggle-role" aria-pressed="false">👑 Visualizando como: <b id="role-label">Dono</b></button>
+      <button class="btn" type="button" id="btn-shortcuts">Atalhos <kbd>?</kbd></button>
+    </div>
+  </div>
+
+  <div class="frame">
+    <div class="grid">
+      <section class="card">
+        <div class="top">
+          <h2>Pessoas</h2>
+          <button class="btn ghost small" type="button" id="btn-reconnect" aria-pressed="false">Simular reconectando</button>
+        </div>
+        <p class="hint">Botão direito / long-press numa pessoa → volume, mutar, fixar e (se dono) promover ou remover.</p>
+        <ul class="people-list" id="people"></ul>
+        <p class="reconnect-note" id="reconnect-note" hidden><span>⏳</span><span>Reconectando… a lista continua visível com dados do último estado conhecido.</span></p>
+      </section>
+
+      <section class="card">
+        <h2>Mixer de fontes</h2>
+        <p class="hint">Botão direito / long-press numa fonte → volume e mutar, sem abrir outro diálogo.</p>
+        <ul class="people-list" id="sources"></ul>
+
+        <h2 style="margin-top:8px">Chat</h2>
+        <div id="chat" style="display:flex; flex-direction:column; gap:8px; min-height:120px"></div>
+      </section>
+    </div>
+  </div>
+
+  <section class="card">
+    <h2>Toasts de conexão consolidados</h2>
+    <p class="hint">Erros de conexão dentro de uma janela curta se juntam em 1 card expansível. Outros erros (ex.: permissão) continuam avisando na hora, sem se misturar.</p>
+    <div class="top ctrls" style="justify-content:flex-start">
+      <button class="btn" type="button" id="btn-conn-storm">Simular 3 erros de conexão</button>
+      <button class="btn" type="button" id="btn-perm-error">Simular erro de permissão (403)</button>
+    </div>
+  </section>
+</div>
+
+<div class="menu" id="menu" role="menu" hidden></div>
+<div class="toasts" id="toasts" aria-live="assertive"></div>
+
+<dialog id="dlg-shortcuts" aria-labelledby="sh-h">
+  <div class="dlg">
+    <div class="dlg-head"><h2 id="sh-h">Atalhos de teclado</h2>
+      <button class="btn ghost icon" type="button" data-close aria-label="Fechar"><svg class="i"><use href="#i-close"/></svg></button>
+    </div>
+    <div class="kmap">
+      <div class="row"><span>Mutar microfone</span><kbd>M</kbd></div>
+      <div class="row"><span>Apertar para falar</span><kbd>V</kbd></div>
+      <div class="row"><span>Tela cheia</span><kbd>F</kbd></div>
+      <div class="row"><span>Abrir chat</span><kbd>C</kbd></div>
+      <div class="row"><span>Abrir pessoas</span><kbd>P</kbd></div>
+      <div class="row"><span>Fechar diálogo / menu</span><kbd>Esc</kbd></div>
+      <div class="row"><span>Esta lista de atalhos</span><kbd>?</kbd></div>
+    </div>
+  </div>
+</dialog>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-volume" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></symbol>
+  <symbol id="i-mute" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M17 9l4 6M21 9l-4 6"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></symbol>
+  <symbol id="i-mic-off" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M4 4l16 16"/></symbol>
+  <symbol id="i-moderator" viewBox="0 0 24 24"><path d="M12 3l7.5 3v5.5c0 4.5-3.2 8.2-7.5 9.5-4.3-1.3-7.5-5-7.5-9.5V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="i-remove-person" viewBox="0 0 24 24"><circle cx="10" cy="8" r="3.5"/><path d="M3.5 20a6.5 6.5 0 0 1 13 0M16 11h6"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3l9.5 17h-19z"/><path d="M12 10v4M12 17v.5"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8v.5"/></symbol>
+  <!-- i-pin: ícone novo, mesmo estilo stroke-based 24x24 dos demais símbolos do app -->
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s7-7.58 7-12A7 7 0 0 0 5 9c0 4.42 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></symbol>
+</svg>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const icon = (name, cls = 'i') => `<svg class="${cls}" aria-hidden="true"><use href="#i-${name}"/></svg>`;
+
+  // ── log estruturado: nunca expõe stack trace à UI [#91][#92][#93] ──
+  function logError(level, kind, code, reason) {
+    console.warn(JSON.stringify({ level, kind, code, reason, ts: Date.now() }));
+  }
+
+  // ===================== estado mock =====================
+  let viewerRole = 'owner'; // 'owner' | 'guest' — alternado pelo toggle no topo
+  let isReconnecting = false;
+  let reconnectTimer = null;
+
+  const PEOPLE = [
+    { id: 'u1', name: 'Yago', role: 'owner', vol: 100, muted: false, pinned: false },
+    { id: 'u2', name: 'Dani', role: 'guest', vol: 80, muted: false, pinned: false },
+    { id: 'u3', name: 'Caio', role: 'guest', vol: 60, muted: true, pinned: false },
+  ];
+  const SOURCES = [
+    { id: 's1', name: 'Discord (app)', vol: 50, muted: false },
+    { id: 's2', name: 'Spotify', vol: 30, muted: false },
+  ];
+  const CHAT = [
+    { who: 'Dani', text: 'chegando aí, 2 min' },
+    { who: 'Caio', text: 'bora, já tô na sessão' },
+  ];
+
+  // ===================== menu de contexto (mesmo padrão de web/ui.js openMenu) =====================
+  let menuOwner = null;
+  function openContextMenu(anchor, buildContent) {
+    const menu = $('menu');
+    if (menuOwner === anchor && !menu.hidden) return closeContextMenu();
+    menu.replaceChildren(...buildContent());
+    menu.hidden = false;
+    const r = anchor.getBoundingClientRect();
+    const w = menu.offsetWidth, hgt = menu.offsetHeight;
+    menu.style.left = `${Math.max(8, Math.min(innerWidth - w - 8, r.left))}px`;
+    menu.style.top = `${r.bottom + hgt + 8 > innerHeight ? Math.max(8, r.top - hgt - 4) : r.bottom + 4}px`;
+    menuOwner = anchor;
+    menu.querySelector('input,button')?.focus();
+  }
+  function closeContextMenu() {
+    $('menu').hidden = true;
+    menuOwner = null;
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !$('menu').hidden) closeContextMenu();
+  });
+  document.addEventListener('pointerdown', (e) => {
+    if (!$('menu').hidden && !e.target.closest('#menu') && e.target.closest('[data-ctx]') !== menuOwner) closeContextMenu();
+  });
+
+  function volRow(entry, onChange) {
+    const row = document.createElement('div');
+    row.className = 'vol-row';
+    row.innerHTML = `${icon(entry.muted ? 'mute' : 'volume', 'i sm')}
+      <input type="range" min="0" max="${entry.id?.startsWith('u') ? 400 : 100}" value="${entry.vol}" aria-label="Volume de ${entry.name}">
+      <output>${entry.vol}</output>`;
+    const input = row.querySelector('input');
+    const out = row.querySelector('output');
+    input.addEventListener('input', () => { entry.vol = Number(input.value); out.textContent = entry.vol; onChange(); });
+    return row;
+  }
+
+  function menuButton({ label, iconName, red, disabled, title, onClick }) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.role = 'menuitem';
+    if (red) b.className = 'red';
+    if (disabled) b.disabled = true;
+    if (title) b.title = title;
+    b.innerHTML = `${icon(iconName, 'i sm')}<span>${label}</span>`;
+    if (!disabled) b.addEventListener('click', () => { closeContextMenu(); onClick(); });
+    return b;
+  }
+
+  function personMenuContent(person) {
+    const nodes = [volRow(person, () => renderPeople())];
+    nodes.push(menuButton({
+      label: person.muted ? 'Desmutar' : 'Mutar',
+      iconName: person.muted ? 'volume' : 'mute',
+      onClick: () => { person.muted = !person.muted; renderPeople(); },
+    }));
+    nodes.push(menuButton({
+      label: person.pinned ? 'Desfixar vídeo' : 'Fixar vídeo',
+      iconName: 'pin',
+      onClick: () => { person.pinned = !person.pinned; renderPeople(); },
+    }));
+    const sep = document.createElement('div'); sep.className = 'sep'; nodes.push(sep);
+    const canModerate = viewerRole === 'owner' && person.role !== 'owner';
+    nodes.push(menuButton({
+      label: 'Definir como moderador',
+      iconName: 'moderator',
+      disabled: !canModerate,
+      title: canModerate ? undefined : 'Só o dono pode definir moderadores',
+      onClick: () => { person.role = 'mod'; renderPeople(); },
+    }));
+    if (viewerRole === 'owner' && person.role !== 'owner') {
+      nodes.push(menuButton({
+        label: 'Remover da sessão',
+        iconName: 'remove-person',
+        red: true,
+        onClick: () => { PEOPLE.splice(PEOPLE.indexOf(person), 1); renderPeople(); },
+      }));
+    }
+    return nodes;
+  }
+
+  function sourceMenuContent(source) {
+    return [
+      volRow(source, () => renderSources()),
+      menuButton({
+        label: source.muted ? 'Desmutar fonte' : 'Mutar fonte',
+        iconName: source.muted ? 'volume' : 'mute',
+        onClick: () => { source.muted = !source.muted; renderSources(); },
+      }),
+    ];
+  }
+
+  function wireContext(row, buildContent) {
+    row.dataset.ctx = '';
+    row.addEventListener('contextmenu', (e) => { e.preventDefault(); openContextMenu(row, buildContent); });
+    let timer = null;
+    row.addEventListener('pointerdown', (e) => {
+      if (e.pointerType !== 'touch' && e.pointerType !== 'pen') return; // mouse já usa contextmenu
+      timer = setTimeout(() => openContextMenu(row, buildContent), 550);
+    });
+    ['pointerup', 'pointermove', 'pointercancel', 'pointerleave'].forEach((ev) =>
+      row.addEventListener(ev, () => { if (timer) { clearTimeout(timer); timer = null; } }));
+  }
+
+  // ===================== render =====================
+  function renderPeople() {
+    const ul = $('people');
+    if (isReconnecting) { ul.replaceChildren(...skeletonRows(PEOPLE.length)); return; }
+    ul.replaceChildren(...PEOPLE.map((p) => {
+      const li = document.createElement('li');
+      li.className = 'person';
+      li.tabIndex = 0;
+      li.setAttribute('aria-label', `${p.name}, menu de contexto disponível`);
+      li.innerHTML = `
+        <span class="avatar">${p.name[0]}</span>
+        <span class="who">
+          <b>${p.name} ${p.pinned ? `<span class="pinned-mark">${icon('pin', 'i sm')}</span>` : ''}</b>
+          <span>
+            ${p.role === 'owner' ? '<span class="badge role">Dono</span>' : p.role === 'mod' ? '<span class="badge role">Moderador</span>' : ''}
+            ${icon(p.muted ? 'mic-off' : 'mic', 'i sm')} ${p.muted ? '<span class="muted-mark">mutado</span>' : 'ativo'}
+          </span>
+        </span>
+        <span class="vol-tag">${p.vol}%</span>`;
+      wireContext(li, () => personMenuContent(p));
+      return li;
+    }));
+  }
+
+  function renderSources() {
+    const ul = $('sources');
+    if (isReconnecting) { ul.replaceChildren(...skeletonRows(SOURCES.length)); return; }
+    ul.replaceChildren(...SOURCES.map((s) => {
+      const li = document.createElement('li');
+      li.className = 'person';
+      li.tabIndex = 0;
+      li.innerHTML = `
+        <span class="avatar">${icon('volume', 'i sm')}</span>
+        <span class="who"><b>${s.name}</b><span>${s.muted ? 'mutada' : 'ativa'}</span></span>
+        <span class="vol-tag">${s.vol}%</span>`;
+      wireContext(li, () => sourceMenuContent(s));
+      return li;
+    }));
+  }
+
+  function renderChat() {
+    const box = $('chat');
+    if (isReconnecting) {
+      box.replaceChildren(...Array.from({ length: 3 }, () => {
+        const d = document.createElement('div'); d.className = 'sk sk-bubble'; return d;
+      }));
+      return;
+    }
+    box.replaceChildren(...CHAT.map((m) => {
+      const p = document.createElement('p');
+      p.className = 'small';
+      p.innerHTML = `<b>${m.who}:</b> <span class="muted">${m.text}</span>`;
+      return p;
+    }));
+  }
+
+  function skeletonRows(n) {
+    return Array.from({ length: n }, () => {
+      const li = document.createElement('li');
+      li.className = 'sk-row';
+      li.innerHTML = `<div class="sk sk-avatar"></div><div class="sk-lines"><div class="sk sk-line" style="width:40%"></div><div class="sk sk-line" style="width:70%"></div></div>`;
+      return li;
+    });
+  }
+
+  function render() { renderPeople(); renderSources(); renderChat(); }
+
+  // ===================== reconectar (skeleton) [#92][#93] =====================
+  function setReconnecting(on) {
+    isReconnecting = on;
+    const btn = $('btn-reconnect');
+    btn.setAttribute('aria-pressed', String(on));
+    btn.textContent = on ? 'Parar simulação' : 'Simular reconectando';
+    $('reconnect-note').hidden = !on;
+    render();
+    if (reconnectTimer) clearTimeout(reconnectTimer);
+    if (on) reconnectTimer = setTimeout(() => setReconnecting(false), 4000);
+  }
+  $('btn-reconnect').addEventListener('click', () => setReconnecting(!isReconnecting));
+
+  // ===================== toggles de visualização =====================
+  $('toggle-view').addEventListener('click', (e) => {
+    const on = document.body.classList.toggle('mobile');
+    e.currentTarget.setAttribute('aria-pressed', String(on));
+    e.currentTarget.textContent = on ? '🖥️ Ver como desktop' : '📱 Ver como mobile';
+  });
+  $('toggle-role').addEventListener('click', (e) => {
+    viewerRole = viewerRole === 'owner' ? 'guest' : 'owner';
+    e.currentTarget.setAttribute('aria-pressed', String(viewerRole === 'guest'));
+    $('role-label').textContent = viewerRole === 'owner' ? 'Dono' : 'Convidado comum';
+  });
+
+  // ===================== atalhos de teclado =====================
+  const dlgShortcuts = $('dlg-shortcuts');
+  dlgShortcuts.addEventListener('click', (e) => {
+    if (e.target.closest('[data-close]') || e.target === dlgShortcuts) dlgShortcuts.close();
+  });
+  $('btn-shortcuts').addEventListener('click', () => dlgShortcuts.showModal());
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== '?') return;
+    const tag = document.activeElement?.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+    if (!dlgShortcuts.open) dlgShortcuts.showModal();
+  });
+
+  // ===================== toasts consolidados [#91][#92][#93] =====================
+  const CONN_WINDOW_MS = 2500;
+  let connGroup = null;
+
+  function trimToasts() {
+    const t = $('toasts');
+    while (t.children.length > 4) t.lastElementChild.remove();
+  }
+
+  function buildConnCard() {
+    const card = document.createElement('div');
+    card.className = 'err info group';
+    card.setAttribute('role', 'status');
+    card.innerHTML = `<div class="t">${icon('info', 'i sm')}<span class="chip-code">conn</span><span class="title"></span></div>
+      <div class="details" hidden></div>`;
+    card.addEventListener('click', () => {
+      const details = card.querySelector('.details');
+      details.hidden = !details.hidden;
+    });
+    return card;
+  }
+
+  function updateConnCard() {
+    const card = connGroup.el;
+    card.querySelector('.title').textContent = connGroup.count === 1
+      ? '1 problema de conexão — ver detalhes'
+      : `${connGroup.count} problemas de conexão — ver detalhes`;
+    card.querySelector('.details').replaceChildren(...connGroup.items.map((it) => {
+      const p = document.createElement('p');
+      p.innerHTML = `<span class="chip-code">${it.code}</span> ${it.reason}`;
+      return p;
+    }));
+  }
+
+  function reportConnError(code, reason) {
+    logError('WARN', 'conn', code, reason);
+    const now = Date.now();
+    if (connGroup && now - connGroup.last < CONN_WINDOW_MS) {
+      connGroup.count++;
+      connGroup.items.push({ code, reason });
+      connGroup.last = now;
+      updateConnCard();
+      return;
+    }
+    connGroup = { count: 1, items: [{ code, reason }], last: now, el: buildConnCard() };
+    $('toasts').prepend(connGroup.el);
+    trimToasts();
+    updateConnCard();
+    setTimeout(() => { if (connGroup?.el === connGroup.el) { connGroup.el.remove(); connGroup = null; } }, 9000);
+  }
+
+  function reportOtherError(code, reason, title) {
+    logError('ERROR', 'app', code, reason);
+    const card = document.createElement('div');
+    card.className = 'err';
+    card.setAttribute('role', 'alert');
+    card.innerHTML = `<div class="t">${icon('alert', 'i sm')}<span class="chip-code">${code}</span><span>${title}</span></div>
+      <p class="why"><b>Por quê: </b>${reason}</p>`;
+    $('toasts').prepend(card);
+    trimToasts();
+    setTimeout(() => card.remove(), 9000);
+  }
+
+  $('btn-conn-storm').addEventListener('click', () => {
+    reportConnError('ICE', 'Falha ao negociar rota direta com um dos pares.');
+    setTimeout(() => reportConnError('TURN', 'Servidor de retransmissão não respondeu a tempo.'), 400);
+    setTimeout(() => reportConnError('WS', 'Conexão com o servidor da sessão caiu, tentando de novo.'), 900);
+  });
+  $('btn-perm-error').addEventListener('click', () => {
+    reportOtherError(403, 'Só o dono pode remover pessoas da sessão.', 'Sem permissão');
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

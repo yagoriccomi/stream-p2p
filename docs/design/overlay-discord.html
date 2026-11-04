@@ -1,0 +1,402 @@
+<!doctype html>
+<!--
+  RESUMO — overlay-discord.html (protótipo isolado, não afeta web/ app/ server/)
+
+  3 sugestões de UI/UX pro Stream P2P inspiradas em padrões do Discord:
+
+  1) Tira de bolhas de participantes (estilo "Go Live"): avatares sobrepostos no canto do
+     palco, anel verde pulsante em quem está falando (mock alterna sozinho), ícone de mic
+     cortado em quem está mutado, badge "+N" pra quem não cabe na tira, e um botão que
+     recolhe/expande a tira — componente coeso e de responsabilidade única [#13], sem
+     ornamento além do necessário para comunicar "quem fala agora" [#7][#98].
+  2) Bottom-sheet mobile pra tela de configurar transmissão (T02): no mobile, o mesmo
+     conteúdo do <dialog> real (fonte, qualidade, áudio) sobe como folha arrastável com alça,
+     em vez do modal centralizado — modal centralizado continua certo no desktop, isso é só
+     a variação mobile. Mesmos campos, outro container: zero duplicação de regra, só de
+     apresentação [#6].
+  3) Reações rápidas flutuantes: 4 emojis fixos perto do chat que sobem e desaparecem sobre
+     o vídeo ao clicar — feedback imediato e descartável, sem poluir o chat de texto real.
+
+  Tokens: todas as cores vêm de var(--token) copiadas 1:1 de web/styles.css (--bg, --surface,
+  --raised, --border, --divider, --violet*, --live, --error, --warn) — nenhum hex cravado no
+  meio do CSS [#3][#6]. App é dark-only por decisão de produto (styles.css linha 1): não foi
+  criado tema claro.
+
+  Tratamento de erro (zero falha silenciosa [#92][#93]): o botão "Simular perda de conexão de
+  voz" registra um log estruturado (console.warn com JSON, nível WARN) e mostra um toast
+  amigável reaproveitando a classe .err/.toasts já usada no app — nunca expõe stack trace ou
+  detalhe técnico cru na tela. Depois de ~4s simula a reconexão automática com um toast de
+  sucesso (kind "ok"), fechando o ciclo visível pro usuário.
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>Stream P2P — Overlay estilo Discord (protótipo)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0a0a0b; --surface: #141416; --raised: #1c1c20; --border: #2a2a30; --divider: #23232a; --input: #52525b;
+  --text: #f2f2f4; --muted: #a1a1aa; --chat: #c9c9d0;
+  --violet: #7f00ff; --violet-border: #9a3dff; --violet-text: #b266ff; --violet-hover: #cc99ff; --violet-soft: #22103d;
+  --live: #2ee59d; --error: #ff4d4d; --warn: #ffb020;
+  --r: 12px; --r-lg: 20px;
+  --font-title: Archivo, 'Arial Narrow', system-ui, sans-serif;
+  --font: Inter, system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); font: 16px/1.45 var(--font); }
+[hidden] { display: none !important; }
+h1, h2, h3 { font-family: var(--font-title); font-stretch: 75%; text-transform: uppercase; margin: 0; line-height: 1.1; }
+h1 { font-weight: 900; font-size: 22px; }
+h2 { font-weight: 800; font-size: 18px; }
+h3 { font-weight: 700; font-size: 14px; letter-spacing: .02em; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+code { font-family: var(--mono); background: var(--raised); padding: 1px 6px; border-radius: 6px; }
+svg.i { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+svg.i.sm { width: 16px; height: 16px; }
+:focus-visible { outline: 3px solid var(--violet-text); outline-offset: 3px; }
+
+button, .btn { font: inherit; color: inherit; cursor: pointer; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 44px; padding: 0 16px; border-radius: var(--r); border: 1px solid var(--border);
+  background: var(--raised); color: var(--text); font-weight: 600; white-space: nowrap;
+}
+.btn:hover { border-color: var(--input); }
+.btn.primary { background: var(--violet); border-color: var(--violet); color: #fff; }
+.btn.primary:hover { background: #8f1fff; }
+.btn.primary.big { min-height: 52px; font-size: 16px; width: 100%; }
+.btn.danger { background: transparent; border-color: var(--error); color: var(--error); }
+.btn.ghost { background: transparent; border-color: transparent; }
+.btn.icon { width: 44px; padding: 0; }
+
+.seg { display: flex; gap: 4px; padding: 4px; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; }
+.seg button { flex: 1; min-height: 38px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font-weight: 600; padding: 0 12px; }
+.seg button[aria-pressed="true"], .seg button[aria-selected="true"] { background: var(--raised); color: var(--text); box-shadow: inset 0 0 0 1px var(--violet-border); }
+
+.switch { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; width: 100%; background: none; border: 0; padding: 0; text-align: left; font-size: 15px; }
+.switch .track { width: 44px; height: 26px; border-radius: 999px; background: var(--input); position: relative; flex: none; transition: background .15s; }
+.switch .track::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: transform .15s; }
+.switch[aria-checked="true"] .track { background: var(--violet); }
+.switch[aria-checked="true"] .track::after { transform: translateX(18px); }
+
+.badge { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; letter-spacing: .04em; padding: 2px 8px; border-radius: 999px; text-transform: uppercase; }
+.badge.live { background: rgba(46, 229, 157, .12); color: var(--live); }
+.badge.live::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--live); }
+
+/* ── proto shell ── */
+.proto-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 20px; border-bottom: 1px solid var(--divider); flex-wrap: wrap; position: sticky; top: 0; background: var(--bg); z-index: 40; }
+.preview { max-width: 980px; margin: 0 auto; padding: 24px 20px 60px; display: flex; flex-direction: column; gap: 32px; transition: max-width .2s; }
+.preview[data-view="mobile"] { max-width: 390px; }
+.demo-block { display: flex; flex-direction: column; gap: 10px; }
+.demo-block > p { margin-bottom: 4px; }
+
+/* ── 1. participant strip ── */
+.stage-mock { position: relative; aspect-ratio: 16/9; background: #000; border-radius: var(--r-lg); overflow: hidden; border: 1px solid var(--border); }
+.stage-video-fake { position: absolute; inset: 0; background: radial-gradient(circle at 30% 30%, #1d1030, #000 70%); }
+.participant-strip { position: absolute; top: 12px; left: 12px; display: flex; align-items: center; gap: 8px; z-index: 2; }
+.strip-collapse { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border); background: rgba(20,20,22,.85); color: var(--text); display: grid; place-items: center; flex: none; }
+.strip-collapse svg { transition: transform .2s; }
+.bubbles { list-style: none; margin: 0; padding: 0; display: flex; gap: -8px; transition: opacity .15s, transform .15s; }
+.bubbles.collapsed { opacity: 0; transform: translateX(-8px) scale(.9); pointer-events: none; width: 0; }
+.bubbles li { position: relative; width: 40px; height: 40px; border-radius: 50%; background: var(--raised); border: 2px solid var(--bg); margin-left: -10px; display: grid; place-items: center; font-weight: 700; font-size: 13px; color: var(--violet-hover); transition: box-shadow .2s; }
+.bubbles li:first-child { margin-left: 0; }
+.bubbles li.speaking { box-shadow: 0 0 0 3px var(--live); animation: pulse-ring 1.1s ease-in-out infinite; }
+.bubbles li .mic-off { position: absolute; bottom: -2px; right: -2px; width: 16px; height: 16px; border-radius: 50%; background: var(--error); color: #fff; display: grid; place-items: center; border: 2px solid var(--bg); }
+.bubbles li .mic-off svg { width: 10px; height: 10px; stroke-width: 2.5; }
+.bubbles li.more { background: var(--surface); color: var(--muted); font-size: 12px; }
+@keyframes pulse-ring { 0%, 100% { box-shadow: 0 0 0 3px var(--live); } 50% { box-shadow: 0 0 0 5px rgba(46,229,157,.35); } }
+
+/* ── 2. bottom sheet ── */
+.sheet-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 50; opacity: 0; transition: opacity .2s; }
+.sheet-backdrop.open { opacity: 1; }
+.sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 51; background: var(--surface); border: 1px solid var(--border); border-bottom: 0; border-radius: 20px 20px 0 0; max-width: 480px; margin: 0 auto; transform: translateY(100%); transition: transform .25s ease; max-height: 85dvh; overflow: auto; touch-action: none; }
+.sheet.open { transform: translateY(0); }
+.sheet.dragging { transition: none; }
+.sheet-handle { display: flex; justify-content: center; padding: 10px 0 4px; cursor: grab; }
+.sheet-handle::after { content: ''; width: 40px; height: 4px; border-radius: 999px; background: var(--input); }
+.dlg { display: flex; flex-direction: column; gap: 16px; padding: 4px 20px 24px; }
+.dlg-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.section { display: flex; flex-direction: column; gap: 10px; padding-top: 14px; border-top: 1px solid var(--divider); }
+.section:first-of-type { border-top: 0; padding-top: 0; }
+
+/* ── 3. reactions ── */
+.chat-mock { position: relative; aspect-ratio: 16/9; background: #000; border-radius: var(--r-lg); overflow: hidden; border: 1px solid var(--border); display: flex; align-items: flex-end; justify-content: flex-end; padding: 14px; }
+.chat-video-fake { position: absolute; inset: 0; background: radial-gradient(circle at 70% 60%, #10261d, #000 70%); }
+.reactions-burst { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.reactions-burst .emo { position: absolute; bottom: 60px; right: 50px; font-size: 26px; animation: rise 1.4s ease-out forwards; }
+@keyframes rise { 0% { opacity: 0; transform: translateY(0) scale(.6); } 15% { opacity: 1; transform: translateY(-10px) scale(1); } 100% { opacity: 0; transform: translateY(-140px) scale(1.1) translateX(var(--dx, 0px)); } }
+.reactions-trigger { position: relative; z-index: 2; border-radius: 999px; }
+.reactions-picker { position: absolute; bottom: 60px; right: 14px; z-index: 3; display: flex; gap: 6px; background: var(--raised); border: 1px solid var(--border); border-radius: 999px; padding: 6px; }
+.reactions-picker button { width: 36px; height: 36px; border-radius: 50%; border: 0; background: transparent; font-size: 18px; display: grid; place-items: center; }
+.reactions-picker button:hover { background: var(--surface); }
+
+/* ── toasts (mesmo padrão do app real) ── */
+.toasts { position: fixed; right: 16px; bottom: 16px; z-index: 60; display: flex; flex-direction: column; gap: 10px; width: min(380px, calc(100vw - 32px)); }
+.err { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--error); border-radius: var(--r); padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; box-shadow: 0 12px 32px rgba(0,0,0,.5); }
+.err.ok { border-left-color: var(--live); }
+.err .t { display: flex; align-items: center; gap: 8px; font-weight: 700; }
+.err .why { font-size: 14px; color: var(--chat); }
+
+.summary { max-width: 980px; margin: 0 auto 60px; padding: 0 20px; display: flex; flex-direction: column; gap: 8px; }
+.summary ul { margin: 0; padding-left: 20px; color: var(--chat); font-size: 14px; display: flex; flex-direction: column; gap: 4px; }
+
+@media (max-width: 460px) {
+  .proto-bar { padding: 12px 14px; }
+  .preview { padding: 18px 14px 50px; }
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></symbol>
+  <symbol id="i-mic-off" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M4 4l16 16"/></symbol>
+  <symbol id="i-headphones" viewBox="0 0 24 24"><path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="4.5" height="6" rx="1.5"/><rect x="16.5" y="14" width="4.5" height="6" rx="1.5"/></symbol>
+  <symbol id="i-participants" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/></symbol>
+  <symbol id="i-watching" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></symbol>
+  <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3l9.5 17h-19z"/><path d="M12 10v4M12 17v.5"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <!-- novo ícone, mesmo estilo stroke-based 24x24 dos demais: recolher/expandir a tira -->
+  <symbol id="i-collapse" viewBox="0 0 24 24"><path d="M6 10l6-6 6 6M6 20l6-6 6 6"/></symbol>
+</svg>
+
+<header class="proto-bar">
+  <h1>Overlay estilo Discord — T03 / T02</h1>
+  <div class="seg" id="view-toggle" role="group" aria-label="Pré-visualização">
+    <button type="button" data-view="desktop" aria-pressed="true">Desktop</button>
+    <button type="button" data-view="mobile" aria-pressed="false">Mobile</button>
+  </div>
+</header>
+
+<main class="preview" id="preview" data-view="desktop">
+
+  <section class="demo-block">
+    <h2>1 · Tira de participantes (estilo "Go Live")</h2>
+    <p class="muted small">Anel verde pulsante em quem fala agora (alterna sozinho a cada ~2s). Ícone vermelho marca quem está mutado. Botão recolhe a tira.</p>
+    <div class="stage-mock">
+      <div class="stage-video-fake"></div>
+      <div class="participant-strip">
+        <button class="strip-collapse" id="strip-collapse" type="button" aria-label="Recolher participantes" aria-expanded="true">
+          <svg class="i sm"><use href="#i-collapse"/></svg>
+        </button>
+        <ul class="bubbles" id="bubbles">
+          <li data-name="Ana">AN</li>
+          <li data-name="Caio">CA<span class="mic-off" hidden><svg class="i"><use href="#i-mic-off"/></svg></span></li>
+          <li data-name="Dani">DA</li>
+          <li data-name="Eli">EL<span class="mic-off" hidden><svg class="i"><use href="#i-mic-off"/></svg></span></li>
+          <li class="more">+3</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="demo-block">
+    <h2>2 · Configurar transmissão — bottom sheet (mobile)</h2>
+    <p class="muted small">No desktop o <code>&lt;dialog&gt;</code> centralizado do app já funciona bem. No mobile, o mesmo conteúdo sobe como folha arrastável — arraste a alça pra baixo pra fechar.</p>
+    <button class="btn primary" id="open-sheet" type="button">Transmitir</button>
+  </section>
+
+  <section class="demo-block">
+    <h2>3 · Reações rápidas no chat</h2>
+    <p class="muted small">Sobe animado e some sobre o vídeo — não entope o histórico do chat de texto.</p>
+    <div class="chat-mock">
+      <div class="chat-video-fake"></div>
+      <div class="reactions-burst" id="burst"></div>
+      <div class="reactions-picker" id="react-picker" hidden>
+        <button type="button" data-emoji="👍" aria-label="Reagir com like">👍</button>
+        <button type="button" data-emoji="❤️" aria-label="Reagir com coração">❤️</button>
+        <button type="button" data-emoji="😂" aria-label="Reagir rindo">😂</button>
+        <button type="button" data-emoji="🔥" aria-label="Reagir com fogo">🔥</button>
+      </div>
+      <button class="btn reactions-trigger" id="react-open" type="button" aria-haspopup="true" aria-expanded="false">
+        <svg class="i sm"><use href="#i-chat"/></svg> Reagir
+      </button>
+    </div>
+  </section>
+
+  <section class="demo-block">
+    <h2>Zero falhas silenciosas</h2>
+    <p class="muted small">Qualquer falha é registrada em log estruturado e avisada num toast limpo — nunca uma tela congelada sem explicação.</p>
+    <button class="btn danger" id="simulate-fail" type="button">Simular perda de conexão de voz</button>
+  </section>
+
+</main>
+
+<div class="sheet-backdrop" id="sheet-backdrop" hidden></div>
+<div class="sheet" id="sheet" hidden aria-labelledby="sheet-h" role="dialog" aria-modal="true">
+  <div class="sheet-handle" id="sheet-handle"></div>
+  <div class="dlg">
+    <div class="dlg-head">
+      <h2 id="sheet-h">Transmitir</h2>
+      <button class="btn ghost icon" id="sheet-close" type="button" aria-label="Fechar"><svg class="i"><use href="#i-close"/></svg></button>
+    </div>
+    <div class="section">
+      <h3>Fonte</h3>
+      <div class="seg" role="tablist" aria-label="Categoria da fonte">
+        <button type="button" role="tab" aria-selected="true">Monitor</button>
+        <button type="button" role="tab" aria-selected="false">Janela</button>
+      </div>
+    </div>
+    <div class="section">
+      <h3>Qualidade</h3>
+      <div class="seg" role="group" aria-label="Qualidade">
+        <button type="button" aria-pressed="true">1080p60</button>
+        <button type="button" aria-pressed="false">720p60</button>
+      </div>
+    </div>
+    <div class="section">
+      <button class="switch" type="button" role="switch" id="sheet-audio" aria-checked="true">
+        <span>Áudio da transmissão</span><span class="track"></span>
+      </button>
+    </div>
+    <button class="btn primary big" type="button">Começar a transmitir</button>
+  </div>
+</div>
+
+<div class="toasts" id="toasts" aria-live="assertive"></div>
+
+<footer class="summary">
+  <h2>Resumo da entrega</h2>
+  <ul>
+    <li><b>Tira de participantes:</b> token <code>--live</code> no anel de quem fala, <code>--error</code> no selo de mic mutado, recolhe sem perder o estado (classe <code>.collapsed</code>).</li>
+    <li><b>Bottom sheet:</b> mesmos campos do diálogo real de T02 (fonte, qualidade, áudio), só muda o container pra mobile; arrasto com Pointer Events, fecha com alça ou clique fora.</li>
+    <li><b>Reações rápidas:</b> emojis Unicode como conteúdo (não ícone de UI), animação CSS pura, sem lib externa.</li>
+    <li><b>Erro tratado:</b> "Simular perda de conexão de voz" loga <code>console.warn</code> estruturado e mostra toast reaproveitando <code>.err</code>/<code>.toasts</code> do app real — nunca stack trace na tela; depois de ~4s mostra toast de reconexão (kind "ok").</li>
+  </ul>
+</footer>
+
+<script>
+// ── 1. tira de participantes: mock de quem está falando ──
+const bubbles = [...document.querySelectorAll('#bubbles li[data-name]')];
+function cycleSpeaker() {
+  bubbles.forEach((b) => b.classList.remove('speaking'));
+  const next = bubbles[Math.floor(Math.random() * bubbles.length)];
+  next.classList.add('speaking');
+}
+cycleSpeaker();
+setInterval(cycleSpeaker, 2000);
+// mic mutado mockado de forma fixa (Caio e Eli), só pra demonstrar o selo
+document.querySelectorAll('#bubbles li[data-name="Caio"] .mic-off, #bubbles li[data-name="Eli"] .mic-off')
+  .forEach((el) => { el.hidden = false; });
+
+const stripCollapse = document.getElementById('strip-collapse');
+const bubblesList = document.getElementById('bubbles');
+stripCollapse.addEventListener('click', () => {
+  const collapsed = bubblesList.classList.toggle('collapsed');
+  stripCollapse.setAttribute('aria-expanded', String(!collapsed));
+  stripCollapse.querySelector('svg').style.transform = collapsed ? 'rotate(180deg)' : '';
+});
+
+// ── 2. bottom sheet: abrir, fechar, arrastar pra fechar ──
+const sheet = document.getElementById('sheet');
+const backdrop = document.getElementById('sheet-backdrop');
+const handle = document.getElementById('sheet-handle');
+
+function openSheet() {
+  sheet.hidden = false;
+  backdrop.hidden = false;
+  requestAnimationFrame(() => { sheet.classList.add('open'); backdrop.classList.add('open'); });
+}
+function closeSheet() {
+  sheet.classList.remove('open');
+  backdrop.classList.remove('open');
+  sheet.style.transform = '';
+  setTimeout(() => { sheet.hidden = true; backdrop.hidden = true; }, 250);
+}
+document.getElementById('open-sheet').addEventListener('click', openSheet);
+document.getElementById('sheet-close').addEventListener('click', closeSheet);
+backdrop.addEventListener('click', closeSheet);
+
+let dragStartY = null;
+handle.addEventListener('pointerdown', (e) => {
+  dragStartY = e.clientY;
+  sheet.classList.add('dragging');
+  handle.setPointerCapture(e.pointerId);
+});
+handle.addEventListener('pointermove', (e) => {
+  if (dragStartY === null) return;
+  const dy = Math.max(0, e.clientY - dragStartY);
+  sheet.style.transform = `translateY(${dy}px)`;
+});
+function endDrag(e) {
+  if (dragStartY === null) return;
+  const dy = Math.max(0, e.clientY - dragStartY);
+  sheet.classList.remove('dragging');
+  dragStartY = null;
+  if (dy > 90) closeSheet();
+  else sheet.style.transform = '';
+}
+handle.addEventListener('pointerup', endDrag);
+handle.addEventListener('pointercancel', endDrag);
+
+// ── 3. reações rápidas ──
+const reactOpen = document.getElementById('react-open');
+const reactPicker = document.getElementById('react-picker');
+const burst = document.getElementById('burst');
+reactOpen.addEventListener('click', () => {
+  const show = reactPicker.hidden;
+  reactPicker.hidden = !show;
+  reactOpen.setAttribute('aria-expanded', String(show));
+});
+reactPicker.querySelectorAll('button[data-emoji]').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const span = document.createElement('span');
+    span.className = 'emo';
+    span.textContent = btn.dataset.emoji;
+    span.style.setProperty('--dx', `${(Math.random() * 60 - 30).toFixed(0)}px`);
+    span.style.right = `${40 + Math.random() * 40}px`;
+    burst.appendChild(span);
+    span.addEventListener('animationend', () => span.remove());
+  });
+});
+
+// ── toast (mesmo padrão visual/estrutural de web/ui.js → showError) ──
+const toasts = document.getElementById('toasts');
+function toast(title, reason, kind = 'error', timeout = 6000) {
+  const card = document.createElement('div');
+  card.className = `err${kind === 'ok' ? ' ok' : ''}`;
+  card.setAttribute('role', kind === 'ok' ? 'status' : 'alert');
+  card.innerHTML = `
+    <div class="t">
+      <svg class="i sm"><use href="#${kind === 'ok' ? 'i-check' : 'i-alert'}"/></svg>
+      <span>${title}</span>
+    </div>
+    <p class="why">${reason}</p>`;
+  toasts.prepend(card);
+  while (toasts.children.length > 4) toasts.lastElementChild.remove();
+  if (timeout) setTimeout(() => card.remove(), timeout);
+  return card;
+}
+
+// ── simular falha: log estruturado + aviso visível, nunca silêncio (regra de ouro #2) ──
+document.getElementById('simulate-fail').addEventListener('click', () => {
+  console.warn(JSON.stringify({ level: 'WARN', event: 'voice_connection_lost', ts: Date.now() })); // [#91][#92]
+  toast('Conexão de voz perdida', 'Rede instável. Tentando reconectar automaticamente, sem precisar recarregar a página.', 'error');
+  setTimeout(() => {
+    console.info(JSON.stringify({ level: 'INFO', event: 'voice_connection_restored', ts: Date.now() }));
+    toast('Voz reconectada', 'A conexão de voz foi restabelecida.', 'ok', 4000);
+  }, 4000);
+});
+
+// ── toggle Desktop/Mobile do preview ──
+const preview = document.getElementById('preview');
+document.getElementById('view-toggle').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-view]');
+  if (!btn) return;
+  document.querySelectorAll('#view-toggle button').forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+  preview.dataset.view = btn.dataset.view;
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,372 @@
+<!doctype html>
+<!--
+  RESUMO (checkpoint de raciocínio da skill design-de-interface-projeto)
+
+  3 sugestões de UI/UX para a tela de sessão (T03), inspiradas no overlay do YouTube,
+  adaptadas a uma live P2P (sem scrub bar — não há "voltar no tempo"):
+
+  1. Barra de controles auto-hide (mouse sobre o vídeo → fade in; 3s sem mover → fade out).
+     Título da sessão + quem transmite no topo; badge "AO VIVO" pulsante; contador de
+     espectadores; volume com popout de slider vertical; tela cheia; configurações.
+  2. HUD de qualidade/latência persistente e discreto (estilo "stats for nerds"), com
+     sparkline SVG de estabilidade. Muda de --live para --warn quando a conexão piora —
+     nunca deixa a pessoa sem saber que algo está errado [#92].
+  3. Picture-in-Picture simulado: mini-player flutuante, arrastável, com 2 tamanhos,
+     para a pessoa acompanhar o chat/pessoas com o vídeo sempre visível.
+
+  - O design está minimalista? Sim — cada elemento (barra, HUD, PiP) só aparece quando
+    relevante; nenhum ornamento sem função [#7]. Componentes isolados em funções JS
+    próprias, coesos e nomeados pela intenção [#13].
+  - Como fica no dark mode? Este app é dark-only por decisão de produto (ver
+    web/styles.css linha 1). Não foi criado tema claro — isso contradiria a decisão já
+    tomada. Toda cor vem de var(--token) definida em :root, nunca hex solto no meio do
+    CSS/inline [#3][#6].
+  - Se a "requisição" simulada falhar, a pessoa fica olhando uma tela congelada? Não: o
+    botão "Simular queda de conexão" dispara um toast no padrão .err/.toasts já usado no
+    projeto, com título limpo e o "porquê" em linguagem simples — sem stack trace, sem
+    jargão técnico vazado à tela [#93]. O HUD também reage visualmente (cor --warn) para
+    reforçar o aviso sem bloquear a interface.
+
+  Tokens usados: --bg, --surface, --raised, --border, --divider, --text, --muted, --chat,
+  --violet(+variantes), --live, --warn, --error, --r, --r-lg, --font-title, --font, --mono.
+  Ícones: sprite copiado de web/index.html (i-play, i-pause, i-stop, i-screen-share,
+  i-volume, i-mute, i-fullscreen, i-settings, i-live, i-latency, i-signal, i-watching,
+  i-reconnect, i-alert, i-check, i-close, i-info) + 1 ícone novo no mesmo estilo
+  (stroke-based, viewBox 24x24, stroke-width 1.75): i-pip (destacar em mini-janela).
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Protótipo — Overlay estilo YouTube · Stream P2P</title>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0a0a0b; --surface: #141416; --raised: #1c1c20; --border: #2a2a30; --divider: #23232a; --input: #52525b;
+  --text: #f2f2f4; --muted: #a1a1aa; --chat: #c9c9d0;
+  --violet: #7f00ff; --violet-border: #9a3dff; --violet-text: #b266ff; --violet-hover: #cc99ff; --violet-soft: #22103d;
+  --live: #2ee59d; --error: #ff4d4d; --warn: #ffb020;
+  --r: 12px; --r-lg: 20px;
+  --font-title: Archivo, 'Arial Narrow', system-ui, sans-serif;
+  --font: Inter, system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); font: 16px/1.45 var(--font); }
+h1, h2, h3 { font-family: var(--font-title); font-stretch: 75%; text-transform: uppercase; margin: 0; line-height: 1.05; }
+h2 { font-weight: 800; font-size: 20px; }
+h3 { font-weight: 700; font-size: 14px; letter-spacing: .02em; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+.mono { font-family: var(--mono); }
+svg.i { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+svg.i.sm { width: 18px; height: 18px; }
+button { font: inherit; color: inherit; cursor: pointer; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 44px; padding: 0 16px; border-radius: var(--r); border: 1px solid var(--border);
+  background: var(--raised); color: var(--text); font-weight: 600; white-space: nowrap;
+}
+.btn:hover { border-color: var(--input); }
+.btn.primary { background: var(--violet); border-color: var(--violet); color: #fff; }
+.btn.ghost { background: transparent; border-color: transparent; }
+.btn.icon { width: 44px; padding: 0; }
+:focus-visible { outline: 3px solid var(--violet-text); outline-offset: 3px; }
+
+/* ── page scaffold (not part of the product, just the lab harness) ── */
+.lab-head { padding: 20px 24px; border-bottom: 1px solid var(--divider); display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.lab-head .seg { display: flex; gap: 4px; padding: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; }
+.lab-head .seg button { min-height: 36px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); font-weight: 600; padding: 0 14px; }
+.lab-head .seg button[aria-pressed="true"] { background: var(--raised); color: var(--text); box-shadow: inset 0 0 0 1px var(--violet-border); }
+.lab-body { padding: 28px 24px 80px; display: flex; justify-content: center; }
+.preview-wrap { width: 100%; max-width: 1180px; transition: max-width .2s; }
+.preview-wrap.mobile { max-width: 375px; }
+.lab-note { max-width: 1180px; margin: 0 auto 18px; color: var(--muted); font-size: 13px; }
+.suggest-list { max-width: 1180px; margin: 0 auto 28px; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.suggest-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
+.suggest-card b { font-size: 14px; }
+.suggest-card span { font-size: 13px; color: var(--muted); }
+
+/* ── simulated T03 stage (mirrors web/styles.css .stage/.overlay) ── */
+.demo-stage { position: relative; background: #000; border-radius: var(--r-lg); overflow: hidden; aspect-ratio: 16/9; border: 1px solid var(--border); }
+.demo-video { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 30% 20%, #241a33, #000 70%); color: var(--muted); font-family: var(--mono); font-size: 13px; }
+
+/* 1. top bar (title + who's presenting) */
+.ov-top { position: absolute; top: 0; left: 0; right: 0; display: flex; align-items: center; gap: 10px; padding: 14px 16px; background: linear-gradient(to bottom, rgba(0,0,0,.65), transparent); opacity: 0; transition: opacity .25s; pointer-events: none; }
+.demo-stage.show-ui .ov-top { opacity: 1; }
+.badge-live { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; letter-spacing: .04em; padding: 3px 9px; border-radius: 999px; background: rgba(46,229,157,.14); color: var(--live); text-transform: uppercase; }
+.badge-live::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--live); animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+.ov-top .title { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ov-top .title b { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ov-top .title span { font-size: 12px; color: var(--muted); }
+.ov-top .grow { flex: 1; }
+.viewers { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text); background: rgba(10,10,11,.55); padding: 4px 10px; border-radius: 999px; }
+
+/* 2. bottom control bar (YouTube-style auto-hide) */
+.ov-bottom { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: 6px; padding: 10px 12px; background: linear-gradient(to top, rgba(0,0,0,.75), transparent); opacity: 0; transition: opacity .25s; pointer-events: none; }
+.demo-stage.show-ui .ov-bottom { opacity: 1; pointer-events: auto; }
+.ov-bottom .btn { background: transparent; border: 0; min-height: 36px; width: 36px; padding: 0; color: #fff; }
+.ov-bottom .btn:hover { background: rgba(255,255,255,.12); }
+.ov-bottom .grow { flex: 1; }
+.vol-group { position: relative; display: flex; align-items: center; }
+.vol-popout { position: absolute; bottom: 42px; left: 50%; transform: translateX(-50%); background: rgba(20,20,22,.95); border: 1px solid var(--border); border-radius: var(--r); padding: 10px 8px; display: flex; flex-direction: column; align-items: center; gap: 8px; opacity: 0; pointer-events: none; transition: opacity .15s; }
+.vol-group:hover .vol-popout, .vol-group:focus-within .vol-popout { opacity: 1; pointer-events: auto; }
+.vol-popout input[type=range] { writing-mode: vertical-lr; direction: rtl; width: 20px; height: 80px; accent-color: var(--violet); }
+.vol-popout output { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+
+/* 3. persistent quality/latency HUD (always visible, discreet, top-right) */
+.hud { position: absolute; top: 14px; right: 14px; z-index: 3; background: rgba(10,10,11,.78); border: 1px solid var(--border); border-radius: var(--r); padding: 6px 10px; display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 12px; color: var(--live); transition: color .2s, border-color .2s; }
+.hud.warn { color: var(--warn); border-color: rgba(255,176,32,.4); }
+.hud svg.i.sm { width: 14px; height: 14px; }
+.hud .spark { width: 56px; height: 20px; flex: none; }
+.hud .spark path { stroke: currentColor; fill: none; stroke-width: 1.6; }
+
+/* PiP mini-player */
+.pip { position: fixed; width: 220px; aspect-ratio: 16/9; background: #050506; border: 1px solid var(--violet-border); border-radius: var(--r); box-shadow: 0 16px 40px rgba(0,0,0,.6); z-index: 80; display: none; flex-direction: column; overflow: hidden; resize: none; }
+.pip.on { display: flex; }
+.pip.big { width: 360px; }
+.pip-head { display: flex; align-items: center; gap: 6px; padding: 6px 8px; background: rgba(0,0,0,.55); cursor: grab; }
+.pip-head b { font-size: 11px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+.pip-head button { background: transparent; border: 0; color: var(--muted); width: 22px; height: 22px; display: grid; place-items: center; border-radius: 6px; }
+.pip-head button:hover { background: rgba(255,255,255,.1); color: var(--text); }
+.pip-body { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--muted); font-family: var(--mono); font-size: 11px; background: radial-gradient(circle at 30% 20%, #241a33, #000 70%); }
+
+/* toasts (reuses the real .err/.toasts pattern) */
+.toasts { position: fixed; right: 16px; bottom: 16px; z-index: 90; display: flex; flex-direction: column; gap: 10px; width: min(380px, calc(100vw - 32px)); }
+.err { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--error); border-radius: var(--r); padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; box-shadow: 0 12px 32px rgba(0,0,0,.5); }
+.err.info { border-left-color: var(--violet-border); }
+.err.ok { border-left-color: var(--live); }
+.err .t { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; }
+.err .why { font-size: 13px; color: var(--chat); }
+.err .acts { display: flex; gap: 8px; margin-top: 2px; }
+.err .acts .btn { min-height: 34px; font-size: 13px; }
+
+.controls-row { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+
+@media (max-width: 860px) {
+  .ov-top .viewers span.full { display: none; }
+  .hud .spark { width: 36px; }
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 5l12 7-12 7z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></symbol>
+  <symbol id="i-screen-share" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4M12 13V7M9 10l3-3 3 3"/></symbol>
+  <symbol id="i-volume" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></symbol>
+  <symbol id="i-mute" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M17 9l4 6M21 9l-4 6"/></symbol>
+  <symbol id="i-fullscreen" viewBox="0 0 24 24"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></symbol>
+  <symbol id="i-latency" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+  <symbol id="i-signal" viewBox="0 0 24 24"><path d="M4 20v-3M9 20v-7M14 20V9M19 20V4"/></symbol>
+  <symbol id="i-watching" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-reconnect" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.5-4.5L4 8"/><path d="M4 4v4h4"/><path d="M4 13a8 8 0 0 0 14.5 4.5L20 16"/><path d="M20 20v-4h-4"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3l9.5 17h-19z"/><path d="M12 10v4M12 17v.5"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8v.5"/></symbol>
+  <!-- novo ícone, mesmo estilo (stroke, 24x24, stroke-width 1.75): "destacar" / PiP -->
+  <symbol id="i-pip" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><rect x="12" y="12" width="7" height="5" rx="1"/></symbol>
+</svg>
+
+<header class="lab-head">
+  <div>
+    <h2 style="font-size:16px">Overlay estilo YouTube — protótipo T03</h2>
+    <p class="small muted">3 sugestões de UI/UX para a tela de sessão. Dados mockados, sem conexão real.</p>
+  </div>
+  <span style="flex:1"></span>
+  <div class="seg" role="group" aria-label="Plataforma">
+    <button type="button" id="pf-desktop" aria-pressed="true">Desktop</button>
+    <button type="button" id="pf-mobile" aria-pressed="false">Mobile</button>
+  </div>
+</header>
+
+<div class="lab-body">
+  <div style="width:100%; max-width:1180px">
+    <div class="suggest-list">
+      <div class="suggest-card"><b>1. Barra auto-hide</b><span>Mova o mouse sobre o vídeo: controles e título aparecem com fade. Some em ~3s sem interação, igual YouTube — sem scrub bar (é live).</span></div>
+      <div class="suggest-card"><b>2. HUD de latência persistente</b><span>Canto superior direito, sempre visível e discreto. Sparkline de estabilidade; muda de cor se a conexão piorar.</span></div>
+      <div class="suggest-card"><b>3. Picture-in-Picture</b><span>Botão "Destacar" solta um mini-player arrastável por cima da interface, com 2 tamanhos.</span></div>
+    </div>
+
+    <div class="preview-wrap" id="preview">
+      <div class="demo-stage" id="stage">
+        <div class="demo-video">vídeo da transmissão (mock)</div>
+
+        <div class="hud" id="hud">
+          <svg class="i sm"><use href="#i-latency"/></svg>
+          <span id="hud-ms">42 ms</span>
+          <svg class="spark" viewBox="0 0 56 20" id="hud-spark"></svg>
+        </div>
+
+        <div class="ov-top">
+          <span class="badge-live">Ao vivo</span>
+          <div class="title">
+            <b>Sessão do Yago · noite de jogo</b>
+            <span>Transmitindo: Dani</span>
+          </div>
+          <span class="grow"></span>
+          <span class="viewers"><svg class="i sm"><use href="#i-watching"/></svg><span class="full">4 assistindo</span></span>
+        </div>
+
+        <div class="ov-bottom">
+          <button class="btn" type="button" id="bt-pause" aria-label="Pausar"><svg class="i"><use href="#i-pause"/></svg></button>
+          <div class="vol-group">
+            <button class="btn" type="button" id="bt-vol" aria-label="Volume"><svg class="i"><use href="#i-volume"/></svg></button>
+            <div class="vol-popout">
+              <input type="range" min="0" max="100" value="70" id="vol-range" aria-label="Nível de volume" orient="vertical">
+              <output for="vol-range" id="vol-out">70</output>
+            </div>
+          </div>
+          <button class="btn" type="button" id="bt-pip" aria-label="Destacar vídeo"><svg class="i"><use href="#i-pip"/></svg></button>
+          <span class="grow"></span>
+          <button class="btn" type="button" id="bt-settings" aria-label="Configurações"><svg class="i"><use href="#i-settings"/></svg></button>
+          <button class="btn" type="button" id="bt-full" aria-label="Tela cheia"><svg class="i"><use href="#i-fullscreen"/></svg></button>
+        </div>
+      </div>
+
+      <div class="controls-row">
+        <button class="btn" type="button" id="sim-drop"><svg class="i sm"><use href="#i-alert"/></svg>Simular queda de conexão</button>
+        <button class="btn ghost" type="button" id="sim-recover"><svg class="i sm"><use href="#i-check"/></svg>Simular recuperação</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="pip" id="pip">
+  <div class="pip-head" id="pip-drag">
+    <b>Sessão do Yago (destacado)</b>
+    <button type="button" id="pip-resize" aria-label="Alternar tamanho"><svg class="i sm"><use href="#i-fullscreen"/></svg></button>
+    <button type="button" id="pip-close" aria-label="Fechar mini-player"><svg class="i sm"><use href="#i-close"/></svg></button>
+  </div>
+  <div class="pip-body">vídeo (mini-player arrastável)</div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script>
+// ── helpers (coesos, um propósito cada — [#13]) ──
+const $ = (id) => document.getElementById(id);
+const icon = (name, cls = 'i sm') => `<svg class="${cls}"><use href="#i-${name}"/></svg>`;
+
+function notify(title, reason, kind = 'error', actions = []) {
+  const card = document.createElement('div');
+  card.className = `err${kind === 'error' ? '' : ` ${kind}`}`;
+  card.setAttribute('role', kind === 'error' ? 'alert' : 'status');
+  card.innerHTML = `
+    <div class="t">${icon(kind === 'ok' ? 'check' : kind === 'info' ? 'info' : 'alert')}<span>${title}</span></div>
+    ${reason ? `<p class="why"><b>Por quê:</b> ${reason}</p>` : ''}
+    <div class="acts"></div>`;
+  const acts = card.querySelector('.acts');
+  actions.forEach((a) => {
+    const b = document.createElement('button');
+    b.className = `btn${a.primary ? ' primary' : ''}`;
+    b.textContent = a.label;
+    b.onclick = () => { card.remove(); a.run?.(); };
+    acts.appendChild(b);
+  });
+  const close = document.createElement('button');
+  close.className = 'btn ghost'; close.textContent = 'Fechar';
+  close.onclick = () => card.remove();
+  acts.appendChild(close);
+  $('toasts').prepend(card);
+  while ($('toasts').children.length > 3) $('toasts').lastElementChild.remove();
+  setTimeout(() => card.remove(), 9000);
+}
+
+// ── 1. barra auto-hide (mousemove mostra, 3s de inatividade esconde) ──
+const stage = $('stage');
+let hideTimer = null;
+function showUi() {
+  stage.classList.add('show-ui');
+  clearTimeout(hideTimer);
+  hideTimer = setTimeout(() => stage.classList.remove('show-ui'), 3000);
+}
+stage.addEventListener('mousemove', showUi);
+stage.addEventListener('mouseleave', () => { clearTimeout(hideTimer); stage.classList.remove('show-ui'); });
+showUi(); // visível ao carregar, some depois de 3s como no YouTube
+
+$('vol-range').addEventListener('input', (e) => { $('vol-out').textContent = e.target.value; });
+$('bt-pause').addEventListener('click', (e) => {
+  const on = e.currentTarget.dataset.on !== '1';
+  e.currentTarget.dataset.on = on ? '1' : '0';
+  e.currentTarget.innerHTML = icon(on ? 'play' : 'pause', 'i');
+});
+
+// ── 2. HUD de latência + sparkline reativo ──
+const hud = $('hud'), hudMs = $('hud-ms'), spark = $('hud-spark');
+let samples = Array.from({ length: 14 }, () => 20 + Math.random() * 15);
+let degraded = false;
+function drawSpark() {
+  const w = 56, h = 20, max = Math.max(...samples, 60), min = 0;
+  const pts = samples.map((v, i) => {
+    const x = (i / (samples.length - 1)) * w;
+    const y = h - ((v - min) / (max - min)) * h;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  spark.innerHTML = `<path d="M${pts.join(' L')}"/>`;
+}
+function tick() {
+  samples.shift();
+  const base = degraded ? 95 : 35;
+  samples.push(Math.max(5, base + (Math.random() - 0.5) * (degraded ? 40 : 14)));
+  const last = samples[samples.length - 1];
+  hudMs.textContent = `${Math.round(last)} ms`;
+  hud.classList.toggle('warn', last > 70);
+  drawSpark();
+}
+drawSpark();
+setInterval(tick, 900);
+
+// ── estado de erro/instabilidade simulado: nunca tela congelada [#92][#93] ──
+$('sim-drop').addEventListener('click', () => {
+  degraded = true;
+  notify('Conexão instável', 'A rede de quem está transmitindo piorou. Ajustando a qualidade automaticamente para manter a transmissão sem travar.', 'error',
+    [{ label: 'Ver detalhes', run: () => notify('Qualidade reduzida', 'A transmissão caiu para 720p30 até a rede estabilizar. Isso é automático — nenhuma ação é necessária.', 'info') }]);
+});
+$('sim-recover').addEventListener('click', () => {
+  degraded = false;
+  notify('Conexão recuperada', 'A rede estabilizou. A transmissão volta à qualidade configurada.', 'ok');
+});
+
+// ── 3. Picture-in-Picture simulado (arrastável, 2 tamanhos) ──
+const pip = $('pip');
+$('bt-pip').addEventListener('click', () => {
+  pip.classList.add('on');
+  pip.style.left = '24px';
+  pip.style.top = `${innerHeight - 160}px`;
+});
+$('pip-close').addEventListener('click', () => pip.classList.remove('on'));
+$('pip-resize').addEventListener('click', () => pip.classList.toggle('big'));
+
+let drag = null;
+$('pip-drag').addEventListener('pointerdown', (e) => {
+  const r = pip.getBoundingClientRect();
+  drag = { dx: e.clientX - r.left, dy: e.clientY - r.top };
+  $('pip-drag').setPointerCapture(e.pointerId);
+});
+$('pip-drag').addEventListener('pointermove', (e) => {
+  if (!drag) return;
+  pip.style.left = `${Math.max(0, Math.min(innerWidth - pip.offsetWidth, e.clientX - drag.dx))}px`;
+  pip.style.top = `${Math.max(0, Math.min(innerHeight - pip.offsetHeight, e.clientY - drag.dy))}px`;
+});
+$('pip-drag').addEventListener('pointerup', () => { drag = null; });
+
+// ── toggle desktop/mobile (reaproveita o breakpoint real de 860px) ──
+const preview = $('preview');
+function setPlatform(mobile) {
+  preview.classList.toggle('mobile', mobile);
+  $('pf-desktop').setAttribute('aria-pressed', String(!mobile));
+  $('pf-mobile').setAttribute('aria-pressed', String(mobile));
+}
+$('pf-desktop').addEventListener('click', () => setPlatform(false));
+$('pf-mobile').addEventListener('click', () => setPlatform(true));
+</script>
+</body>
+</html>

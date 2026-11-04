@@ -1,0 +1,425 @@
+<!doctype html>
+<!--
+  Checkpoint de raciocínio (skill design-de-interface-projeto):
+  - Minimalista? Cada layout usa só os componentes reais do design system (.card, .btn, .badge,
+    .person, .avatar, .messages) sem ornamento extra — hierarquia clara por layout [#7][#13].
+  - Funciona no tema único (dark-only, web/styles.css linha 1)? Sim — nenhuma cor nova foi
+    inventada; tudo deriva de var(--token) copiado de web/styles.css [#3][#6].
+  - Erro simulado avisa o usuário? Sim — no layout 3 (Fullscreen+chat flutuante), "Simular erro de
+    conexão" loga console.warn estruturado e mostra um toast .err limpo, sem stack trace [#93][#91].
+  - Nomes descritivos: data-layout, funções JS (showLayout, setViewport, simulateError) revelam a
+    intenção sem precisar de comentário adicional [#1].
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Stream P2P — Layouts estilo YouTube (grupo 1/2)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0a0a0b; --surface: #141416; --raised: #1c1c20; --border: #2a2a30; --divider: #23232a; --input: #52525b;
+  --text: #f2f2f4; --muted: #a1a1aa; --chat: #c9c9d0;
+  --violet: #7f00ff; --violet-border: #9a3dff; --violet-text: #b266ff; --violet-hover: #cc99ff; --violet-soft: #22103d;
+  --live: #2ee59d; --error: #ff4d4d; --warn: #ffb020;
+  --r: 12px; --r-lg: 20px;
+  --font-title: Archivo, 'Arial Narrow', system-ui, sans-serif;
+  --font: Inter, system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); font: 16px/1.45 var(--font); }
+[hidden] { display: none !important; }
+h1, h2, h3 { font-family: var(--font-title); font-stretch: 75%; text-transform: uppercase; margin: 0; line-height: 1.1; }
+h2 { font-weight: 800; font-size: 18px; }
+h3 { font-weight: 700; font-size: 14px; letter-spacing: .02em; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+svg.i { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+svg.i.sm { width: 16px; height: 16px; }
+button, .btn { font: inherit; color: inherit; cursor: pointer; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 0 14px; border-radius: var(--r); border: 1px solid var(--border); background: var(--raised); color: var(--text); font-weight: 600; white-space: nowrap; }
+.btn:hover { border-color: var(--input); }
+.btn.primary { background: var(--violet); border-color: var(--violet); color: #fff; }
+.btn.primary:hover { background: #8f1fff; }
+.btn.ghost { background: transparent; border-color: transparent; }
+.btn.icon { width: 40px; padding: 0; }
+.btn[aria-pressed="true"] { background: var(--violet-soft); border-color: var(--violet-border); }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 16px; }
+.badge { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; letter-spacing: .04em; padding: 3px 9px; border-radius: 999px; text-transform: uppercase; }
+.badge.live { background: rgba(46, 229, 157, .12); color: var(--live); }
+.badge.live::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--live); }
+.avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--raised); display: grid; place-items: center; font-weight: 700; font-size: 13px; flex: none; color: var(--violet-hover); border: 1px solid var(--border); }
+.avatar.lg { width: 56px; height: 56px; font-size: 20px; }
+.person { display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 2px 4px; border-radius: 8px; }
+.person .who { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.person .who b { font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.person .who span { font-size: 11px; color: var(--muted); }
+.messages { flex: 1; overflow: auto; display: flex; flex-direction: column; gap: 8px; min-height: 60px; }
+.msg { font-size: 13px; color: var(--chat); }
+.msg b { color: var(--text); font-weight: 600; }
+.msg time { color: var(--muted); font-size: 11px; margin-left: 6px; }
+.composer { display: flex; gap: 6px; }
+.composer input { flex: 1; min-height: 38px; border-radius: var(--r); border: 1px solid var(--input); background: var(--bg); color: var(--text); padding: 0 10px; font: inherit; }
+.seg { display: flex; gap: 4px; padding: 4px; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; }
+.seg button { flex: 1; min-height: 34px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font-weight: 600; font-size: 13px; padding: 0 10px; }
+.seg button[aria-selected="true"] { background: var(--raised); color: var(--text); box-shadow: inset 0 0 0 1px var(--violet-border); }
+
+/* ── toasts/err (copiado de web/styles.css, para o botão "simular erro") ── */
+.toasts { position: fixed; right: 16px; bottom: 16px; z-index: 90; display: flex; flex-direction: column; gap: 10px; width: min(380px, calc(100vw - 32px)); }
+.err { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--error); border-radius: var(--r); padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; box-shadow: 0 12px 32px rgba(0,0,0,.5); font-size: 13px; }
+.err .t { display: flex; align-items: center; gap: 8px; font-weight: 700; }
+.err .why { color: var(--chat); }
+.err .acts { display: flex; gap: 8px; margin-top: 2px; }
+.err .acts .btn { min-height: 32px; font-size: 12px; }
+
+/* ── chrome do artefato (não é parte do produto) ── */
+.lab-head { position: sticky; top: 0; z-index: 50; background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px 14px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.lab-head .lab-title { font-family: var(--font-title); font-weight: 900; font-size: 15px; text-transform: uppercase; white-space: nowrap; }
+.lab-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.lab-tabs button { min-height: 34px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--raised); color: var(--muted); font-size: 12px; font-weight: 700; }
+.lab-tabs button[aria-pressed="true"] { background: var(--violet-soft); border-color: var(--violet-border); color: var(--violet-hover); }
+.lab-viewport { padding: 20px; display: flex; justify-content: center; }
+.lab-frame { width: 100%; max-width: 1100px; border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden; transition: max-width .2s; background: var(--bg); }
+.lab-frame.mobile { max-width: 375px; }
+.lab-note { max-width: 1100px; margin: 0 auto 16px; padding: 0 20px; }
+
+/* ── layout 1: Theater Mode ── */
+.l1-wrap { display: flex; flex-direction: column; }
+.l1-stage { position: relative; aspect-ratio: 16/9; background: #000; display: flex; align-items: center; justify-content: center; }
+.l1-stage .ph { color: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.l1-bar { position: absolute; left: 0; right: 0; bottom: 0; padding: 10px 14px; display: flex; align-items: center; gap: 10px; background: linear-gradient(transparent, rgba(0,0,0,.85)); opacity: 0; transition: opacity .2s; }
+.l1-stage:hover .l1-bar, .l1-stage.show .l1-bar { opacity: 1; }
+.l1-bar .grow { flex: 1; }
+.l1-people-tab { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-bottom: 1px solid var(--divider); }
+.l1-chat { padding: 14px; display: flex; flex-direction: column; gap: 10px; min-height: 160px; }
+
+/* ── layout 2: Watch Page Classic ── */
+.l2-wrap { display: flex; gap: 0; align-items: flex-start; }
+.l2-main { flex: 1 1 65%; min-width: 0; }
+.l2-stage { aspect-ratio: 16/9; background: #000; display: flex; align-items: center; justify-content: center; color: var(--muted); }
+.l2-meta { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; border-bottom: 1px solid var(--divider); }
+.l2-watchers { display: flex; align-items: center; gap: -6px; }
+.l2-watchers .avatar { margin-left: -8px; border: 2px solid var(--surface); }
+.l2-watchers .avatar:first-child { margin-left: 0; }
+.l2-side { flex: 0 0 35%; border-left: 1px solid var(--divider); display: flex; flex-direction: column; position: sticky; top: 46px; height: calc(100vh - 46px); min-height: 360px; }
+.l2-side .messages { padding: 12px; }
+.l2-side .composer { padding: 0 12px 12px; }
+
+/* ── layout 3: Fullscreen + chat flutuante ── */
+.l3-wrap { position: relative; aspect-ratio: 16/9; background: #000; overflow: hidden; }
+.l3-wrap .ph { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--muted); }
+.l3-chat-float { position: absolute; right: 12px; bottom: 56px; width: 260px; max-height: 220px; background: rgba(20,20,22,.82); backdrop-filter: blur(6px); border: 1px solid var(--border); border-radius: var(--r); display: flex; flex-direction: column; opacity: 1; transition: opacity .4s; }
+.l3-chat-float.fade { opacity: .15; }
+.l3-chat-float .messages { padding: 10px; flex: 1; min-height: 100px; max-height: 140px; }
+.l3-chat-float .composer { padding: 0 10px 10px; }
+.l3-bar { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); display: flex; gap: 8px; padding: 6px 10px; background: rgba(20,20,22,.78); backdrop-filter: blur(6px); border: 1px solid var(--border); border-radius: 999px; }
+.l3-bar .btn { background: transparent; border-color: transparent; min-height: 32px; width: 32px; padding: 0; }
+.l3-err-trigger { position: absolute; top: 12px; left: 12px; }
+
+/* ── layout 4: Sala de espera (Premiere) ── */
+.l4-wrap { display: flex; gap: 0; }
+.l4-main { flex: 1 1 65%; aspect-ratio: 16/9; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: var(--muted); text-align: center; padding: 20px; }
+.l4-side { flex: 0 0 35%; border-left: 1px solid var(--divider); display: flex; flex-direction: column; min-height: 320px; }
+.l4-side .messages { padding: 12px; }
+.l4-side .composer { padding: 0 12px 12px; }
+.l4-countdown { font-family: var(--mono); font-size: 28px; color: var(--violet-hover); }
+
+/* ── layout 5: Mobile feed-style ── */
+.l5-wrap { display: flex; flex-direction: column; }
+.l5-stage { position: sticky; top: 0; aspect-ratio: 16/9; background: #000; display: flex; align-items: center; justify-content: center; color: var(--muted); z-index: 2; }
+.l5-tabs { display: flex; border-bottom: 1px solid var(--divider); }
+.l5-tabs button { flex: 1; min-height: 42px; border: 0; background: transparent; color: var(--muted); font-weight: 700; font-size: 13px; border-bottom: 2px solid transparent; }
+.l5-tabs button[aria-selected="true"] { color: var(--text); border-color: var(--violet); }
+.l5-panel { padding: 12px; min-height: 240px; }
+.l5-panel .messages { min-height: 160px; }
+.l5-panel .composer { margin-top: 10px; }
+.l5-people-list { display: flex; flex-direction: column; gap: 4px; }
+
+footer.lab-summary { max-width: 1100px; margin: 24px auto 60px; padding: 0 20px; display: flex; flex-direction: column; gap: 10px; }
+footer.lab-summary .card { display: flex; flex-direction: column; gap: 4px; }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-screen-share" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4M12 13V7M9 10l3-3 3 3"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 5l12 7-12 7z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></symbol>
+  <symbol id="i-participants" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/></symbol>
+  <symbol id="i-watching" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-owner" viewBox="0 0 24 24"><path d="M4 18h16M5 15L4 7l5 4 3-6 3 6 5-4-1 8z"/></symbol>
+  <symbol id="i-fullscreen" viewBox="0 0 24 24"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></symbol>
+  <symbol id="i-volume" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></symbol>
+  <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3l9.5 17h-19z"/><path d="M12 10v4M12 17v.5"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M4 12L20 4l-6 16-3-7z"/></symbol>
+</svg>
+
+<div class="lab-head">
+  <span class="lab-title">Layouts · YouTube (1/2)</span>
+  <div class="lab-tabs" id="tabs" role="tablist" aria-label="Escolher layout"></div>
+  <span style="flex:1"></span>
+  <div class="seg" id="viewport-toggle" role="group" aria-label="Viewport">
+    <button type="button" data-vp="desktop" aria-selected="true">Desktop</button>
+    <button type="button" data-vp="mobile" aria-selected="false">Mobile</button>
+  </div>
+</div>
+
+<p class="lab-note small muted" id="lab-note"></p>
+
+<div class="lab-viewport">
+  <div class="lab-frame" id="frame">
+    <section data-layout="1" class="l1-wrap">
+      <div class="l1-stage" id="l1-stage">
+        <div class="ph"><svg class="i" style="width:40px;height:40px"><use href="#i-screen-share"/></svg><span>Transmissão de Caio</span></div>
+        <div class="l1-bar">
+          <button class="btn icon ghost" style="color:#fff" type="button"><svg class="i"><use href="#i-pause"/></svg></button>
+          <span class="badge live">Ao vivo</span>
+          <span class="grow"></span>
+          <span class="small" style="color:#fff">142 assistindo</span>
+          <button class="btn icon ghost" style="color:#fff" type="button"><svg class="i"><use href="#i-fullscreen"/></svg></button>
+        </div>
+      </div>
+      <div class="l1-people-tab">
+        <svg class="i sm"><use href="#i-participants"/></svg>
+        <span class="small muted">5 na sessão · Caio transmitindo</span>
+      </div>
+      <div class="l1-chat">
+        <div class="messages" id="l1-messages"></div>
+        <form class="composer" onsubmit="return false"><input placeholder="Mensagem" aria-label="Mensagem"><button class="btn primary icon" type="submit"><svg class="i"><use href="#i-send"/></svg></button></form>
+      </div>
+    </section>
+
+    <section data-layout="2" hidden class="l2-wrap">
+      <div class="l2-main">
+        <div class="l2-stage"><svg class="i" style="width:40px;height:40px"><use href="#i-screen-share"/></svg></div>
+        <div class="l2-meta">
+          <strong>Sessão de Caio · Jogo ao vivo</strong>
+          <div class="l2-watchers" id="l2-watchers"></div>
+        </div>
+      </div>
+      <aside class="l2-side">
+        <div class="messages" id="l2-messages"></div>
+        <form class="composer" onsubmit="return false"><input placeholder="Mensagem" aria-label="Mensagem"><button class="btn primary icon" type="submit"><svg class="i"><use href="#i-send"/></svg></button></form>
+      </aside>
+    </section>
+
+    <section data-layout="3" hidden class="l3-wrap" id="l3-wrap">
+      <div class="ph"><svg class="i" style="width:40px;height:40px"><use href="#i-screen-share"/></svg></div>
+      <button class="btn l3-err-trigger" type="button" id="l3-err-btn">Simular erro de conexão</button>
+      <div class="l3-chat-float" id="l3-chat">
+        <div class="messages" id="l3-messages"></div>
+        <form class="composer" onsubmit="return false"><input placeholder="Mensagem" aria-label="Mensagem"><button class="btn primary icon" type="submit"><svg class="i"><use href="#i-send"/></svg></button></form>
+      </div>
+      <div class="l3-bar">
+        <button class="btn" type="button" style="color:#fff"><svg class="i"><use href="#i-pause"/></svg></button>
+        <button class="btn" type="button" style="color:#fff"><svg class="i"><use href="#i-volume"/></svg></button>
+        <button class="btn" type="button" style="color:#fff"><svg class="i"><use href="#i-fullscreen"/></svg></button>
+      </div>
+    </section>
+
+    <section data-layout="4" hidden class="l4-wrap">
+      <div class="l4-main">
+        <div class="avatar lg">C</div>
+        <h2 style="font-size:16px">A transmissão começa em breve</h2>
+        <p class="l4-countdown" id="l4-countdown">02:14</p>
+        <p class="small muted">Caio vai transmitir · 8 pessoas esperando</p>
+      </div>
+      <aside class="l4-side">
+        <div class="messages" id="l4-messages"></div>
+        <form class="composer" onsubmit="return false"><input placeholder="Mensagem" aria-label="Mensagem"><button class="btn primary icon" type="submit"><svg class="i"><use href="#i-send"/></svg></button></form>
+      </aside>
+    </section>
+
+    <section data-layout="5" hidden class="l5-wrap">
+      <div class="l5-stage"><svg class="i" style="width:36px;height:36px"><use href="#i-screen-share"/></svg></div>
+      <div class="l5-tabs" role="tablist">
+        <button type="button" role="tab" aria-selected="true" data-l5tab="chat">Chat</button>
+        <button type="button" role="tab" aria-selected="false" data-l5tab="people">Pessoas <span id="l5-count"></span></button>
+      </div>
+      <div class="l5-panel" data-l5panel="chat">
+        <div class="messages" id="l5-messages"></div>
+        <form class="composer" onsubmit="return false"><input placeholder="Mensagem" aria-label="Mensagem"><button class="btn primary icon" type="submit"><svg class="i"><use href="#i-send"/></svg></button></form>
+      </div>
+      <div class="l5-panel l5-people-list" data-l5panel="people" hidden id="l5-people"></div>
+    </section>
+  </div>
+</div>
+
+<footer class="lab-summary">
+  <h3 class="muted" style="margin-bottom:4px">Resumo — necessidade que cada layout resolve melhor</h3>
+  <div class="card"><b>1. Theater Mode</b><span class="small muted">Foco total no vídeo durante a transmissão, com chat acessível sem dividir a largura da tela.</span></div>
+  <div class="card"><b>2. Watch Page Classic</b><span class="small muted">Chat sempre visível ao lado sem precisar trocar de aba, ideal para quem acompanha vídeo e conversa ao mesmo tempo.</span></div>
+  <div class="card"><b>3. Fullscreen + chat flutuante</b><span class="small muted">Imersão máxima no vídeo, com chat que aparece só quando necessário e desaparece sozinho.</span></div>
+  <div class="card"><b>4. Sala de espera (Premiere)</b><span class="small muted">Mantém a audiência engajada e conversando antes da transmissão realmente começar.</span></div>
+  <div class="card"><b>5. Mobile feed-style</b><span class="small muted">Vídeo sempre visível no topo enquanto rola o chat/pessoas, igual ao hábito de uso do YouTube no celular.</span></div>
+</footer>
+
+<div class="toasts" id="toasts"></div>
+
+<script>
+const DATA = {
+  people: [
+    { id: 'p1', name: 'Caio', role: 'Transmitindo', speaking: true, you: false },
+    { id: 'p2', name: 'Dani', role: 'Ouvindo', speaking: false, you: false },
+    { id: 'p3', name: 'Bruno', role: 'Ouvindo', speaking: false, you: true },
+    { id: 'p4', name: 'Fe', role: 'Ouvindo', speaking: false, you: false },
+    { id: 'p5', name: 'Lia', role: 'Ouvindo', speaking: false, you: false },
+  ],
+  messages: [
+    { who: 'Dani', text: 'Chegou nessa fase rápido', t: '21:04' },
+    { who: 'Bruno', text: 'boa, segue assim', t: '21:05' },
+    { who: 'Fe', text: 'qual a sensibilidade do mouse?', t: '21:06' },
+    { who: 'Caio', text: '800 dpi, sens 1.2', t: '21:06' },
+  ],
+  latencyMs: 138,
+};
+
+function initials(n) { return n.trim()[0]?.toUpperCase() ?? '?'; }
+
+function renderMessages(elId, limit) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  el.innerHTML = '';
+  DATA.messages.slice(0, limit ?? DATA.messages.length).forEach((m) => {
+    const div = document.createElement('div');
+    div.className = 'msg';
+    div.innerHTML = `<b>${m.who}</b> ${m.text} <time>${m.t}</time>`;
+    el.appendChild(div);
+  });
+}
+
+function renderWatchers(elId) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  el.innerHTML = '';
+  DATA.people.forEach((p) => {
+    const a = document.createElement('div');
+    a.className = 'avatar';
+    a.title = p.name;
+    a.textContent = initials(p.name);
+    el.appendChild(a);
+  });
+}
+
+function renderPeopleList(elId) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  el.innerHTML = '';
+  DATA.people.forEach((p) => {
+    const row = document.createElement('div');
+    row.className = 'person';
+    row.innerHTML = `<div class="avatar">${initials(p.name)}</div><div class="who"><b>${p.name}${p.you ? ' (você)' : ''}</b><span>${p.role}</span></div>`;
+    el.appendChild(row);
+  });
+}
+
+renderMessages('l1-messages');
+renderMessages('l2-messages');
+renderMessages('l3-messages', 3);
+renderMessages('l4-messages');
+renderMessages('l5-messages');
+renderWatchers('l2-watchers');
+renderPeopleList('l5-people');
+document.getElementById('l5-count').textContent = `(${DATA.people.length})`;
+
+// ── seletor de layout ──
+const LAYOUT_NAMES = ['Theater Mode', 'Watch Page Classic', 'Fullscreen + chat flutuante', 'Sala de espera', 'Mobile feed-style'];
+const tabs = document.getElementById('tabs');
+LAYOUT_NAMES.forEach((name, i) => {
+  const n = i + 1;
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.role = 'tab';
+  btn.textContent = `${n}. ${name}`;
+  btn.setAttribute('aria-pressed', n === 1 ? 'true' : 'false');
+  btn.addEventListener('click', () => showLayout(n));
+  tabs.appendChild(btn);
+});
+
+function showLayout(n) {
+  document.querySelectorAll('[data-layout]').forEach((s) => { s.hidden = s.dataset.layout !== String(n); });
+  [...tabs.children].forEach((b, i) => b.setAttribute('aria-pressed', String(i + 1 === n)));
+  document.getElementById('lab-note').textContent = `Layout ${n} de 5 — ${LAYOUT_NAMES[n - 1]}`;
+}
+showLayout(1);
+
+// ── toggle desktop/mobile (reaproveita o breakpoint real de 860px do projeto) ──
+const vpToggle = document.getElementById('viewport-toggle');
+vpToggle.addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-vp]');
+  if (!btn) return;
+  [...vpToggle.children].forEach((b) => b.setAttribute('aria-selected', String(b === btn)));
+  document.getElementById('frame').classList.toggle('mobile', btn.dataset.vp === 'mobile');
+});
+
+// ── layout 1: auto-hide da barra de controles ──
+const l1Stage = document.getElementById('l1-stage');
+let l1HideTimer = null;
+l1Stage.addEventListener('mousemove', () => {
+  l1Stage.classList.add('show');
+  clearTimeout(l1HideTimer);
+  l1HideTimer = setTimeout(() => l1Stage.classList.remove('show'), 2500);
+});
+
+// ── layout 3: fade do chat flutuante quando parado + erro simulado ──
+const l3Chat = document.getElementById('l3-chat');
+let l3FadeTimer = null;
+function l3ResetFade() {
+  l3Chat.classList.remove('fade');
+  clearTimeout(l3FadeTimer);
+  l3FadeTimer = setTimeout(() => l3Chat.classList.add('fade'), 3000);
+}
+document.getElementById('l3-wrap').addEventListener('mousemove', l3ResetFade);
+l3ResetFade();
+
+function showToast(title, reason, kind) {
+  const toasts = document.getElementById('toasts');
+  const card = document.createElement('div');
+  card.className = 'err';
+  card.setAttribute('role', kind === 'error' ? 'alert' : 'status');
+  card.innerHTML = `
+    <div class="t"><svg class="i sm"><use href="#i-${kind === 'ok' ? 'check' : 'alert'}"/></svg><span>${title}</span></div>
+    <p class="why">${reason}</p>
+    <div class="acts"><button class="btn ghost" type="button">Fechar</button></div>`;
+  card.querySelector('button').addEventListener('click', () => card.remove());
+  toasts.prepend(card);
+  while (toasts.children.length > 3) toasts.lastElementChild.remove();
+  setTimeout(() => card.remove(), 6000);
+}
+
+document.getElementById('l3-err-btn').addEventListener('click', () => {
+  // Log estruturado no nível WARN (contornável: a sessão reconecta sozinha) [#91][#92].
+  console.warn(JSON.stringify({ level: 'WARN', event: 'ice_disconnected', sessionId: 'mock-session', ts: Date.now() }));
+  showToast('Conexão instável', 'Por quê: a rede até quem transmite caiu por um instante. Tentando reconectar automaticamente.', 'error');
+});
+
+// ── layout 5: abas chat/pessoas ──
+document.querySelectorAll('[data-l5tab]').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-l5tab]').forEach((b) => b.setAttribute('aria-selected', String(b === btn)));
+    document.querySelectorAll('[data-l5panel]').forEach((p) => { p.hidden = p.dataset.l5panel !== btn.dataset.l5tab; });
+  });
+});
+
+// ── layout 4: contagem regressiva mockada ──
+let l4Left = 134;
+setInterval(() => {
+  l4Left = Math.max(0, l4Left - 1);
+  const m = String(Math.floor(l4Left / 60)).padStart(2, '0');
+  const s = String(l4Left % 60).padStart(2, '0');
+  document.getElementById('l4-countdown').textContent = `${m}:${s}`;
+}, 1000);
+</script>
+</body>
+</html>

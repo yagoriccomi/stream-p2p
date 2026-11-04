@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Stream P2P — Protótipos de Interface</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg:#0a0a0b; --surface:#141416; --raised:#1c1c20; --border:#2a2a30; --divider:#23232a;
+    --text:#f2f2f4; --muted:#a1a1aa;
+    --violet:#7f00ff; --violet-border:#9a3dff; --violet-text:#b266ff; --violet-hover:#cc99ff; --violet-soft:#22103d;
+    --r:12px; --r-lg:20px;
+    --font-title: Archivo, 'Arial Narrow', system-ui, sans-serif;
+    --font: Inter, system-ui, sans-serif;
+  }
+  * { box-sizing:border-box; }
+  html, body { margin:0; min-height:100%; background:var(--bg); color:var(--text); font:16px/1.5 var(--font); }
+  h1, h2, h3 { font-family:var(--font-title); font-stretch:75%; text-transform:uppercase; margin:0; line-height:1.1; }
+  h1 { font-weight:900; font-size:clamp(24px,5vw,34px); }
+  h2 { font-weight:800; font-size:18px; }
+  h3 { font-weight:700; font-size:13px; letter-spacing:.03em; color:var(--violet-text); }
+  p { margin:0; }
+  .muted { color:var(--muted); }
+  a { color:var(--violet-text); text-decoration:none; }
+  a:hover { color:var(--violet-hover); }
+  :focus-visible { outline:3px solid var(--violet-text); outline-offset:3px; }
+
+  .page { max-width:980px; margin:0 auto; padding:40px 20px 80px; display:flex; flex-direction:column; gap:28px; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:22px; display:flex; flex-direction:column; gap:10px; }
+  .proto-link { display:flex; flex-direction:column; gap:6px; padding:18px; border:1px solid var(--border); border-radius:var(--r); background:var(--raised); transition:border-color .15s, background .15s; }
+  .proto-link:hover { border-color:var(--violet-border); background:var(--violet-soft); }
+  .proto-link b { font-size:17px; color:var(--text); }
+  .proto-link span { font-size:14px; color:var(--muted); }
+  .proto-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(260px,1fr)); gap:14px; }
+
+  ol.sugs { margin:0; padding-left:22px; display:flex; flex-direction:column; gap:10px; }
+  ol.sugs li { font-size:14px; }
+  ol.sugs b { color:var(--text); }
+  ol.sugs .why { color:var(--muted); }
+  .group-label { font-size:12px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--violet-text); margin-top:6px; }
+  .proto-link.featured { border:2px solid var(--violet-border); background:var(--violet-soft); }
+  .proto-link.featured b { color:var(--violet-hover); }
+  .star { color:var(--violet-text); }
+</style>
+</head>
+<body>
+<div class="page">
+  <div>
+    <h1>Stream P2P — Protótipos de Interface (10 sugestões)</h1>
+    <p class="muted" style="margin-top:8px">Protótipos HTML autossuficientes, usando os mesmos tokens de cor e ícones do app (dark-only, fundo <code>--bg</code>, violeta <code>--violet</code>). Cada link abre um protótipo navegável e independente.</p>
+  </div>
+
+  <section class="card">
+    <h2><span class="star">★</span> Entrega principal: 10 layouts de tela</h2>
+    <p class="muted">Cada link abre 10 composições completas e distintas da tela de sessão (T03) — não widgets isolados, mas o layout inteiro (vídeo, chat, pessoas, controles) reorganizado, com seletor para trocar entre elas e toggle Desktop/Mobile.</p>
+    <div class="proto-grid">
+      <a class="proto-link featured" href="layouts-youtube.html">
+        <b>5 layouts estilo YouTube</b>
+        <span>Theater Mode, Watch Page Classic, Fullscreen com chat flutuante, Sala de espera (Premiere) e Mobile feed-style.</span>
+      </a>
+      <a class="proto-link featured" href="layouts-discord.html">
+        <b>5 layouts estilo Discord</b>
+        <span>Stage Channel, Grid de chamada + Screen Share, Painel lateral docked, Mobile bottom-tab navigation e Focus Mode.</span>
+      </a>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Bônus: protótipos de componentes</h2>
+    <div class="proto-grid">
+      <a class="proto-link" href="overlay-youtube.html">
+        <b>Overlay estilo YouTube</b>
+        <span>Barra de controles com auto-hide, HUD de qualidade/latência persistente e Picture-in-Picture flutuante para acompanhar o chat sem perder o vídeo de vista.</span>
+      </a>
+      <a class="proto-link" href="overlay-discord.html">
+        <b>Overlay estilo Discord</b>
+        <span>Bolhas de participantes com indicador de fala, bottom-sheet mobile para pessoas/chat e reações rápidas sobre o vídeo.</span>
+      </a>
+      <a class="proto-link" href="context-menu.html">
+        <b>Menu de contexto, skeletons, atalhos e toasts</b>
+        <span>Botão direito / long-press com volume inline, estados de carregamento sem tela congelada, atalhos de teclado e toasts de conexão agrupados.</span>
+      </a>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>As 10 sugestões, uma a uma</h2>
+
+    <p class="group-label">Overlay estilo YouTube</p>
+    <ol class="sugs" start="1">
+      <li><b>Barra de controles com auto-hide.</b> <span class="why">Resolve o vídeo poluído de botões fixos — controles aparecem só quando o mouse se move ou a tela é tocada.</span></li>
+      <li><b>HUD de qualidade/latência persistente.</b> <span class="why">Resolve a falta de aviso quando a conexão piora — muda de cor e nunca desaparece sozinho.</span></li>
+      <li><b>Picture-in-Picture flutuante e arrastável.</b> <span class="why">Resolve ter que escolher entre ver o vídeo ou acompanhar o chat/pessoas.</span></li>
+    </ol>
+
+    <p class="group-label">Overlay estilo Discord</p>
+    <ol class="sugs" start="4">
+      <li><b>Bolhas de participantes com indicador de fala.</b> <span class="why">Resolve não saber quem está falando sem abrir a lista de pessoas.</span></li>
+      <li><b>Bottom-sheet mobile para pessoas/chat.</b> <span class="why">Resolve o painel lateral não caber bem em telas pequenas sem esconder o vídeo.</span></li>
+      <li><b>Reações rápidas sobre o vídeo.</b> <span class="why">Resolve a falta de um jeito leve de reagir sem poluir o chat de texto.</span></li>
+    </ol>
+
+    <p class="group-label">Menu de contexto, skeletons, atalhos e toasts</p>
+    <ol class="sugs" start="7">
+      <li><b>Menu de botão direito / long-press com volume inline.</b> <span class="why">Resolve ter que abrir um diálogo separado só para ajustar o volume de uma pessoa ou fonte.</span></li>
+      <li><b>Estados de skeleton loading.</b> <span class="why">Resolve a lista de pessoas e o chat ficarem congelados ou em branco durante uma reconexão.</span></li>
+      <li><b>Painel de atalhos de teclado.</b> <span class="why">Resolve atalhos existentes (mutar, tela cheia) que ninguém descobre sem documentação visível.</span></li>
+      <li><b>Consolidação de toasts de conexão.</b> <span class="why">Resolve o spam de vários cards de erro empilhados por um mesmo problema de rede.</span></li>
+    </ol>
+  </section>
+</div>
+</body>
+</html>
