@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
-import { iceServers, iceSource, restCredential, turnUrls, DEFAULT_STUN, TURN_TTL_S, CF_TURN_API, CF_TTL_S } from './ice.js';
+import { cleanTurnId, iceServers, iceSource, restCredential, turnUrls, DEFAULT_STUN, TURN_TTL_S, CF_TURN_API, CF_TTL_S } from './ice.js';
 
 const NOW = 1_700_000_000_000;
 
@@ -12,8 +12,22 @@ test('without TURN env only the default STUN is offered', () => {
 test('TURN_SECRET yields a coturn REST credential that expires after the TTL', () => {
   const [, turn] = iceServers({ TURN_URLS: 'turn:t.example.com:3478, turns:t.example.com:5349', TURN_SECRET: 's3cret' }, NOW);
   assert.deepEqual(turn.urls, ['turn:t.example.com:3478', 'turns:t.example.com:5349']);
-  assert.equal(turn.username, `${NOW / 1000 + TURN_TTL_S}:sp2p`);
+  assert.equal(turn.username, `${NOW / 1000 + TURN_TTL_S}:stream-p2p`);
   assert.equal(turn.credential, createHmac('sha1', 's3cret').update(turn.username).digest('base64'));
+});
+
+test('the room/user id goes into the username and is sanitized', () => {
+  const env = { TURN_URLS: 'turn:t.example.com', TURN_SECRET: 's' };
+  const exp = NOW / 1000 + TURN_TTL_S;
+  assert.equal(iceServers(env, NOW, 'AB12-cd')[1].username, `${exp}:stream-p2p:AB12-cd`);
+  assert.equal(iceServers(env, NOW, 'a:b c/../d')[1].username, `${exp}:stream-p2p:abcd`); // no forged fields
+  assert.equal(iceServers(env, NOW, '')[1].username, `${exp}:stream-p2p`);
+  assert.equal(cleanTurnId('x'.repeat(100)).length, 64);
+});
+
+test('iceSource passes the id on to the own TURN', async () => {
+  const env = { TURN_URLS: 'turn:t.example.com', TURN_SECRET: 's' };
+  assert.match((await iceSource(env)(NOW, 'R1'))[1].username, /:stream-p2p:R1$/);
 });
 
 test('static TURN credentials are used when there is no secret', () => {

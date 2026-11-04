@@ -5,22 +5,27 @@ import { createHmac } from 'node:crypto';
 
 export const DEFAULT_STUN = 'stun:stun.l.google.com:19302';
 export const TURN_TTL_S = 6 * 3600;
-const TURN_USER_TAG = 'sp2p';
+const TURN_USER_TAG = 'stream-p2p';
 
 export function turnUrls(env) {
   return (env.TURN_URLS ?? '').split(',').map((u) => u.trim()).filter((u) => /^turns?:[^\s]+$/.test(u));
 }
 
-export function restCredential(secret, now = Date.now(), ttlS = TURN_TTL_S) {
-  const username = `${Math.floor(now / 1000) + ttlS}:${TURN_USER_TAG}`;
+// The id (room or user) rides inside the username, so coturn logs show who the credential was for.
+// It comes from the client: only [\w-] survives (no ':' to forge fields), at most 64 chars.
+export const cleanTurnId = (id) => String(id ?? '').replace(/[^\w-]/g, '').slice(0, 64);
+
+export function restCredential(secret, now = Date.now(), ttlS = TURN_TTL_S, id = '') {
+  const who = cleanTurnId(id);
+  const username = `${Math.floor(now / 1000) + ttlS}:${TURN_USER_TAG}${who ? `:${who}` : ''}`;
   return { username, credential: createHmac('sha1', secret).update(username).digest('base64') };
 }
 
-export function iceServers(env = process.env, now = Date.now()) {
+export function iceServers(env = process.env, now = Date.now(), id = '') {
   const servers = [{ urls: DEFAULT_STUN }];
   const urls = turnUrls(env);
   if (!urls.length) return servers;
-  if (env.TURN_SECRET) return [...servers, { urls, ...restCredential(env.TURN_SECRET, now) }];
+  if (env.TURN_SECRET) return [...servers, { urls, ...restCredential(env.TURN_SECRET, now, TURN_TTL_S, id) }];
   if (env.TURN_USERNAME && env.TURN_CREDENTIAL) {
     return [...servers, { urls, username: env.TURN_USERNAME, credential: env.TURN_CREDENTIAL }];
   }
@@ -40,10 +45,10 @@ const BROWSER_BLOCKED_PORT = /:53(\?|$)/; // browsers block port 53: that URL on
 export function iceSource(env = process.env, fetchFn = fetch) {
   const id = env.CF_TURN_KEY_ID;
   const token = env.CF_TURN_API_TOKEN;
-  if (!id || !token) return async (now = Date.now()) => iceServers(env, now);
+  if (!id || !token) return async (now = Date.now(), who = '') => iceServers(env, now, who);
   let cache = null; // { turn, renewAt, expiresAt }
-  return async (now = Date.now()) => {
-    const own = iceServers(env, now); // fresh REST credential every call
+  return async (now = Date.now(), who = '') => {
+    const own = iceServers(env, now, who); // fresh REST credential every call
     if (cache && now < cache.renewAt) return [...own, ...cache.turn];
     try {
       const res = await fetchFn(`${CF_TURN_API}/${encodeURIComponent(id)}/credentials/generate-ice-servers`, {
