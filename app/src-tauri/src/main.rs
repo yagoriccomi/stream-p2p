@@ -114,13 +114,13 @@ async fn pick_source(_id: String) -> Result<(), String> {
 // (everything but this app), so an older page that never sends it is unaffected.
 #[cfg(windows)]
 #[tauri::command]
-async fn system_audio_start(out: tauri::ipc::Channel<tauri::ipc::InvokeResponseBody>, window: Option<u64>, pids: Option<Vec<u32>>) -> Result<usize, String> {
-    tauri::async_runtime::spawn_blocking(move || sysaudio::start(out, window, pids)).await.map_err(|e| e.to_string())??;
+async fn system_audio_start(out: tauri::ipc::Channel<tauri::ipc::InvokeResponseBody>, window: Option<u64>, pids: Option<Vec<u32>>, exclude: Option<Vec<String>>) -> Result<usize, String> {
+    tauri::async_runtime::spawn_blocking(move || sysaudio::start(out, window, pids, exclude)).await.map_err(|e| e.to_string())??;
     Ok(sysaudio::RATE)
 }
 #[cfg(not(windows))]
 #[tauri::command]
-async fn system_audio_start(_out: tauri::ipc::Channel<tauri::ipc::InvokeResponseBody>, _window: Option<u64>, _pids: Option<Vec<u32>>) -> Result<usize, String> {
+async fn system_audio_start(_out: tauri::ipc::Channel<tauri::ipc::InvokeResponseBody>, _window: Option<u64>, _pids: Option<Vec<u32>>, _exclude: Option<Vec<String>>) -> Result<usize, String> {
     Err("áudio do sistema pelo app só existe no Windows".into())
 }
 
@@ -128,14 +128,15 @@ async fn system_audio_start(_out: tauri::ipc::Channel<tauri::ipc::InvokeResponse
 // sysaudio::list_sessions), so the page can offer an allowlist for system_audio_start's `pids`.
 #[derive(Serialize)]
 struct AudioSession {
-    pid: u32,
     name: String,
+    sound: bool,
+    mic: bool,
 }
 #[cfg(windows)]
 #[tauri::command]
 async fn list_audio_sessions() -> Result<Vec<AudioSession>, String> {
     tauri::async_runtime::spawn_blocking(|| {
-        sysaudio::list_sessions().map(|sessions| sessions.into_iter().map(|(pid, name)| AudioSession { pid, name }).collect())
+        sysaudio::list_sessions().map(|sessions| sessions.into_iter().map(|a| AudioSession { name: a.name, sound: a.sound, mic: a.mic }).collect())
     })
     .await
     .map_err(|e| e.to_string())?
@@ -144,6 +145,15 @@ async fn list_audio_sessions() -> Result<Vec<AudioSession>, String> {
 #[tauri::command]
 async fn list_audio_sessions() -> Result<Vec<AudioSession>, String> {
     Err("lista de áudio pelo app só existe no Windows".into())
+}
+
+// Apps (by name) left out of the full-screen sound; a running capture picks the change up at once.
+#[tauri::command]
+fn system_audio_exclude(names: Vec<String>) {
+    #[cfg(windows)]
+    sysaudio::set_exclude(names);
+    #[cfg(not(windows))]
+    let _ = names;
 }
 
 #[tauri::command]
@@ -275,7 +285,8 @@ fn allow_ipc(app: &AppHandle, server: &str) {
         .permission("allow-system-audio-start")
         .permission("allow-system-audio-stop")
         .permission("allow-pick-source")
-        .permission("allow-list-audio-sessions");
+        .permission("allow-list-audio-sessions")
+        .permission("allow-system-audio-exclude");
     if let Err(e) = app.add_capability(cap) {
         eprintln!("capability: {e}");
     }
@@ -330,7 +341,7 @@ fn main() -> ExitCode {
         // Size, position and maximized come back on the next launch; visibility does not, so a
         // quit from the tray never reopens hidden.
         .plugin(tauri_plugin_window_state::Builder::default().with_state_flags(StateFlags::all() - StateFlags::VISIBLE).build())
-        .invoke_handler(tauri::generate_handler![list_sources, set_tray_live, set_status, system_audio_start, system_audio_stop, pick_source, list_audio_sessions])
+        .invoke_handler(tauri::generate_handler![list_sources, set_tray_live, set_status, system_audio_start, system_audio_stop, pick_source, list_audio_sessions, system_audio_exclude])
         .manage(Server(server.clone()))
         .setup(move |app| {
             allow_ipc(app.handle(), &server);

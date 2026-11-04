@@ -39,9 +39,9 @@ registerProcessor('sysaudio', SysAudio);
 
 // Resolves to the track, or rejects when the app has no such command (older app) or the
 // capture does not start. Call it straight from a click: the AudioContext needs the gesture.
-// `pids`, when given, is the Monitor allowlist (app/src-tauri/src/sysaudio.rs ignores it once a
-// shared window narrows the source, same as the backend's own precedence rule).
-export async function nativeSystemAudio({ core }, pids) {
+// `exclude`, when given, lists the apps (by name) left out of Tela inteira; app/src-tauri/src/
+// sysaudio.rs ignores it once a shared window narrows the source.
+export async function nativeSystemAudio({ core }, exclude) {
   const ctx = new AudioContext({ sampleRate: 48000, latencyHint: 'interactive' });
   let node = null;
   // One channel per start: Tauri numbers a channel's messages from 0 for each Rust side, and the
@@ -65,7 +65,7 @@ export async function nativeSystemAudio({ core }, pids) {
     });
     const dest = ctx.createMediaStreamDestination();
     node.connect(dest);
-    await core.invoke('system_audio_start', { out: channel(), pids: pids?.length ? pids : undefined });
+    await core.invoke('system_audio_start', { out: channel(), exclude: exclude ?? undefined });
     await ctx.resume();
     const [track] = dest.stream.getAudioTracks();
     // Narrows the sound to the program behind a shared window (its HWND), so the voice chat,

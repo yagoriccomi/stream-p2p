@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-system-audio-exclude"
+description = "Enables the system_audio_exclude command without any pre-configured scope."
+commands.allow = ["system_audio_exclude"]
+
+[[permission]]
+identifier = "deny-system-audio-exclude"
+description = "Denies the system_audio_exclude command without any pre-configured scope."
+commands.deny = ["system_audio_exclude"]
