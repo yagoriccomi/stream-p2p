@@ -26,6 +26,7 @@
   <symbol id="i-request-turn" viewBox="0 0 24 24"><path d="M8 13V6a1.5 1.5 0 0 1 3 0v5M11 11V4.5a1.5 1.5 0 0 1 3 0V11M14 11V6a1.5 1.5 0 0 1 3 0v7a7 7 0 0 1-7 7h-.5A5.5 5.5 0 0 1 5 15.5V12a1.5 1.5 0 0 1 3 0"/></symbol>
   <symbol id="i-pass-turn" viewBox="0 0 24 24"><path d="M4 8h13M14 5l3 3-3 3M20 16H7M10 13l-3 3 3 3"/></symbol>
   <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></symbol>
+  <symbol id="i-discord" viewBox="0 0 24 24"><path d="M8.5 5.5c-1.6.3-3 .8-4 1.5-1.6 2.6-2.2 5.6-2 8.5 1.4 1.1 3 1.9 4.6 2.4l1.1-1.7M15.5 5.5c1.6.3 3 .8 4 1.5 1.6 2.6 2.2 5.6 2 8.5-1.4 1.1-3 1.9-4.6 2.4l-1.1-1.7M7 16c3.2 1.4 6.8 1.4 10 0M9 5.3l.6 1.3c1.6-.3 3.2-.3 4.8 0l.6-1.3"/><circle cx="9" cy="12" r="1.3"/><circle cx="15" cy="12" r="1.3"/></symbol>
   <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></symbol>
   <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></symbol>
   <symbol id="i-mic-off" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M4 4l16 16"/></symbol>
@@ -111,6 +112,10 @@
       <p id="home-code-hint" class="hint">Oculto por padrão, como uma senha.</p>
       <button class="btn big" type="submit">Continuar</button>
     </form>
+  </div>
+  <div class="wrap bot-add" id="bot-add" hidden>
+    <a class="btn" href="/discord/install" target="_blank" rel="noopener"><svg class="i"><use href="#i-discord"/></svg>Adicionar o bot ao seu servidor do Discord</a>
+    <p class="small muted">Com o bot, qualquer pessoa do servidor abre uma sessão com <code>/stream criar</code> e recebe o aviso quando alguém entra ao vivo.</p>
   </div>
   <p class="wrap small muted">Transmite direto do navegador. O <a href="/download">app para Windows</a> deixa a qualidade maior (codificação pela placa de vídeo).</p>
 </main>
@@ -272,7 +277,7 @@
     <div class="section" id="apps-section" hidden>
       <h3>Áudio da tela inteira</h3>
       <div id="apps-list"></div>
-      <p class="small muted" id="apps-hint" hidden>Nenhum app com som agora. Abra um jogo ou player e ele aparece aqui.</p>
+      <p class="small muted" id="apps-hint" hidden>Nenhum app usando som ou microfone agora. Abra um jogo ou player e ele aparece aqui; o que você desligar fica fora da transmissão.</p>
     </div>
     <button class="btn primary big" type="button" id="q-start"><svg class="i"><use href="#i-play"/></svg>Começar a transmitir</button>
   </form>

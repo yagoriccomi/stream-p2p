@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { WebSocketServer } from 'ws';
 import { createRoom, addViewer, removeViewer, jitterTargets, setHopRtt, setHopNeed, retarget, autoTarget, validLatency, LATENCY, JITTER_STEP_MS, MODES } from './topology.js';
 import * as S from './session.js';
-import { handleInteraction, joinButton } from './discord.js';
+import { handleInteraction, joinButton, botInstallUrl } from './discord.js';
 import { iceSource } from './ice.js';
 
 const PORT = Number(process.env.PORT) || 3000;
@@ -115,12 +115,27 @@ function announceLive(s) {
 }
 
 const http = createServer(async (req, res) => {
-  const path = new URL(req.url, 'http://x').pathname;
+  const url = new URL(req.url, 'http://x');
+  const path = url.pathname;
   if (path === '/health') return res.end('ok'); // [#82]
   if (path === '/speedtest' && req.method === 'POST') return speedtest(req, res);
   if (path === '/ice.json') {
     res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
-    return res.end(JSON.stringify({ iceServers: await ice() }));
+    return res.end(JSON.stringify({ iceServers: await ice(Date.now(), url.searchParams.get('id')) }));
+  }
+  // "Adicionar ao Discord" on the home screen: the page asks .json to know whether to show it.
+  if (path === '/discord/install' || path === '/discord/install.json') {
+    const to = botInstallUrl(process.env.DISCORD_ID);
+    if (path.endsWith('.json')) {
+      res.writeHead(to ? 200 : 404, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+      return res.end(JSON.stringify({ url: to }));
+    }
+    if (!to) {
+      res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+      return res.end('O bot do Discord não está configurado neste servidor (falta DISCORD_ID).');
+    }
+    res.writeHead(302, { location: to });
+    return res.end();
   }
   if (path === '/discord/interactions' && req.method === 'POST') {
     const chunks = [];

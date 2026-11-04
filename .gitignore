@@ -3,3 +3,6 @@ node_modules/
 app/src-tauri/target/
 app/src-tauri/gen/
 app/node_modules/
+worker/.wrangler/
+# scripts de diagnóstico descartáveis (convenção do projeto)
+e2e/_*.tmp.*

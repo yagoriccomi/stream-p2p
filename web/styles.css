@@ -100,6 +100,9 @@ input[aria-invalid="true"] { border: 2px solid var(--error); }
 .brand .name { font-family: var(--font-title); font-stretch: 75%; font-weight: 900; font-size: 22px; text-transform: uppercase; }
 .hero { display: flex; flex-direction: column; gap: 12px; }
 .grid-2 { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+.bot-add { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.bot-add[hidden] { display: none; }
+.bot-add p { margin: 0; flex: 1 1 260px; }
 .grid-2 > * { flex: 1 1 320px; min-width: 0; }
 .voice-opt { border-radius: var(--r); padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; text-align: left; background: var(--bg); border: 2px solid var(--border); width: 100%; }
 .voice-opt[aria-checked="true"] { background: var(--violet-soft); border-color: var(--violet-border); }

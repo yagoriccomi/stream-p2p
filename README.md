@@ -80,7 +80,7 @@ O servidor entrega a lista de ICE em `/ice.json`: sempre o STUN do Google e, se 
 
 **Outro TURN (coturn ou provedor com usuário e senha):**
 - `TURN_URLS`: uma ou mais URLs separadas por vírgula, por exemplo `turn:turn.seu-dominio.com:3478,turns:turn.seu-dominio.com:5349`.
-- `TURN_SECRET` (recomendado): o mesmo `static-auth-secret` do coturn com `use-auth-secret`. Cada cliente recebe uma credencial que vale 6 h.
+- `TURN_SECRET` (recomendado): o mesmo `static-auth-secret` do coturn com `use-auth-secret`. Cada cliente recebe uma credencial que vale 6 h, no formato `<validade>:stream-p2p:<código da sessão>` (o código aparece no log do coturn).
 - `TURN_USERNAME` e `TURN_CREDENTIAL`: para provedores que dão usuário e senha fixos. Só valem quando não há `TURN_SECRET`.
 
 **Os dois juntos:** o TURN próprio vai primeiro na lista e o da Cloudflare depois. O navegador prefere o primeiro, então a Cloudflare só leva a mídia quando o próprio falha.
@@ -113,7 +113,20 @@ Aponte **Interactions Endpoint URL** para `PUBLIC_URL/discord/interactions` e re
 | `/stream help` | Ajuda |
 | Clique direito › Apps › **Chamar para stream** | Menciona a pessoa com o botão e manda o link por mensagem privada |
 
-Com `DISCORD_BOT_TOKEN` também no Render, o bot avisa no canal quando alguém começa a transmitir ("🔴 Fulano está ao vivo") e manda a mensagem privada do **Chamar para stream**. Sem o token, esses dois são pulados. Para postar no canal, o bot precisa estar no servidor: instale com `scope=bot+applications.commands`.
+Com `DISCORD_BOT_TOKEN` também no Render, o bot avisa no canal quando alguém começa a transmitir ("🔴 Fulano está ao vivo") e manda a mensagem privada do **Chamar para stream**. Sem o token, esses dois são pulados. Para postar no canal, o bot precisa estar no servidor: a tela inicial do site tem o botão **Adicionar o bot ao seu servidor do Discord** (rota `/discord/install`, aparece só com `DISCORD_ID` definido no servidor, também no Render).
+
+### Porta de entrada sempre ligada (Cloudflare Worker)
+O Discord espera só 3 s pela resposta de um comando, e o Render grátis leva cerca de 1 min para acordar. Sem nada na frente, o primeiro `/stream` depois de um tempo parado falhava com "o aplicativo não respondeu". O Worker em `worker/` (grátis, não dorme) recebe as interações no lugar do Render:
+- **Render acordado:** repassa a interação e devolve a resposta sem mudar nada.
+- **Render dormindo:** responde na hora, só para quem chamou, "⏳ O servidor estava dormindo e está acordando. A resposta chega aqui em até 1 minuto.", e continua chamando o Render até ele responder. Resposta privada: o aviso vira a resposta. Resposta pública (sessão aberta, botão Entrar): ela vai para o canal e o aviso some. Se em 3 min nada responder, o aviso diz para tentar de novo.
+- **Status online:** o bot continua aparecendo offline no servidor. A bolinha verde exige uma conexão permanente com o Discord (Gateway), que nem o Worker nem o Render grátis mantêm. Os comandos e botões funcionam do mesmo jeito.
+
+Para publicar, uma vez:
+1. `cd worker`, `npx wrangler login` e `npx wrangler deploy`. O endereço sai como `https://stream-p2p-discord.<sua-conta>.workers.dev`.
+2. `npx wrangler secret put DISCORD_PUBLIC_KEY`, com a mesma chave pública do Render.
+3. No portal do Discord, troque **Interactions Endpoint URL** para `https://stream-p2p-discord.<sua-conta>.workers.dev/discord/interactions`. O Discord testa o endereço na hora; o Worker responde ao teste mesmo com o Render dormindo.
+
+O Render continua checando a assinatura do Discord: o Worker repassa os cabeçalhos e o corpo originais. Se mudar o endereço do Render, ajuste `ORIGIN` em `worker/wrangler.toml`.
 
 ## App para Windows (T08, T12–T14)
 O app fica em `app/` e é feito com Tauri 2. A janela carrega o mesmo site e acrescenta:
@@ -125,7 +138,7 @@ O app fica em `app/` e é feito com Tauri 2. A janela carrega o mesmo site e acr
 - **Atualização (T14):** baixa e reinicia o app, nunca no meio de uma sessão.
 - **Som do PC pelo app:** o app captura o áudio do Windows por conta própria (WASAPI, convertido para estéreo), fora do seletor.
   - **Janela compartilhada:** só o som do programa dela vai na transmissão. Discord, WhatsApp e o chat de voz ficam de fora, e quem fala não se ouve de volta.
-  - **Tela inteira:** uma lista mostra quem tem som tocando agora, e a pessoa escolhe o que entra na transmissão (desmarcar Discord e WhatsApp evita que eles vazem). Por padrão todos vêm marcados, como antes.
+  - **Tela inteira:** uma lista mostra só os apps usando som ou microfone agora, e a pessoa desliga o que não deve entrar na transmissão (desligar Discord e WhatsApp evita que eles vazem). Vale na hora, mesmo com a transmissão rolando, e um app que começa a tocar depois também entra, a não ser que já esteja desligado.
   - O seletor pede só a imagem, então o áudio vem de qualquer fonte, janela inclusive.
   - O som do próprio app (a voz do chat) fica de fora, para não dar eco em quem assiste.
   - O áudio do sistema do Chromium falha em alguns aparelhos, como um headset 7.1, com "Could not start audio source", e derruba a tela junto.
@@ -182,7 +195,7 @@ A página `/download` explica a instalação para quem baixa.
 O servidor público está em https://stream-p2p-k72t.onrender.com: serviço `stream-p2p` no Render, plano free, região Virginia.
 - **Build e start:** `npm ci --omit=dev` e `npm start`, com `NODE_VERSION=24` e `PUBLIC_URL` igual a essa URL.
 - **Deploy automático:** cada push no `main` faz um novo deploy. O servidor reinicia, e as sessões abertas (que ficam só na memória) caem.
-- **Plano free:** o serviço dorme depois de um tempo sem acesso, e o primeiro acesso depois disso leva perto de 1 min.
+- **Plano free:** o serviço dorme depois de 15 min sem acesso, e acordar leva perto de 1 min. O bot do Discord não sofre com isso porque passa pelo Worker (ver "Bot do Discord").
 - **Instalar o app apontando para ele:** `.\Stream-P2P_0.1.0_x64-setup.exe /SERVER=https://stream-p2p-k72t.onrender.com`.
 - **Sem TURN configurado:** quem estiver atrás de uma rede muito fechada (alguns 4G e redes corporativas) pode não conseguir conectar. Ver "TURN para fora da LAN".
 

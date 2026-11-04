@@ -41,6 +41,18 @@ const userId = (i) => i.member?.user?.id ?? i.user?.id;
 // Sessions belong to the server they were opened in (or the DM channel, outside a server).
 const scopeOf = (i) => i.guild_id ?? i.channel_id;
 
+// Discord's own "add to server" page for the bot: slash commands plus what it needs to post the
+// live notice in a channel (View Channel 1024 + Send Messages 2048 + Embed Links 16384).
+export const BOT_PERMISSIONS = 1024 + 2048 + 16384;
+export function botInstallUrl(applicationId) {
+  if (!applicationId) return null;
+  const url = new URL('https://discord.com/oauth2/authorize');
+  url.searchParams.set('client_id', applicationId);
+  url.searchParams.set('scope', 'bot applications.commands');
+  url.searchParams.set('permissions', String(BOT_PERMISSIONS));
+  return url.href;
+}
+
 export function inviteUrl(baseUrl, code, name, ownerToken) {
   const url = new URL('/', baseUrl);
   url.searchParams.set('code', code);

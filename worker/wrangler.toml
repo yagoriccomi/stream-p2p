@@ -1,0 +1,9 @@
+# Porta de entrada do bot do Discord (ver worker/index.js e o README, "Bot do Discord").
+# Publicar: cd worker && npx wrangler deploy
+# Chave pública do app (segredo não, mas fora do Git por costume): npx wrangler secret put DISCORD_PUBLIC_KEY
+name = "stream-p2p-discord"
+main = "index.js"
+compatibility_date = "2025-06-01"
+
+[vars]
+ORIGIN = "https://stream-p2p-k72t.onrender.com"

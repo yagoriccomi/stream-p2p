@@ -43,9 +43,11 @@ window.__app = st; // read by e2e
 // ── ICE: the server's STUN/TURN (/ice.json) plus an optional personal TURN from T11 ──
 const ICE_REFRESH_MS = 60 * 60_000; // server TURN credentials last 6 h (coturn) to 12 h (Cloudflare)
 let serverIce = [{ urls: 'stun:stun.l.google.com:19302' }]; // until /ice.json answers
+let iceFor = ''; // session code the TURN credential was issued for: it shows in the TURN log
 async function loadIce() {
+  iceFor = st.code ?? '';
   try {
-    const res = await fetch('/ice.json', { cache: 'no-store' });
+    const res = await fetch(`/ice.json?id=${encodeURIComponent(iceFor)}`, { cache: 'no-store' });
     if (res.ok) serverIce = (await res.json()).iceServers;
   } catch (e) {
     log(`ice: ${e.message}`); // keep the last list; STUN alone still works on most networks
@@ -206,6 +208,7 @@ function onSession(s) {
   st.session = s;
   st.code = s.code;
   st.pending = null;
+  if (iceFor !== s.code) loadIce(); // credential tagged with this session, before any peer connection
   if (first) {
     st.rejoin = null;
     st.auto = false; // only the session the command line asked for skips the mic prompt
@@ -439,6 +442,9 @@ $('create-form').addEventListener('submit', async (e) => {
   send({ type: 'create', name, device: st.device });
 });
 wireEye(document.querySelector('[data-eye="home-code"]'), $('home-code'));
+// The "add the bot" button only shows on a server that has the Discord app configured.
+fetch('/discord/install.json').then((r) => { $('bot-add').hidden = !r.ok; }).catch(() => {});
+
 $('home-join-form').addEventListener('submit', (e) => {
   e.preventDefault();
   openJoin($('home-code').value);
@@ -599,16 +605,22 @@ async function loadAudioSessions() {
     log(`list_audio_sessions: ${e}`);
   }
 }
-// One line per process with sound right now; a process that drops off the list keeps its saved
-// choice (by name: a PID is only good for the run that had it), so a brief hiccup never forgets it.
+// One line per app using sound or the mic right now; an app that drops off the list keeps its
+// saved choice (by name: a PID is only good for the run that had it). Turning one off applies at
+// once, even mid-stream: the app re-reads the list on every change.
 function renderAudioApps() {
   const sessions = st.audioSessions ?? [];
   $('apps-hint').hidden = sessions.length > 0;
   $('apps-list').replaceChildren(...sessions.map((s) => {
-    const on = st.audioAllow[s.name] ?? true; // unseen name: allowed, same as today's behaviour
+    const on = st.audioAllow[s.name] ?? true; // unseen name: allowed
+    const uses = [s.sound && 'som', s.mic && 'microfone'].filter(Boolean).join(' · ');
     const btn = h('button', { class: 'switch', type: 'button', role: 'switch', 'aria-checked': String(on) },
-      h('span', { text: s.name }), h('span', { class: 'track' }));
-    wireSwitch(btn, (allow) => { st.audioAllow = { ...st.audioAllow, [s.name]: allow }; store.set('audioAllow', st.audioAllow); });
+      h('span', {}, h('span', { text: s.name }), h('span', { class: 'small muted', text: uses ? ` ${uses}` : '' })), h('span', { class: 'track' }));
+    wireSwitch(btn, (allow) => {
+      st.audioAllow = { ...st.audioAllow, [s.name]: allow };
+      store.set('audioAllow', st.audioAllow);
+      tauri?.core?.invoke('system_audio_exclude', { names: excludedAudioApps() ?? [] }).catch(() => {}); // older app: applies on the next start
+    });
     return btn;
   }));
 }
@@ -737,16 +749,17 @@ $('q-measure').addEventListener('click', measureUpload);
 // In the app the system audio comes from WASAPI (sysaudio.js), so the picker only gives the video:
 // Chromium's own loopback fails on some devices ("Could not start audio source", e.g. a 7.1
 // headset) and drops the screen with it. An older app without the command falls back to Chromium.
-function allowedAudioPids() {
-  if (st.src !== 'monitor') return null; // Janela isolates by HWND already, no allowlist to send
-  const sessions = st.audioSessions ?? [];
-  return sessions.filter((s) => st.audioAllow[s.name] ?? true).map((s) => s.pid);
+// Apps turned off for Tela inteira, by name. The app captures every other app with sound, also one
+// that starts playing after the stream did; an empty list is everything but this app.
+function excludedAudioApps() {
+  if (st.src !== 'monitor') return null; // Janela isolates by HWND already
+  return Object.entries(st.audioAllow).filter(([, allow]) => allow === false).map(([name]) => name);
 }
 
 async function appSystemAudio() {
   if (!tauri) return null;
   try {
-    return await nativeSystemAudio(tauri, allowedAudioPids());
+    return await nativeSystemAudio(tauri, excludedAudioApps());
   } catch (e) {
     log(`áudio do sistema pelo app: ${e?.message ?? e}; usando o do navegador`);
     return null;

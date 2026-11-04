@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { generateKeyPairSync, sign } from 'node:crypto';
-import { handleInteraction, serverName, inviteUrl } from './discord.js';
+import { handleInteraction, serverName, inviteUrl, botInstallUrl } from './discord.js';
 
 const { publicKey, privateKey } = generateKeyPairSync('ed25519');
 const PUB_HEX = publicKey.export({ format: 'der', type: 'spki' }).subarray(-32).toString('hex');
@@ -105,4 +105,14 @@ test('name fallbacks and length', () => {
   assert.equal(serverName({ user: { username: 'solo' } }), 'solo');
   assert.equal(serverName({ member: { nick: 'x'.repeat(40), user: {} } }).length, 24);
   assert.equal(inviteUrl('http://h:3000', 'abcd-ef', ''), 'http://h:3000/?code=abcd-ef');
+});
+
+test('link para adicionar o bot: comandos, permissões de postar, nada sem o ID do app', () => {
+  const u = new URL(botInstallUrl('123456789'));
+  assert.equal(u.origin + u.pathname, 'https://discord.com/oauth2/authorize');
+  assert.equal(u.searchParams.get('client_id'), '123456789');
+  assert.equal(u.searchParams.get('scope'), 'bot applications.commands');
+  assert.equal(u.searchParams.get('permissions'), '19456');
+  assert.equal(botInstallUrl(undefined), null);
+  assert.equal(botInstallUrl(''), null);
 });
