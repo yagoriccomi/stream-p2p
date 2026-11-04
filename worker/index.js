@@ -8,7 +8,7 @@
 // (or, when the answer is meant for the whole channel, posts it there and removes the note).
 // The server still checks Discord's signature itself: the original headers and body go along.
 //
-// Env: ORIGIN (the server, e.g. https://stream-p2p-k72t.onrender.com) and DISCORD_PUBLIC_KEY.
+// Env: ORIGIN (the server, e.g. https://stream.yagoriccomi.com.br) and DISCORD_PUBLIC_KEY.
 const PING = 1;
 const PONG = 1;
 const MESSAGE = 4;

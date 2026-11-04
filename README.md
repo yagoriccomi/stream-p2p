@@ -146,7 +146,7 @@ O app fica em `app/` e é feito com Tauri 2. A janela carrega o mesmo site e acr
 
 O instalador NSIS instala por usuário, sem pedir administrador, e cria o atalho no Menu Iniciar.
 
-Para gerar o instalador, no Windows com Rust e Node: `cd app && npm install && npm run build`. Ele sai em `app/src-tauri/target/release/bundle/nsis/`. Sem `--server` nem `/SERVER=`, o app abre o servidor público (`https://stream-p2p-k72t.onrender.com`).
+Para gerar o instalador, no Windows com Rust e Node: `cd app && npm install && npm run build`. Ele sai em `app/src-tauri/target/release/bundle/nsis/`. Sem `--server` nem `/SERVER=`, o app abre o servidor público (`https://stream.yagoriccomi.com.br`).
 
 **Atualização com um clique.** O app procura uma versão nova ao abrir e a cada 30 min. Quando acha, aparece o aviso "Versão X do app disponível" com o botão **Atualizar**: baixa (com a porcentagem), instala e reabre. Em **Configurações → Atualização do app** dá para procurar na hora. Só instala o que foi assinado com a chave do projeto.
 
@@ -192,11 +192,11 @@ Comportamento:
 A página `/download` explica a instalação para quem baixa.
 
 ### Servidor público (Render)
-O servidor público está em https://stream-p2p-k72t.onrender.com: serviço `stream-p2p` no Render, plano free, região Virginia.
-- **Build e start:** `npm ci --omit=dev` e `npm start`, com `NODE_VERSION=24` e `PUBLIC_URL` igual a essa URL.
+O servidor público está em https://stream.yagoriccomi.com.br: serviço `stream-p2p` no Render, plano free, região Virginia. O endereço original do Render, https://stream-p2p-k72t.onrender.com, continua respondendo; o app com ele salvo passa sozinho para o principal.
+- **Build e start:** `npm ci --omit=dev` e `npm start`, com `NODE_VERSION=24` e `PUBLIC_URL=https://stream.yagoriccomi.com.br` (é a base dos links que o bot do Discord manda).
 - **Deploy automático:** cada push no `main` faz um novo deploy. O servidor reinicia, e as sessões abertas (que ficam só na memória) caem.
 - **Plano free:** o serviço dorme depois de 15 min sem acesso, e acordar leva perto de 1 min. O bot do Discord não sofre com isso porque passa pelo Worker (ver "Bot do Discord").
-- **Instalar o app apontando para ele:** `.\Stream-P2P_0.1.0_x64-setup.exe /SERVER=https://stream-p2p-k72t.onrender.com`.
+- **Instalar o app apontando para ele:** `.\Stream-P2P_0.1.0_x64-setup.exe /SERVER=https://stream.yagoriccomi.com.br`.
 - **Sem TURN configurado:** quem estiver atrás de uma rede muito fechada (alguns 4G e redes corporativas) pode não conseguir conectar. Ver "TURN para fora da LAN".
 
 ### Servidor na rede local, sem HTTPS

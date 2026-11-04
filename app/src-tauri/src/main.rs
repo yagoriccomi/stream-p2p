@@ -21,7 +21,9 @@ use tauri::{
 use tauri_plugin_window_state::StateFlags;
 
 // The public server; --server or the installer's /SERVER= override it.
-const DEFAULT_SERVER: &str = "https://stream-p2p-k72t.onrender.com";
+const DEFAULT_SERVER: &str = "https://stream.yagoriccomi.com.br";
+// The same Render service under its first address: a server.txt saved with it moves to the main one.
+const OLD_DEFAULT_SERVER: &str = "https://stream-p2p-k72t.onrender.com";
 // Same folder Tauri uses for this identifier; the NSIS hook writes server.txt here too.
 const IDENTIFIER: &str = "app.streamp2p.desktop";
 const STATUS_STALE_MS: u128 = 10_000; // the web app refreshes status every 2 s
@@ -218,7 +220,8 @@ fn save_server(server: &str) {
 
 fn server_from_disk() -> Option<String> {
     let raw = fs::read_to_string(config_dir().join("server.txt")).ok()?;
-    cli::valid_server(raw.trim()).ok()
+    let server = cli::valid_server(raw.trim()).ok()?;
+    Some(if server == OLD_DEFAULT_SERVER { DEFAULT_SERVER.into() } else { server })
 }
 
 // A GUI-subsystem exe has no console; borrow the caller's so --help/--status print there.
