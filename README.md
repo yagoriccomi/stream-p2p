@@ -41,6 +41,12 @@
 
 No celular dá para assistir e falar: no Android, **Instalar app**; no iPhone, **Compartilhar › Adicionar à Tela de Início**.
 
+## Instalar o app para Windows
+
+O instalador ainda não tem assinatura de código, então o Windows mostra um aviso na primeira vez. Clique em **Mais informações** e depois em **Executar assim mesmo**. Ele instala só para o seu usuário, sem pedir administrador.
+
+<img src="docs/brand/smartscreen.png" alt="Passo 1: clique em Mais informações. Passo 2: clique em Executar assim mesmo." width="100%">
+
 ## No Discord
 
 | Comando | O que faz |

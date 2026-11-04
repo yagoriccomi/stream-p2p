@@ -1,9 +1,14 @@
-# Porta de entrada do bot do Discord (ver worker/index.js e o README, "Bot do Discord").
+# Porta de entrada do bot do Discord e do site (ver worker/index.js e docs/TECNICO.md).
+# O site passa pelo Worker pela rota abaixo; o registro DNS de stream.yagoriccomi.com.br
+# precisa estar com o proxy do Cloudflare ligado (nuvem laranja).
 # Publicar: cd worker && npx wrangler deploy
 # Chave pública do app (segredo não, mas fora do Git por costume): npx wrangler secret put DISCORD_PUBLIC_KEY
 name = "stream-p2p-discord"
 main = "index.js"
 compatibility_date = "2025-06-01"
+workers_dev = true # o Discord chama o endereço workers.dev
+routes = [{ pattern = "stream.yagoriccomi.com.br/*", zone_name = "yagoriccomi.com.br" }]
 
 [vars]
-ORIGIN = "https://stream.yagoriccomi.com.br"
+ORIGIN = "https://stream-p2p-k72t.onrender.com"
+SITE_HOST = "stream.yagoriccomi.com.br"

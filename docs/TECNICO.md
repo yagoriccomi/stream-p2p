@@ -130,6 +130,8 @@ Para publicar, uma vez:
 
 O Render continua checando a assinatura do Discord: o Worker repassa os cabeçalhos e o corpo originais. Se mudar o endereço do Render, ajuste `ORIGIN` em `worker/wrangler.toml`.
 
+**Página "acordando" do site.** O mesmo Worker fica na frente de `stream.yagoriccomi.com.br` (rota `stream.yagoriccomi.com.br/*` no `wrangler.toml`). Quando alguém abre uma página e o Render não responde em 4 s, o Worker devolve uma página "Acordando o servidor" (503, sem cache). Ela consulta `/__wake` a cada 2 s, e o `/__wake` testa o `/health` do Render. Quando o Render liga, a página recarrega sozinha. O resto (arquivos, WebSocket, `/discord/install`) passa direto. A rota só vale com o registro `stream` do DNS **com proxy** (nuvem laranja) na Cloudflare. Com o proxy desligado, o tráfego vai direto ao Render e a página "acordando" não aparece.
+
 ## App para Windows (T08, T12–T14)
 O app fica em `app/` e é feito com Tauri 2. A janela carrega o mesmo site e acrescenta:
 - **Seletor nativo (T12):** monitores e janelas com miniatura. É o único seletor: o app responde ao seletor do Chromium por baixo, com a mesma fonte, sem que ele apareça.

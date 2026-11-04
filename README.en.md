@@ -41,6 +41,12 @@
 
 On a phone you can watch and talk: on Android, **Install app**; on iPhone, **Share › Add to Home Screen**.
 
+## Installing the Windows app
+
+The installer is not code-signed yet, so Windows shows a warning the first time. Click **More info**, then **Run anyway**. It installs for your user only, without asking for administrator rights.
+
+<img src="docs/brand/smartscreen.en.png" alt="Step 1: click More info. Step 2: click Run anyway." width="100%">
+
 ## On Discord
 
 | Command | What it does |

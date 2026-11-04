@@ -38,6 +38,7 @@ const STATIC = {
   '/icon-maskable.svg': ['web/icon-maskable.svg', 'image/svg+xml'],
   '/icon-192.png': ['web/icon-192.png', 'image/png'],
   '/icon-512.png': ['web/icon-512.png', 'image/png'],
+  '/smartscreen.png': ['web/smartscreen.png', 'image/png'],
 };
 
 // ponytail: in-memory state, single process. Move to Redis when horizontal scaling is needed [#27].
