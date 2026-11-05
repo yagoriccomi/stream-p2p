@@ -60,3 +60,23 @@ Achados:
 - Só os relays Rust, com o transmissor do Edge, já cortam o atraso, mas o transmissor do Edge vira o gargalo.
 
 Limites: o codec é diferente (H.264 por hardware no nativo, VP8 por software no Edge). O app real, no WebView2, pode usar H.264 por hardware, e isso diminuiria a diferença no transmissor (medir na ADR). A janela-fonte fica "sempre no topo" durante a medição, porque o Windows para de atualizar janela coberta. Rede ruim não medida. Os relays nativos não mostram vídeo.
+
+## Etapa 2c — Edge com H.264 por hardware (feita em 2026-11-05)
+Opção `BENCH_CODEC` na bancada: `h264` força o perfil baseline 42e01f (o mesmo do Rust); `h264any` aceita qualquer perfil H.264 com packetization-mode=1. Também `BENCH_HEADFUL` e `BENCH_EDGEARGS` para testar flags.
+
+Achados:
+- Com o baseline 42e01f o Edge **não usa a placa de vídeo**: cai no OpenH264 (software), mesmo com `--enable-features=MediaFoundationH264CbpEncoding`. Fica pior que o VP8: 369 ms no espectador, 398p.
+- Com outro perfil (`h264any`) o Edge usa o `NVIDIA H.264 Encoder MFT`, o mesmo codificador do transmissor nativo.
+- O `edge://gpu` confirma codificação H.264 por hardware até 1080p a 121 quadros/s; o `mediaCapabilities` diz o contrário (`powerEfficient: false`), então não serve para detectar.
+
+| Cenário (captura real, rede boa) | Atraso no espectador | Quadros/s · altura | RAM transmissor / relay | CPU transmissor |
+|---|---|---|---|---|
+| App de hoje com H.264 por hardware (relays Edge recodificam) | **97–120 ms** | 46 · 534p | 210 / ~190 MB | ~60 % |
+| 100 % Rust (etapa 2b) | 87–103 ms | 60 · 1070p | 30 / 3 MB | ~10 % |
+
+- Só trocar o codec do app de hoje para H.264 por hardware corta o atraso de 190–243 ms para ~100 ms. Mas a imagem cai para 534p a 46 quadros/s. Pelos dados, a queda parece vir da captura `getDisplayMedia` e da adaptação do WebRTC, não do codificador.
+- A primeira rodada de cada configuração foi instável (1 quadro/s, atrasos absurdos), provavelmente pelo aquecimento do codificador. As rodadas seguintes repetiram 97–120 ms.
+- O repasse sem decodificar no Edge (`encoded`) **não funcionou com H.264**: o relay 2 não recebeu nada. A técnica da "fachada" foi feita para VP8.
+- O relay Rust aceita só o perfil 42e01f. Para combinar Edge com H.264 por hardware e relays Rust, falta aceitar outros perfis (640c1f / 42e01f com o perfil que o Edge oferece).
+
+Conclusão parcial: o H.264 por hardware fecha boa parte da diferença de **atraso** entre o app enxuto e o nativo. As diferenças de **RAM** (210 vs 30 MB; relay 190 vs 3 MB) e de **qualidade** (534p46 vs 1080p60) continuam.

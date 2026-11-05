@@ -39,6 +39,8 @@ const isNative = (i) => (MODE === 'native' || FULL) && i > 0 && i < NODES.length
 const SOURCE_TITLE = 'sp2p-bench-source';
 // BENCH_SCREEN=1: the Edge presenter captures the same source window with getDisplayMedia (like the app).
 const SCREEN = Boolean(process.env.BENCH_SCREEN);
+// BENCH_CODEC=h264: Edge nodes prefer H.264 (hardware encoder when available) instead of VP8.
+const CODEC = process.env.BENCH_CODEC ?? 'vp8';
 const NATIVE_DIR = path.join(import.meta.dirname, 'bench', 'native', 'target', 'release');
 const NATIVE_BIN = path.join(NATIVE_DIR, 'sp2p-native-bench.exe');
 const PRESENTER_BIN = path.join(NATIVE_DIR, 'presenter.exe');
@@ -138,7 +140,7 @@ try {
       };
     };
     if (isNative(i)) {
-      nodes.push(spawnNative(NATIVE_BIN, [], { SP2P_CODEC: FULL ? 'h264' : 'vp8' }));
+      nodes.push(spawnNative(NATIVE_BIN, [], { SP2P_CODEC: FULL ? 'h264' : CODEC }));
       continue;
     }
     if ((FULL || SCREEN) && i === 0) {
@@ -161,16 +163,16 @@ try {
       execFileSync(PRESENTER_BIN, [SOURCE_TITLE, '--pin']); // DWM stops refreshing a covered window
     }
     const b = await puppeteer.launch({
-      executablePath: EDGE, headless: 'new', userDataDir: path.join(profiles, String(i)),
+      executablePath: EDGE, headless: process.env.BENCH_HEADFUL ? false : 'new', userDataDir: path.join(profiles, String(i)),
       args: [...(SCREEN && i === 0 ? [`--auto-select-desktop-capture-source=${SOURCE_TITLE}`] : []), '--autoplay-policy=no-user-gesture-required', '--disable-background-timer-throttling', '--disable-renderer-backgrounding',
-        '--disable-backgrounding-occluded-windows', '--allow-loopback-in-peer-connection', ...(process.env.BENCH_FIELDTRIALS ? [`--force-fieldtrials=${process.env.BENCH_FIELDTRIALS}`] : []), ...(LEAN ? LEAN_FLAGS : [])],
+        '--disable-backgrounding-occluded-windows', '--allow-loopback-in-peer-connection', ...(process.env.BENCH_FIELDTRIALS ? [`--force-fieldtrials=${process.env.BENCH_FIELDTRIALS}`] : []), ...(LEAN ? LEAN_FLAGS : []), ...(process.env.BENCH_EDGEARGS?.split(' ').filter(Boolean) ?? [])],
     });
     const p = (await b.pages())[0] ?? await b.newPage();
     p.on('pageerror', (e) => console.error(`[${name}] pageerror:`, e.message));
     if (process.env.BENCH_DEBUG) p.on('console', (m) => console.log(`[${name}] ${m.text()}`));
     await p.exposeFunction('sig', (to, msg) => deliver(to, i, msg));
     const pageMode = MODE.startsWith('native') ? 'decode' : MODE;
-    await p.goto(`http://127.0.0.1:${HTTP_PORT}/relay.html?mode=${pageMode}&ph=${process.env.BENCH_PH ?? 2}&phfps=${process.env.BENCH_PHFPS ?? 1000}&minkbps=${process.env.BENCH_MINKBPS ?? 0}${SCREEN ? '&screen=1' : ''}&ice=${encodeURIComponent(JSON.stringify(ICE))}`);
+    await p.goto(`http://127.0.0.1:${HTTP_PORT}/relay.html?mode=${pageMode}&ph=${process.env.BENCH_PH ?? 2}&phfps=${process.env.BENCH_PHFPS ?? 1000}&minkbps=${process.env.BENCH_MINKBPS ?? 0}${SCREEN ? '&screen=1' : ''}&codec=${CODEC}&ice=${encodeURIComponent(JSON.stringify(ICE))}`);
     browsers.push(b);
     nodes.push({
       name, pid: b.process().pid, browser: b,

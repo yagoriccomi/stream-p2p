@@ -14,9 +14,12 @@ const pcs = new Map(); // peer -> pc
 let stream = null, parentPc = null, worker = null;
 const pending = [];
 
+const CODEC = q.get('codec') || 'vp8';
 function preferVp8(pc) {
   const caps = RTCRtpSender.getCapabilities('video').codecs;
-  const vp8 = caps.filter((c) => /vp8/i.test(c.mimeType)), rest = caps.filter((c) => /rtx|red|ulpfec/i.test(c.mimeType));
+  // h264: only constrained baseline 42e01f with packetization-mode=1 (what the Rust relay offers)
+  const want = (c) => CODEC === 'h264any' ? /h264/i.test(c.mimeType) && /packetization-mode=1/.test(c.sdpFmtpLine ?? '') : CODEC === 'h264' ? /h264/i.test(c.mimeType) && /packetization-mode=1/.test(c.sdpFmtpLine ?? '') && /profile-level-id=42e01f/.test(c.sdpFmtpLine ?? '') : /vp8/i.test(c.mimeType);
+  const vp8 = caps.filter(want), rest = caps.filter((c) => /rtx|red|ulpfec/i.test(c.mimeType));
   for (const t of pc.getTransceivers()) t.setCodecPreferences([...vp8, ...rest]);
 }
 function newPc(peer) {
@@ -109,7 +112,12 @@ async function onSig(from, { sdp, candidate }) {
     // Encoded relay: the placeholder encoder thinks it sends 2x2 frames, so the bandwidth
     // estimate would never climb to the parent's bitrate; give it a floor.
     const minKbps = MODE === 'encoded' && parentPc ? Number(q.get('minkbps') || 0) : 0;
-    const s = sdp.sdp.replace(/(a=rtpmap:(\d+) VP8\/90000\r\n)/, `$1a=fmtp:$2 x-google-start-bitrate=${minKbps || KBPS / 2}${minKbps ? `;x-google-min-bitrate=${minKbps}` : ''}\r\n`);
+    const extra = `x-google-start-bitrate=${minKbps || KBPS / 2}${minKbps ? `;x-google-min-bitrate=${minKbps}` : ''}`;
+    // H.264 already has an fmtp line: append to it instead of adding a second one.
+    const pt = CODEC.startsWith('h264') && sdp.sdp.match(/a=rtpmap:(\d+) H264\/90000/)?.[1];
+    const s = pt
+      ? sdp.sdp.replace(new RegExp(`(a=fmtp:${pt} [^\\r\\n]*)`), `$1;${extra}`)
+      : sdp.sdp.replace(/(a=rtpmap:(\d+) VP8\/90000\r\n)/, `$1a=fmtp:$2 ${extra}\r\n`);
     return pcs.get(from).setRemoteDescription({ type: 'answer', sdp: s });
   }
   const pc = (parentPc = newPc(from));

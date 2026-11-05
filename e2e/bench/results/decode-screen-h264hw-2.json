@@ -1,0 +1,100 @@
+{
+  "label": "decode-screen-h264hw-2",
+  "mode": "decode",
+  "lean": false,
+  "edge": "Edg/156.0.4314.58",
+  "native": null,
+  "at": "2026-11-05T21:11:26.940Z",
+  "networks": {
+    "boa": {
+      "rede": {},
+      "nodes": [
+        {
+          "nó": "transmissor",
+          "latência ms": 0,
+          "recebe": null,
+          "quadros codificados/s": 55,
+          "ms de codificação/s": 196,
+          "encoder": "MediaFoundationVideoEncodeAccelerator (NVIDIA H.264 Encoder MFT)",
+          "altura enviada": 534,
+          "enviado kbps": 7966,
+          "plis": 1,
+          "repasse": null,
+          "fachada/s": 0,
+          "RAM MB": 210,
+          "CPU %": 61,
+          "processos": 7
+        },
+        {
+          "nó": "relay 1",
+          "latência ms": 94,
+          "recebe": {
+            "fps": 46,
+            "kbps": 7580,
+            "altura": 534,
+            "congelamentos": 2,
+            "perda %": 0,
+            "buffer ms": 2
+          },
+          "quadros codificados/s": 46,
+          "ms de codificação/s": 126,
+          "encoder": null,
+          "altura enviada": 534,
+          "enviado kbps": 6681,
+          "plis": 0,
+          "repasse": null,
+          "fachada/s": 0,
+          "RAM MB": 187,
+          "CPU %": 26,
+          "processos": 7
+        },
+        {
+          "nó": "relay 2",
+          "latência ms": 90,
+          "recebe": {
+            "fps": 46,
+            "kbps": 6669,
+            "altura": 534,
+            "congelamentos": 2,
+            "perda %": 0,
+            "buffer ms": 2
+          },
+          "quadros codificados/s": 46,
+          "ms de codificação/s": 139,
+          "encoder": null,
+          "altura enviada": 534,
+          "enviado kbps": 6643,
+          "plis": 0,
+          "repasse": null,
+          "fachada/s": 0,
+          "RAM MB": 183,
+          "CPU %": 26,
+          "processos": 7
+        },
+        {
+          "nó": "espectador",
+          "latência ms": 120,
+          "recebe": {
+            "fps": 46,
+            "kbps": 6643,
+            "altura": 534,
+            "congelamentos": 2,
+            "perda %": 0,
+            "buffer ms": 4
+          },
+          "quadros codificados/s": 0,
+          "ms de codificação/s": 0,
+          "encoder": null,
+          "altura enviada": null,
+          "enviado kbps": 0,
+          "plis": 0,
+          "repasse": null,
+          "fachada/s": 0,
+          "RAM MB": 142,
+          "CPU %": 27,
+          "processos": 7
+        }
+      ]
+    }
+  }
+}
