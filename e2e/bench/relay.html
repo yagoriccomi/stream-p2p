@@ -1,0 +1,165 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>bench relay</title>
+<video id="video" autoplay muted playsinline style="width:320px"></video>
+<script>
+// One node of the benchmark chain. Signaling goes through window.sig (exposed by the harness).
+// mode 'decode' = today's app: forward the received track (Chromium decodes and re-encodes).
+// mode 'encoded' = scenario 2: forward encoded frames through relay-worker.js.
+const q = new URLSearchParams(location.search);
+const MODE = q.get('mode');
+const ICE = JSON.parse(q.get('ice'));
+const W = 1920, H = 1080, FPS = 60, KBPS = 8000;
+const pcs = new Map(); // peer -> pc
+let stream = null, parentPc = null, worker = null;
+const pending = [];
+
+function preferVp8(pc) {
+  const caps = RTCRtpSender.getCapabilities('video').codecs;
+  const vp8 = caps.filter((c) => /vp8/i.test(c.mimeType)), rest = caps.filter((c) => /rtx|red|ulpfec/i.test(c.mimeType));
+  for (const t of pc.getTransceivers()) t.setCodecPreferences([...vp8, ...rest]);
+}
+function newPc(peer) {
+  const pc = new RTCPeerConnection({ iceServers: ICE, iceTransportPolicy: ICE.length ? 'relay' : 'all' });
+  pc.onicecandidate = (e) => e.candidate && sig(peer, { candidate: e.candidate.toJSON() });
+  pcs.set(peer, pc);
+  return pc;
+}
+
+// Game-like 1080p60 source with a 24-bit clock on top (same probe as e2e/netsim.js).
+function capture() {
+  const c = Object.assign(document.createElement('canvas'), { width: W, height: H });
+  const g = c.getContext('2d');
+  const TILE = 512;
+  const tex = Object.assign(document.createElement('canvas'), { width: TILE, height: TILE });
+  const small = Object.assign(document.createElement('canvas'), { width: TILE / 4, height: TILE / 4 });
+  const sg = small.getContext('2d'), img = sg.createImageData(small.width, small.height);
+  for (let i = 0; i < img.data.length; i += 4) img.data.set([Math.random() * 256, Math.random() * 256, Math.random() * 256, 255], i);
+  sg.putImageData(img, 0, 0);
+  tex.getContext('2d').drawImage(small, 0, 0, TILE, TILE);
+  let t = 0;
+  setInterval(() => {
+    t++;
+    const [ox, oy] = [(t * 7) % TILE, (t * 3) % TILE];
+    for (let x = -ox; x < W; x += TILE) for (let y = -oy; y < H; y += TILE) g.drawImage(tex, x, y);
+    g.fillStyle = `hsl(${(t * 3) % 360} 80% 50% / 0.25)`;
+    g.fillRect(0, 0, W, H);
+    for (let i = 0; i < 40; i++) { g.fillStyle = `hsl(${Math.random() * 360} 90% 60%)`; g.fillRect(Math.random() * W, Math.random() * H, 24, 24); }
+    const stamp = Date.now() & 0xffffff, bw = W / 32;
+    for (let i = 0; i < 24; i++) { g.fillStyle = (stamp >> i) & 1 ? '#fff' : '#000'; g.fillRect(i * bw, 0, bw, H / 8); }
+  }, 1000 / FPS);
+  return c.captureStream(FPS);
+}
+// Placeholder fed on demand: one 2x2 frame per parent frame (see relay-worker.js).
+// Placeholder source: a 2x2 canvas declared at 240 fps, one requestFrame() per parent frame.
+// (MediaStreamTrackGenerator and captureStream(0) are capped at 30 fps by Chromium's track
+// adapter, which halves a 60 fps stream.)
+let placeholder = null, phCtx = null, phN = 0;
+function placeholderTrack() {
+  if (!placeholder) {
+    const c = Object.assign(document.createElement('canvas'), { width: 2, height: 2 });
+    phCtx = c.getContext('2d');
+    placeholder = c.captureStream(Number(q.get('phcap') || 240)).getVideoTracks()[0];
+    placeholder.contentHint = 'motion';
+  }
+  return placeholder;
+}
+function getWorker() {
+  if (!worker) {
+    worker = new Worker('relay-worker.js');
+    worker.addEventListener('message', (e) => {
+      if (e.data !== 'tick' || !placeholder) return;
+      phCtx.fillStyle = ++phN & 1 ? '#000' : '#111'; // changed pixels, so the frame is not skipped
+      phCtx.fillRect(0, 0, 2, 2);
+      placeholder.requestFrame();
+      window.phWrites = (window.phWrites ?? 0) + 1;
+    });
+  }
+  return worker;
+}
+
+async function offerTo(child) {
+  const pc = newPc(child);
+  const forwardEncoded = MODE === 'encoded' && parentPc;
+  const track = forwardEncoded ? placeholderTrack() : stream.getVideoTracks()[0];
+  const tr = pc.addTransceiver(track, { direction: 'sendonly' });
+  if (forwardEncoded) tr.sender.transform = new RTCRtpScriptTransform(getWorker(), { role: 'sender', id: child });
+  preferVp8(pc);
+  const p = tr.sender.getParameters();
+  // The placeholder must emit one frame per parent frame, and parent frames arrive in bursts:
+  // a frame-rate cap would drop some of them.
+  p.encodings = [{ ...(p.encodings?.[0] ?? {}), maxBitrate: KBPS * 1000, maxFramerate: forwardEncoded ? Number(q.get('phfps') || 1000) : FPS }];
+  p.degradationPreference = forwardEncoded ? 'maintain-framerate' : 'balanced'; // placeholder: CPU adaptation must never skip frames
+  await tr.sender.setParameters(p);
+  const o = await pc.createOffer();
+  // Same unlock as the app (mungeBitrate + start bitrate at half the mode).
+  const sdp = o.sdp.replace(/(m=video[^\r\n]*\r\n(?:(?!m=)[^\r\n]*\r\n)*?c=[^\r\n]*\r\n)/, `$1b=AS:${KBPS}\r\n`);
+  await pc.setLocalDescription({ type: 'offer', sdp });
+  sig(child, { sdp: pc.localDescription.toJSON() });
+}
+
+async function onSig(from, { sdp, candidate }) {
+  if (candidate) return pcs.get(from)?.addIceCandidate(candidate).catch(() => {});
+  if (sdp.type === 'answer') {
+    // Encoded relay: the placeholder encoder thinks it sends 2x2 frames, so the bandwidth
+    // estimate would never climb to the parent's bitrate; give it a floor.
+    const minKbps = MODE === 'encoded' && parentPc ? Number(q.get('minkbps') || 0) : 0;
+    const s = sdp.sdp.replace(/(a=rtpmap:(\d+) VP8\/90000\r\n)/, `$1a=fmtp:$2 x-google-start-bitrate=${minKbps || KBPS / 2}${minKbps ? `;x-google-min-bitrate=${minKbps}` : ''}\r\n`);
+    return pcs.get(from).setRemoteDescription({ type: 'answer', sdp: s });
+  }
+  const pc = (parentPc = newPc(from));
+  pc.ontrack = (e) => {
+    if (MODE === 'encoded') e.receiver.transform = new RTCRtpScriptTransform(getWorker(), { role: 'receiver' });
+    stream = new MediaStream([e.track]);
+    document.getElementById('video').srcObject = stream;
+    for (const c of pending.splice(0)) offerTo(c);
+  };
+  await pc.setRemoteDescription(sdp);
+  await pc.setLocalDescription(await pc.createAnswer());
+  sig(from, { sdp: pc.localDescription.toJSON() });
+}
+
+window.bench = {
+  present() { stream = capture(); document.getElementById('video').srcObject = stream; },
+  child(id) { stream ? offerTo(id) : pending.push(id); },
+  onSig,
+  // Median glass-to-glass latency read from the clock blocks of the rendered video.
+  latency(n = 40) {
+    const v = document.getElementById('video');
+    const c = Object.assign(document.createElement('canvas'), { width: 320, height: 180 });
+    const g = c.getContext('2d', { willReadFrequently: true });
+    const out = [];
+    return new Promise((done) => {
+      const sample = () => {
+        g.drawImage(v, 0, 0, c.width, c.height);
+        const now = Date.now();
+        let stamp = 0;
+        for (let i = 0; i < 24; i++) {
+          const [r, gg, b] = g.getImageData(Math.floor((i + 0.5) * (c.width / 32)), Math.floor(c.height / 16), 1, 1).data;
+          if (r + gg + b > 384) stamp |= 1 << i;
+        }
+        out.push(((now & 0xffffff) - stamp + 0x1000000) % 0x1000000);
+        if (out.length < n) setTimeout(sample, 50); else done(out.sort((x, y) => x - y)[n >> 1]);
+      };
+      sample();
+    });
+  },
+  async stats() {
+    const res = { in: null, out: [] };
+    for (const pc of pcs.values()) {
+      for (const s of (await pc.getStats()).values()) {
+        if (s.type === 'inbound-rtp' && s.kind === 'video') res.in = { frames: s.framesDecoded, bytes: s.bytesReceived, freezes: s.freezeCount ?? 0, lost: s.packetsLost, recv: s.packetsReceived, h: s.frameHeight, bufS: s.jitterBufferDelay, bufN: s.jitterBufferEmittedCount, decodeS: s.totalDecodeTime, keys: s.keyFramesDecoded };
+        if (s.type === 'outbound-rtp' && s.kind === 'video') res.out.push({ encoded: s.framesEncoded ?? 0, sent: s.framesSent ?? 0, bytes: s.bytesSent, h: s.frameHeight, encodeS: s.totalEncodeTime ?? 0, encoder: s.encoderImplementation, plis: s.pliCount ?? 0 });
+      }
+    }
+    if (worker) res.worker = await new Promise((r) => {
+      const h = (e) => { if (e.data !== 'tick') { worker.removeEventListener('message', h); r(e.data); } };
+      worker.addEventListener('message', h);
+      worker.postMessage('stats');
+    });
+    res.phWrites = window.phWrites ?? 0;
+    res.at = performance.now();
+    return res;
+  },
+};
+</script>

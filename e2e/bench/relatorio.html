@@ -1,0 +1,175 @@
+<title>Bancada de Relays P2P</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400;500&family=Archivo:wght@700;800&display=swap">
+<style>
+/* Layout: one reading column of measurements, each chart a labelled instrument panel. */
+:root {
+  --bg: #f5f6f4; --panel: #ffffff; --fg: #1b2420; --muted: #5d6a63; --rule: #d9ded9;
+  --c1: #2f6f8f; --c2: #c07a2c; --c3: #a23b4a; --ok: #2e7d4f; --bad: #b3261e;
+  --display: "Archivo", "Segoe UI", system-ui, sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #121614; --panel: #1a201d; --fg: #e4ebe6; --muted: #98a59d; --rule: #2c3530;
+  --c1: #6db3d6; --c2: #e0a35a; --c3: #e07383; --ok: #6cc28e; --bad: #f08a80; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #121614; --panel: #1a201d; --fg: #e4ebe6; --muted: #98a59d; --rule: #2c3530;
+  --c1: #6db3d6; --c2: #e0a35a; --c3: #e07383; --ok: #6cc28e; --bad: #f08a80; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font: 15px/1.6 var(--body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 32px 56px; }
+main { max-width: 860px; margin: 0 auto; display: grid; gap: 28px; }
+h1 { font: 800 clamp(28px, 5vw, 40px)/1.1 var(--display); margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+h2 { font: 700 20px/1.25 var(--display); margin: 0 0 4px; text-wrap: balance; }
+p { margin: 0; max-width: 68ch; }
+.lede { color: var(--muted); }
+.eyebrow { font: 500 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+section { display: grid; gap: 12px; }
+.panel { background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; padding: 16px; min-width: 0; }
+.verdicts { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.verdict { display: grid; gap: 6px; align-content: start; }
+.pill { justify-self: start; font: 500 12px/1 var(--mono); padding: 5px 8px; border-radius: 99px; border: 1px solid currentColor; }
+.pill.ok { color: var(--ok); } .pill.bad { color: var(--bad); } .pill.wait { color: var(--muted); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font: 13px var(--mono); color: var(--muted); }
+.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+svg { display: block; width: 100%; height: auto; }
+svg text { fill: var(--muted); font: 12px var(--mono); }
+svg .val { fill: var(--fg); font-weight: 500; }
+.wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font: 13px var(--mono); font-variant-numeric: tabular-nums; }
+th, td { text-align: right; padding: 6px 10px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; }
+th { color: var(--muted); font-weight: 500; }
+ul { margin: 0; padding-left: 20px; max-width: 68ch; display: grid; gap: 6px; }
+code { font: 13px var(--mono); }
+</style>
+
+<main>
+  <header style="display:grid;gap:10px">
+    <span class="eyebrow">Ticket 05 · 1ª etapa · 5 nov 2026</span>
+    <h1>Bancada de relays: hoje vs. Edge enxuto</h1>
+    <p class="lede">Uma transmissão 1080p60 com movimento de jogo atravessa a árvore transmissor → relay 1 → relay 2 → espectador. Cada nó roda num Edge 156 separado (o mesmo motor do WebView2), tudo neste PC (RTX 4060 Ti, 16 GB). Rede local, sem perdas. Uma rodada por cenário, medindo 15 s após 20 s de estabilização.</p>
+  </header>
+
+  <section class="verdicts" aria-label="Conclusões">
+    <div class="panel verdict"><span class="pill ok">atinge a meta</span><h2>Atraso de hoje: 82 ms</h2><p>O relay atual (decodifica e recodifica) já entrega abaixo de 100 ms ponta a ponta nesta rede. Cada salto custa de 14 a 27 ms, acima da meta de 5 ms.</p></div>
+    <div class="panel verdict"><span class="pill bad">não sustenta</span><h2>Repasse sem recodificar</h2><p>Corta a codificação no relay de ~355 para ~4 ms por segundo, mas o Edge só deixa sair metade dos quadros: o atraso acumula até 34 s.</p></div>
+    <div class="panel verdict"><span class="pill wait">ganho pequeno</span><h2>Flags de memória</h2><p>Economizam de 7 a 23 MB por nó, de um total de 140 a 230 MB. O consumo continua acima da meta de 200 MB no transmissor e nos relays.</p></div>
+  </section>
+
+  <section>
+    <div><span class="eyebrow">Atraso acumulado</span><h2>Quanto atraso cada nó vê, em ms</h2></div>
+    <div class="panel">
+      <div class="legend" id="lat-legend"></div>
+      <svg id="lat" viewBox="0 0 640 260" role="img" aria-label="Atraso por nó nos cenários atual e enxuto"></svg>
+      <p class="lede" style="margin-top:8px">Fora de escala: sem recodificar, o relay 2 chega a 20,3 s e o espectador a 34,5 s, porque a fila cresce sem parar.</p>
+    </div>
+  </section>
+
+  <section>
+    <div><span class="eyebrow">Memória privada</span><h2>RAM de cada navegador, em MB</h2></div>
+    <div class="panel">
+      <div class="legend" id="ram-legend"></div>
+      <svg id="ram" viewBox="0 0 640 280" role="img" aria-label="RAM por nó em três cenários"></svg>
+      <p class="lede" style="margin-top:8px">Soma da memória privada de todos os processos do navegador. A linha tracejada é a meta de 200 MB.</p>
+    </div>
+  </section>
+
+  <section>
+    <div><span class="eyebrow">Números da rodada</span><h2>Tabela completa</h2></div>
+    <div class="panel wrap"><table id="tbl"></table></div>
+  </section>
+
+  <section>
+    <div><span class="eyebrow">Por que o repasse travou</span><h2>O que o Edge exige para repassar</h2></div>
+    <div class="panel"><ul>
+      <li>O Edge descarta, sem erro, quadros escritos num envio que não saíram do próprio codificador (testado com cópia simples e com metadados ajustados).</li>
+      <li>O caminho aceito é o mesmo da criptografia ponta a ponta: um codificador de fachada gera um quadro mínimo por quadro do pai, e o conteúdo dele é trocado pelo vídeo do pai.</li>
+      <li>Esse codificador de fachada nunca passa de ~30 quadros/s, e cada salto corta de novo pela metade. Testei sem variação: FPS máximo de 120 e de 1000, fachada de 2×2 e de 1080p, piso de banda de 6 Mbps, gerador de faixa e canvas.</li>
+      <li>Hipótese mais provável: o controle de congestionamento do Chrome vê quadros de fachada de ~20 bytes, enquanto saem ~17 KB por quadro, e segura o codificador.</li>
+    </ul></div>
+  </section>
+
+  <section>
+    <div><span class="eyebrow">Limites desta medição</span><h2>O que ela ainda não diz</h2></div>
+    <div class="panel"><ul>
+      <li><b>Rede ruim não medida.</b> O TURN local não aguenta três saltos de 8 Mbps: até o relay atual degrada nele com a rede limpa.</li>
+      <li><b>Uma rodada por cenário.</b> O atraso é lido de um relógio pintado no vídeo, com erro de um quadro (±17 ms). A diferença de 82 para 126 ms entre o atual e o enxuto está dentro dessa variação.</li>
+      <li><b>Edge sem janela, não o WebView2.</b> O app real soma o processo de GPU e a composição da janela.</li>
+      <li><b>O vídeo saiu em 720p.</b> O codificador por software do transmissor baixou de 1080p sozinho, igual nos três cenários.</li>
+      <li><b>Versão 100% Rust ainda não medida.</b> É a 2ª etapa.</li>
+    </ul></div>
+  </section>
+
+  <p class="lede">Reproduzir: <code>BENCH_DIRECT=1 BENCH_MODE=decode node e2e/bench-relay.js</code> (também <code>BENCH_LEAN=1</code> e <code>BENCH_MODE=encoded</code>).</p>
+</main>
+
+<script>
+const D = {"decode":{"nodes":[{"n":"transmissor","lat":0,"fps":null,"kbps":null,"ram":231,"enc":427},{"n":"relay 1","lat":41,"fps":56,"kbps":7975,"ram":212,"enc":357},{"n":"relay 2","lat":68,"fps":55,"kbps":7956,"ram":210,"enc":351},{"n":"espectador","lat":82,"fps":54,"kbps":7946,"ram":162,"enc":0}]},"decode-lean":{"nodes":[{"n":"transmissor","lat":0,"fps":null,"kbps":null,"ram":224,"enc":457},{"n":"relay 1","lat":59,"fps":57,"kbps":7961,"ram":200,"enc":370},{"n":"relay 2","lat":83,"fps":55,"kbps":7900,"ram":195,"enc":361},{"n":"espectador","lat":126,"fps":54,"kbps":7936,"ram":139,"enc":0}]},"encoded":{"nodes":[{"n":"transmissor","lat":0,"fps":null,"kbps":null,"ram":230,"enc":390},{"n":"relay 1","lat":58,"fps":57,"kbps":8003,"ram":207,"enc":4},{"n":"relay 2","lat":20308,"fps":30,"kbps":4229,"ram":185,"enc":2},{"n":"espectador","lat":34502,"fps":13,"kbps":1425,"ram":153,"enc":0}]}};
+const S = [
+  { k: 'decode', label: 'Atual (recodifica)', c: '--c1' },
+  { k: 'decode-lean', label: 'Atual + flags de memória', c: '--c2' },
+  { k: 'encoded', label: 'Repasse sem recodificar', c: '--c3' },
+];
+const NS = 'http://www.w3.org/2000/svg';
+const el = (tag, attrs, parent, text) => { const e = document.createElementNS(NS, tag); for (const [a, v] of Object.entries(attrs)) e.setAttribute(a, v); if (text != null) e.textContent = text; parent.appendChild(e); return e; };
+const col = (v) => `var(${v})`;
+const legend = (id, series) => { document.getElementById(id).innerHTML = series.map((s) => `<span><i style="background:${col(s.c)}"></i>${s.label}</span>`).join(''); };
+const nodes = D.decode.nodes.map((n) => n.n);
+
+// Latency: grouped bars per node, two series on one scale (encoded is off-scale, noted below).
+(() => {
+  const svg = document.getElementById('lat'), series = S.slice(0, 2);
+  legend('lat-legend', series);
+  const L = 44, R = 630, T = 16, B = 220, max = 140;
+  const y = (v) => B - (v / max) * (B - T);
+  for (let t = 0; t <= max; t += 20) {
+    el('line', { x1: L, x2: R, y1: y(t), y2: y(t), stroke: col('--rule'), 'stroke-width': 1 }, svg);
+    el('text', { x: L - 8, y: y(t) + 4, 'text-anchor': 'end' }, svg, t);
+  }
+  el('line', { x1: L, x2: R, y1: y(100), y2: y(100), stroke: col('--fg'), 'stroke-dasharray': '4 4', 'stroke-width': 1 }, svg);
+  el('text', { x: R, y: y(100) - 6, 'text-anchor': 'end' }, svg, 'meta 100 ms');
+  const gw = (R - L) / nodes.length, bw = 34;
+  nodes.forEach((name, i) => {
+    const cx = L + gw * i + gw / 2;
+    series.forEach((s, j) => {
+      const v = D[s.k].nodes[i].lat, x = cx + (j - 0.5) * (bw + 6) - bw / 2;
+      el('rect', { x, y: y(v), width: bw, height: Math.max(1, B - y(v)), fill: col(s.c), rx: 2 }, svg);
+      el('text', { x: x + bw / 2, y: y(v) - 6, 'text-anchor': 'middle', class: 'val' }, svg, v);
+    });
+    el('text', { x: cx, y: B + 20, 'text-anchor': 'middle' }, svg, name);
+  });
+})();
+
+// RAM: grouped bars, three series, 200 MB target line.
+(() => {
+  const svg = document.getElementById('ram');
+  legend('ram-legend', S);
+  const L = 44, R = 630, T = 16, B = 236, max = 250;
+  const y = (v) => B - (v / max) * (B - T);
+  for (let t = 0; t <= max; t += 50) {
+    el('line', { x1: L, x2: R, y1: y(t), y2: y(t), stroke: col('--rule'), 'stroke-width': 1 }, svg);
+    el('text', { x: L - 8, y: y(t) + 4, 'text-anchor': 'end' }, svg, t);
+  }
+  const gw = (R - L) / nodes.length, bw = 30;
+  nodes.forEach((name, i) => {
+    const cx = L + gw * i + gw / 2;
+    S.forEach((s, j) => {
+      const v = D[s.k].nodes[i].ram, x = cx + (j - 1) * (bw + 4) - bw / 2;
+      el('rect', { x, y: y(v), width: bw, height: B - y(v), fill: col(s.c), rx: 2 }, svg);
+      el('text', { x: x + bw / 2, y: y(v) - 6, 'text-anchor': 'middle', class: 'val' }, svg, v);
+    });
+    el('text', { x: cx, y: B + 20, 'text-anchor': 'middle' }, svg, name);
+  });
+  el('line', { x1: L, x2: R, y1: y(200), y2: y(200), stroke: col('--fg'), 'stroke-dasharray': '4 4', 'stroke-width': 1 }, svg);
+})();
+
+// Full table.
+(() => {
+  const fmt = (v) => (v == null ? '—' : v.toLocaleString('pt-BR'));
+  let h = '<thead><tr><th>Cenário · nó</th><th>atraso ms</th><th>quadros/s</th><th>kbps</th><th>RAM MB</th><th>codificação ms/s</th></tr></thead><tbody>';
+  for (const s of S) for (const n of D[s.k].nodes) h += `<tr><td>${s.label} · ${n.n}</td><td>${fmt(n.lat)}</td><td>${fmt(n.fps)}</td><td>${fmt(n.kbps)}</td><td>${fmt(n.ram)}</td><td>${fmt(n.enc)}</td></tr>`;
+  document.getElementById('tbl').innerHTML = h + '</tbody>';
+})();
+</script>

@@ -1,0 +1,99 @@
+{
+  "label": "decode-lean",
+  "mode": "decode",
+  "lean": true,
+  "edge": "Edg/156.0.4314.58",
+  "at": "2026-11-05T18:17:31.809Z",
+  "networks": {
+    "boa": {
+      "rede": {},
+      "nodes": [
+        {
+          "nó": "transmissor",
+          "latência ms": 0,
+          "recebe": null,
+          "quadros codificados/s": 56,
+          "ms de codificação/s": 457,
+          "encoder": null,
+          "altura enviada": 720,
+          "enviado kbps": 7961,
+          "plis": 0,
+          "repasse": null,
+          "fachada/s": 0,
+          "RAM MB": 224,
+          "CPU %": 114,
+          "processos": 6
+        },
+        {
+          "nó": "relay 1",
+          "latência ms": 59,
+          "recebe": {
+            "fps": 57,
+            "kbps": 7961,
+            "altura": 720,
+            "congelamentos": 0,
+            "perda %": 0,
+            "buffer ms": 31
+          },
+          "quadros codificados/s": 55,
+          "ms de codificação/s": 370,
+          "encoder": null,
+          "altura enviada": 720,
+          "enviado kbps": 7900,
+          "plis": 0,
+          "repasse": null,
+          "fachada/s": 0,
+          "RAM MB": 200,
+          "CPU %": 28,
+          "processos": 6
+        },
+        {
+          "nó": "relay 2",
+          "latência ms": 83,
+          "recebe": {
+            "fps": 55,
+            "kbps": 7900,
+            "altura": 720,
+            "congelamentos": 0,
+            "perda %": 0,
+            "buffer ms": 55
+          },
+          "quadros codificados/s": 54,
+          "ms de codificação/s": 361,
+          "encoder": null,
+          "altura enviada": 720,
+          "enviado kbps": 7936,
+          "plis": 0,
+          "repasse": null,
+          "fachada/s": 0,
+          "RAM MB": 195,
+          "CPU %": 27,
+          "processos": 6
+        },
+        {
+          "nó": "espectador",
+          "latência ms": 126,
+          "recebe": {
+            "fps": 54,
+            "kbps": 7936,
+            "altura": 720,
+            "congelamentos": 0,
+            "perda %": 0,
+            "buffer ms": 126
+          },
+          "quadros codificados/s": 0,
+          "ms de codificação/s": 0,
+          "encoder": null,
+          "altura enviada": null,
+          "enviado kbps": 0,
+          "plis": 0,
+          "repasse": null,
+          "fachada/s": 0,
+          "RAM MB": 139,
+          "CPU %": 19,
+          "processos": 6
+        }
+      ]
+    }
+  }
+}

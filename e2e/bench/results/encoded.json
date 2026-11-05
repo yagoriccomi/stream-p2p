@@ -1,0 +1,126 @@
+{
+  "label": "encoded",
+  "mode": "encoded",
+  "lean": false,
+  "edge": "Edg/156.0.4314.58",
+  "at": "2026-11-05T18:18:25.658Z",
+  "networks": {
+    "boa": {
+      "rede": {},
+      "nodes": [
+        {
+          "nó": "transmissor",
+          "latência ms": 0,
+          "recebe": null,
+          "quadros codificados/s": 57,
+          "ms de codificação/s": 390,
+          "encoder": null,
+          "altura enviada": 720,
+          "enviado kbps": 8003,
+          "plis": 0,
+          "repasse": null,
+          "fachada/s": 0,
+          "RAM MB": 230,
+          "CPU %": 101,
+          "processos": 7
+        },
+        {
+          "nó": "relay 1",
+          "latência ms": 58,
+          "recebe": {
+            "fps": 57,
+            "kbps": 8003,
+            "altura": 720,
+            "congelamentos": 0,
+            "perda %": 0,
+            "buffer ms": 27
+          },
+          "quadros codificados/s": 30,
+          "ms de codificação/s": 4,
+          "encoder": null,
+          "altura enviada": 2,
+          "enviado kbps": 4229,
+          "plis": 0,
+          "repasse": {
+            "in": 1956,
+            "out": 988,
+            "keys": 2,
+            "keyAsks": 0,
+            "dropped": 0,
+            "queueMax": 968,
+            "swapMs": 9141081.199999996,
+            "swapMsAvg": 9252.11
+          },
+          "fachada/s": 57,
+          "RAM MB": 207,
+          "CPU %": 20,
+          "processos": 7
+        },
+        {
+          "nó": "relay 2",
+          "latência ms": 20308,
+          "recebe": {
+            "fps": 30,
+            "kbps": 4229,
+            "altura": 720,
+            "congelamentos": 0,
+            "perda %": 0,
+            "buffer ms": 92
+          },
+          "quadros codificados/s": 13,
+          "ms de codificação/s": 2,
+          "encoder": null,
+          "altura enviada": 2,
+          "enviado kbps": 1425,
+          "plis": 0,
+          "repasse": {
+            "in": 988,
+            "out": 398,
+            "keys": 2,
+            "keyAsks": 0,
+            "dropped": 0,
+            "queueMax": 590,
+            "swapMs": 4167786.000000052,
+            "swapMsAvg": 10471.82
+          },
+          "fachada/s": 30,
+          "RAM MB": 185,
+          "CPU %": 9,
+          "processos": 7
+        },
+        {
+          "nó": "espectador",
+          "latência ms": 34502,
+          "recebe": {
+            "fps": 13,
+            "kbps": 1425,
+            "altura": 720,
+            "congelamentos": 0,
+            "perda %": 0,
+            "buffer ms": 14
+          },
+          "quadros codificados/s": 0,
+          "ms de codificação/s": 0,
+          "encoder": null,
+          "altura enviada": null,
+          "enviado kbps": 0,
+          "plis": 0,
+          "repasse": {
+            "in": 398,
+            "out": 0,
+            "keys": 2,
+            "keyAsks": 0,
+            "dropped": 0,
+            "queueMax": 0,
+            "swapMs": 0,
+            "swapMsAvg": null
+          },
+          "fachada/s": 0,
+          "RAM MB": 153,
+          "CPU %": 5,
+          "processos": 7
+        }
+      ]
+    }
+  }
+}
