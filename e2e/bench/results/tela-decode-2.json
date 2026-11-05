@@ -1,0 +1,100 @@
+{
+  "label": "tela-decode-2",
+  "mode": "decode",
+  "lean": false,
+  "edge": "Edg/156.0.4314.58",
+  "native": null,
+  "at": "2026-11-05T19:24:33.338Z",
+  "networks": {
+    "boa": {
+      "rede": {},
+      "nodes": [
+        {
+          "nó": "transmissor",
+          "latência ms": 0,
+          "recebe": null,
+          "quadros codificados/s": 32,
+          "ms de codificação/s": 330,
+          "encoder": "libvpx",
+          "altura enviada": 801,
+          "enviado kbps": 8019,
+          "plis": 0,
+          "repasse": null,
+          "fachada/s": 0,
+          "RAM MB": 228,
+          "CPU %": 111,
+          "processos": 7
+        },
+        {
+          "nó": "relay 1",
+          "latência ms": 168,
+          "recebe": {
+            "fps": 32,
+            "kbps": 8013,
+            "altura": 801,
+            "congelamentos": 0,
+            "perda %": 0,
+            "buffer ms": 24
+          },
+          "quadros codificados/s": 32,
+          "ms de codificação/s": 298,
+          "encoder": null,
+          "altura enviada": 801,
+          "enviado kbps": 7997,
+          "plis": 0,
+          "repasse": null,
+          "fachada/s": 0,
+          "RAM MB": 224,
+          "CPU %": 100,
+          "processos": 7
+        },
+        {
+          "nó": "relay 2",
+          "latência ms": 197,
+          "recebe": {
+            "fps": 32,
+            "kbps": 7997,
+            "altura": 801,
+            "congelamentos": 0,
+            "perda %": 0,
+            "buffer ms": 20
+          },
+          "quadros codificados/s": 32,
+          "ms de codificação/s": 306,
+          "encoder": null,
+          "altura enviada": 801,
+          "enviado kbps": 7996,
+          "plis": 0,
+          "repasse": null,
+          "fachada/s": 0,
+          "RAM MB": 215,
+          "CPU %": 98,
+          "processos": 7
+        },
+        {
+          "nó": "espectador",
+          "latência ms": 243,
+          "recebe": {
+            "fps": 32,
+            "kbps": 7995,
+            "altura": 801,
+            "congelamentos": 0,
+            "perda %": 0,
+            "buffer ms": 78
+          },
+          "quadros codificados/s": 0,
+          "ms de codificação/s": 0,
+          "encoder": null,
+          "altura enviada": null,
+          "enviado kbps": 0,
+          "plis": 0,
+          "repasse": null,
+          "fachada/s": 0,
+          "RAM MB": 150,
+          "CPU %": 18,
+          "processos": 7
+        }
+      ]
+    }
+  }
+}

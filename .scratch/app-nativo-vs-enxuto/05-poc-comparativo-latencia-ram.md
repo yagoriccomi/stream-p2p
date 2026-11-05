@@ -42,5 +42,21 @@ Achados:
 
 Limites: o relay nativo não mostra o vídeo (não decodifica); o espectador que também repassa, no app, precisaria decodificar uma vez para a tela. Duas rodadas, rede ruim não medida.
 
-## Etapa 2b — transmissor nativo (pendente)
-Captura WGC + NVENC em Rust. Sem ffmpeg nesta máquina: exige Media Foundation (MFT de hardware da NVIDIA) via `windows-rs`.
+## Etapa 2b — transmissor nativo e captura real (feita em 2026-11-05)
+Transmissor em Rust (`e2e/bench/native/src/bin/presenter.rs`): captura a janela com Windows.Graphics.Capture, converte BGRA→NV12 na GPU (processador de vídeo D3D11), codifica H.264 no `NVIDIA H.264 Encoder MFT` (Media Foundation, NVENC) e envia com `str0m`. Os relays Rust repassam H.264 (`SP2P_CODEC=h264`).
+
+Para comparar de forma justa, a "tela do jogo" virou uma janela real do Edge (canvas 1080p60 com o relógio), mantida no topo. O transmissor do Edge passa a capturá-la com `getDisplayMedia`, como o app faz (`BENCH_SCREEN=1`). Duas a três rodadas por cenário, rede limpa, ICE direto.
+
+| Cenário (captura real da janela) | Atraso no espectador | Sem relay (base) | Quadros/s · altura | RAM transmissor / relay | CPU do transmissor |
+|---|---|---|---|---|---|
+| App de hoje (Edge captura + VP8 por software, relays Edge) | 190–243 ms | 90–111 ms | 32–46 · 801p | 228 / ~215 MB | 111–170 % |
+| Edge captura + relays Rust | 115–183 ms | — | 32–49 · 801p | 227 / 3 MB | 81–146 % |
+| **100 % Rust (WGC + NVENC + str0m)** | **87–103 ms** | **74–86 ms** | **60 · 1070p** | **30 / 3 MB** | **~10 %** |
+
+Achados:
+- Com a captura real, o app de hoje fica acima da meta: 190–243 ms no espectador. O codificador VP8 por software do Edge satura a CPU, cai para 801p e 32–46 quadros/s.
+- 100 % Rust: 87–103 ms ponta a ponta, 1080p60 cravado, zero congelamentos. A conversão de cor leva 0,6 ms e a codificação 4,6 ms por quadro. Custo por salto ~7 ms (média com relays menos média da base, dividido por 2), perto da meta de 5 ms.
+- RAM: transmissor de 228 para 30 MB, relay de ~215 para 3 MB.
+- Só os relays Rust, com o transmissor do Edge, já cortam o atraso, mas o transmissor do Edge vira o gargalo.
+
+Limites: o codec é diferente (H.264 por hardware no nativo, VP8 por software no Edge). O app real, no WebView2, pode usar H.264 por hardware, e isso diminuiria a diferença no transmissor (medir na ADR). A janela-fonte fica "sempre no topo" durante a medição, porque o Windows para de atualizar janela coberta. Rede ruim não medida. Os relays nativos não mostram vídeo.

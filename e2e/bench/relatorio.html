@@ -47,12 +47,34 @@ code { font: 13px var(--mono); }
 
 <main>
   <header style="display:grid;gap:10px">
-    <span class="eyebrow">Ticket 05 · etapas 1 e 2a · 5 nov 2026</span>
-    <h1>Bancada de relays: hoje, Edge enxuto e relay em Rust</h1>
+    <span class="eyebrow">Ticket 05 · etapas 1, 2a e 2b · 5 nov 2026</span>
+    <h1>Bancada de transmissão: app de hoje, Edge enxuto e 100% Rust</h1>
     <p class="lede">Uma transmissão 1080p60 com movimento de jogo atravessa a árvore transmissor → relay 1 → relay 2 → espectador. Cada nó roda num Edge 156 separado (o mesmo motor do WebView2), tudo neste PC (RTX 4060 Ti, 16 GB). Rede local, sem perdas. Medindo 15 s após 20 s de estabilização. No cenário Rust, os dois relays são um processo nativo (str0m) que repassa os pacotes sem decodificar; transmissor e espectador seguem no Edge.</p>
   </header>
 
-  <section class="verdicts" aria-label="Conclusões">
+  <section class="verdicts" aria-label="Conclusão principal">
+    <div class="panel verdict"><span class="pill ok">atinge as metas</span><h2>100% Rust: 87–103 ms em 1080p60</h2><p>Capturando uma janela real, o app de hoje leva 190–243 ms até o espectador e cai para 801p a 32–46 quadros/s. A versão toda em Rust (captura WGC, NVENC, str0m) entrega 87–103 ms, 1080p a 60 quadros/s, com 30 MB no transmissor e 3 MB por relay.</p></div>
+  </section>
+
+  <section>
+    <div><span class="eyebrow">Etapa 2b · captura real da janela</span><h2>Atraso no espectador, em ms</h2></div>
+    <div class="panel">
+      <div class="legend" id="real-legend"></div>
+      <svg id="real" viewBox="0 0 640 230" role="img" aria-label="Atraso no espectador com captura real, por cenário"></svg>
+      <p class="lede" style="margin-top:8px">A barra vai do menor ao maior valor das rodadas; o número é a média. A linha tracejada é a meta de 100 ms. A janela da "tela do jogo" é a mesma nos três cenários; o Edge a captura com <code>getDisplayMedia</code>, como o app.</p>
+    </div>
+    <div class="panel wrap" style="margin-top:12px"><table>
+      <thead><tr><th>Cenário</th><th>atraso (base sem relay)</th><th>quadros/s · altura</th><th>RAM transmissor / relay</th><th>CPU do transmissor</th></tr></thead>
+      <tbody>
+        <tr><td>App de hoje (Edge, VP8 por software)</td><td>190–243 ms (90–111)</td><td>32–46 · 801p</td><td>228 / ~215 MB</td><td>111–170 %</td></tr>
+        <tr><td>Edge transmite, relays em Rust</td><td>115–183 ms</td><td>32–49 · 801p</td><td>227 / 3 MB</td><td>81–146 %</td></tr>
+        <tr><td><b>100% Rust</b> (WGC + NVENC + str0m)</td><td><b>87–103 ms</b> (74–86)</td><td><b>60 · 1070p</b></td><td><b>30 / 3 MB</b></td><td><b>~10 %</b></td></tr>
+      </tbody></table>
+      <p class="lede" style="margin-top:8px">Cuidado: os codecs diferem. O nativo usa H.264 na placa de vídeo; o Edge usou VP8 no processador. O WebView2 do app pode usar H.264 por hardware, o que encurtaria a diferença no transmissor.</p>
+    </div>
+  </section>
+
+  <section class="verdicts" aria-label="Conclusões das etapas 1 e 2a">
     <div class="panel verdict"><span class="pill ok">atinge as metas</span><h2>Relay em Rust: 4 MB e ~2–7 ms por salto</h2><p>O espectador vê 59–68 ms com dois relays nativos, contra 53–56 ms sem relay nenhum e 82 ms com o relay de hoje. Cada relay usa 4 MB de RAM e 3% de CPU, contra ~210 MB no Edge.</p></div>
     <div class="panel verdict"><span class="pill ok">atinge a meta</span><h2>Relay de hoje: 82 ms</h2><p>O relay atual (decodifica e recodifica) já entrega abaixo de 100 ms ponta a ponta nesta rede. Cada salto custa ~14 ms (atraso menos a base sem relay, dividido por 2), acima da meta de 5 ms.</p></div>
     <div class="panel verdict"><span class="pill bad">não sustenta</span><h2>Repasse sem recodificar</h2><p>Corta a codificação no relay de ~355 para ~4 ms por segundo, mas o Edge só deixa sair metade dos quadros: o atraso acumula até 34 s.</p></div>
@@ -99,12 +121,13 @@ code { font: 13px var(--mono); }
       <li><b>Uma ou duas rodadas por cenário.</b> O atraso é lido de um relógio pintado no vídeo, com erro de um quadro (±17 ms). A diferença de 82 para 126 ms entre o atual e o enxuto está dentro dessa variação.</li>
       <li><b>Edge sem janela, não o WebView2.</b> O app real soma o processo de GPU e a composição da janela.</li>
       <li><b>O vídeo saiu em 720p.</b> O codificador por software do transmissor baixou de 1080p sozinho, igual nos três cenários.</li>
-      <li><b>Transmissor nativo ainda não medido.</b> Captura WGC + NVENC em Rust é a etapa 2b; sem ffmpeg nesta máquina, passa por Media Foundation.</li>
+      <li><b>Etapas 1 e 2a usam o canvas direto, sem captura de tela.</b> Por isso o atraso delas é menor que o da etapa 2b, que captura uma janela de verdade.</li>
+      <li><b>A janela capturada fica sempre no topo durante a medição.</b> O Windows para de atualizar janelas totalmente cobertas.</li>
       <li><b>O relay em Rust não mostra o vídeo.</b> No app, quem assiste e repassa ao mesmo tempo ainda decodifica uma vez para a tela.</li>
     </ul></div>
   </section>
 
-  <p class="lede">Reproduzir: <code>BENCH_DIRECT=1 BENCH_MODE=decode node e2e/bench-relay.js</code> (também <code>BENCH_LEAN=1</code>, <code>BENCH_MODE=encoded</code>, <code>BENCH_MODE=native</code> após <code>cargo build --release</code> em <code>e2e/bench/native</code>, e <code>BENCH_NORELAY=1</code> para a base).</p>
+  <p class="lede">Reproduzir: <code>BENCH_DIRECT=1 BENCH_MODE=decode node e2e/bench-relay.js</code> (também <code>BENCH_LEAN=1</code>, <code>BENCH_MODE=encoded</code>, <code>BENCH_MODE=native</code> após <code>cargo build --release</code> em <code>e2e/bench/native</code>, e <code>BENCH_NORELAY=1</code> para a base). Etapa 2b: <code>BENCH_MODE=native-full</code> e <code>BENCH_SCREEN=1 BENCH_MODE=decode</code>..</p>
 </main>
 
 <script>
@@ -167,6 +190,30 @@ const nodes = D.decode.nodes.map((n) => n.n);
     el('text', { x: cx, y: B + 20, 'text-anchor': 'middle' }, svg, name);
   });
   el('line', { x1: L, x2: R, y1: y(200), y2: y(200), stroke: col('--fg'), 'stroke-dasharray': '4 4', 'stroke-width': 1 }, svg);
+})();
+
+// Real-capture latency: range bars with the mean.
+(() => {
+  const svg = document.getElementById('real');
+  const rows = [
+    { label: 'App de hoje', min: 190, max: 243, avg: 217, c: '--c1' },
+    { label: 'Edge + relays Rust', min: 115, max: 183, avg: 149, c: '--c2' },
+    { label: '100% Rust', min: 87, max: 103, avg: 96, c: '--c4' },
+  ];
+  legend('real-legend', rows);
+  const L = 150, R = 620, T = 10, max = 260, rh = 56;
+  const x = (v) => L + (v / max) * (R - L);
+  for (let t = 0; t <= max; t += 50) {
+    el('line', { x1: x(t), x2: x(t), y1: T, y2: T + rh * rows.length, stroke: col('--rule'), 'stroke-width': 1 }, svg);
+    el('text', { x: x(t), y: T + rh * rows.length + 18, 'text-anchor': 'middle' }, svg, t);
+  }
+  rows.forEach((r, i) => {
+    const y = T + i * rh + 14;
+    el('text', { x: L - 10, y: y + 18, 'text-anchor': 'end' }, svg, r.label);
+    el('rect', { x: x(r.min), y, width: x(r.max) - x(r.min), height: 26, fill: col(r.c), rx: 2 }, svg);
+    el('text', { x: x(r.max) + 6, y: y + 18, class: 'val' }, svg, `${r.avg} ms`);
+  });
+  el('line', { x1: x(100), x2: x(100), y1: T, y2: T + rh * rows.length, stroke: col('--fg'), 'stroke-dasharray': '4 4', 'stroke-width': 1 }, svg);
 })();
 
 // Full table.

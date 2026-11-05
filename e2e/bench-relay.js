@@ -5,6 +5,9 @@
 //   BENCH_MODE=decode   today's relay: forwards the received track (decode + re-encode)
 //   BENCH_MODE=encoded  scenario 2: forwards encoded frames (RTCRtpScriptTransform)
 //   BENCH_MODE=native   scenario 3: relays 1 and 2 are the Rust relay (bench/native), RTP forward
+//   BENCH_MODE=native-full  scenario 3 complete: the presenter is also native (bench/native presenter:
+//                       window capture + hardware H.264). It captures a visible Edge window that paints
+//                       the clock (the "game"), which is left out of the presenter's RAM and CPU.
 //   BENCH_LEAN=1        scenario 2 also launches Edge with memory-saving flags
 // Writes e2e/bench/results/<mode>.json.
 import { spawn, execFileSync } from 'node:child_process';
@@ -31,8 +34,14 @@ const ALL_NETWORKS = { boa: {}, ruim: { delay: 20, jitter: 5, loss: 0.01 } };
 const NETWORKS = Object.fromEntries((process.env.BENCH_NETS ?? 'boa').split(',').map((n) => [n, ALL_NETWORKS[n]]));
 // BENCH_NORELAY=1: presenter straight to the viewer, the baseline that gives the cost of each hop.
 const NODES = process.env.BENCH_NORELAY ? ['transmissor', 'espectador'] : ['transmissor', 'relay 1', 'relay 2', 'espectador'];
-const isNative = (i) => MODE === 'native' && i > 0 && i < NODES.length - 1;
-const NATIVE_BIN = path.join(import.meta.dirname, 'bench', 'native', 'target', 'release', 'sp2p-native-bench.exe');
+const FULL = MODE === 'native-full';
+const isNative = (i) => (MODE === 'native' || FULL) && i > 0 && i < NODES.length - 1;
+const SOURCE_TITLE = 'sp2p-bench-source';
+// BENCH_SCREEN=1: the Edge presenter captures the same source window with getDisplayMedia (like the app).
+const SCREEN = Boolean(process.env.BENCH_SCREEN);
+const NATIVE_DIR = path.join(import.meta.dirname, 'bench', 'native', 'target', 'release');
+const NATIVE_BIN = path.join(NATIVE_DIR, 'sp2p-native-bench.exe');
+const PRESENTER_BIN = path.join(NATIVE_DIR, 'presenter.exe');
 
 if (process.platform === 'win32') {
   const { default: koffi } = await import('koffi');
@@ -97,6 +106,7 @@ const LEAN_FLAGS = [ // what an optimized WebView2 host can pass in AdditionalBr
 ];
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const browsers = [], nodes = [];
+let sourceBrowser = null;
 const profiles = path.join(tmpdir(), 'sp2p-bench');
 rmSync(profiles, { recursive: true, force: true });
 
@@ -104,37 +114,63 @@ try {
   await sleep(500);
   const deliver = (to, from, msg) => nodes[to].onSig(from, msg);
   for (const [i, name] of NODES.entries()) {
-    if (isNative(i)) {
-      const proc = spawn(NATIVE_BIN, [], { stdio: ['pipe', 'pipe', 'inherit'] });
+    const spawnNative = (bin, args, env) => {
+      const proc = spawn(bin, args, { stdio: ['pipe', 'pipe', 'inherit'], env: { ...process.env, ...env } });
       const waiting = [];
+      let ready;
+      const isReady = new Promise((r) => { ready = r; });
       readline.createInterface({ input: proc.stdout }).on('line', (l) => {
         const m = JSON.parse(l);
         if (m.stats) return waiting.shift()?.(m.stats);
+        if (m.ready) { console.log(`[${name}]`, m.ready); return ready(m.ready); }
         const { to, ...msg } = m;
         deliver(to, i, msg);
       });
       const send = (o) => proc.stdin.write(JSON.stringify(o) + '\n');
-      nodes.push({
-        name, pid: proc.pid, native: true,
+      return {
+        name, pid: proc.pid, native: true, isReady,
         onSig: (from, msg) => send({ from, ...msg }),
         child: (c) => send({ cmd: 'child', id: c }),
         stats: () => new Promise((r) => { waiting.push((st) => r({ native: st, out: [], at: performance.now() })); send({ cmd: 'stats' }); }),
         latency: async () => null, // no screen
+        present: async () => {},
         close: async () => proc.kill(),
-      });
+      };
+    };
+    if (isNative(i)) {
+      nodes.push(spawnNative(NATIVE_BIN, [], { SP2P_CODEC: FULL ? 'h264' : 'vp8' }));
       continue;
+    }
+    if ((FULL || SCREEN) && i === 0) {
+      // The "game": a visible Edge app window painting the 1080p60 scene and the clock.
+      const src = await puppeteer.launch({
+        executablePath: EDGE, headless: false, userDataDir: path.join(profiles, 'source'), defaultViewport: null, ignoreDefaultArgs: ['--enable-automation'],
+        args: [`--app=http://127.0.0.1:${HTTP_PORT}/relay.html?source=1&ice=[]`, '--window-position=0,0', '--window-size=1280,720', '--disable-features=CalculateNativeWinOcclusion', '--disable-background-timer-throttling',
+          '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows', '--autoplay-policy=no-user-gesture-required'],
+      });
+      sourceBrowser = src;
+      const sp = (await src.pages())[0];
+      await sp.waitForFunction((t) => document.title === t, {}, SOURCE_TITLE);
+      await sleep(1500);
+      if (FULL) {
+        const n = spawnNative(PRESENTER_BIN, [SOURCE_TITLE], {});
+        await n.isReady;
+        nodes.push(n);
+        continue;
+      }
+      execFileSync(PRESENTER_BIN, [SOURCE_TITLE, '--pin']); // DWM stops refreshing a covered window
     }
     const b = await puppeteer.launch({
       executablePath: EDGE, headless: 'new', userDataDir: path.join(profiles, String(i)),
-      args: ['--autoplay-policy=no-user-gesture-required', '--disable-background-timer-throttling', '--disable-renderer-backgrounding',
+      args: [...(SCREEN && i === 0 ? [`--auto-select-desktop-capture-source=${SOURCE_TITLE}`] : []), '--autoplay-policy=no-user-gesture-required', '--disable-background-timer-throttling', '--disable-renderer-backgrounding',
         '--disable-backgrounding-occluded-windows', '--allow-loopback-in-peer-connection', ...(process.env.BENCH_FIELDTRIALS ? [`--force-fieldtrials=${process.env.BENCH_FIELDTRIALS}`] : []), ...(LEAN ? LEAN_FLAGS : [])],
     });
     const p = (await b.pages())[0] ?? await b.newPage();
     p.on('pageerror', (e) => console.error(`[${name}] pageerror:`, e.message));
     if (process.env.BENCH_DEBUG) p.on('console', (m) => console.log(`[${name}] ${m.text()}`));
     await p.exposeFunction('sig', (to, msg) => deliver(to, i, msg));
-    const pageMode = MODE === 'native' ? 'decode' : MODE;
-    await p.goto(`http://127.0.0.1:${HTTP_PORT}/relay.html?mode=${pageMode}&ph=${process.env.BENCH_PH ?? 2}&phfps=${process.env.BENCH_PHFPS ?? 1000}&minkbps=${process.env.BENCH_MINKBPS ?? 0}&ice=${encodeURIComponent(JSON.stringify(ICE))}`);
+    const pageMode = MODE.startsWith('native') ? 'decode' : MODE;
+    await p.goto(`http://127.0.0.1:${HTTP_PORT}/relay.html?mode=${pageMode}&ph=${process.env.BENCH_PH ?? 2}&phfps=${process.env.BENCH_PHFPS ?? 1000}&minkbps=${process.env.BENCH_MINKBPS ?? 0}${SCREEN ? '&screen=1' : ''}&ice=${encodeURIComponent(JSON.stringify(ICE))}`);
     browsers.push(b);
     nodes.push({
       name, pid: b.process().pid, browser: b,
@@ -143,13 +179,14 @@ try {
       stats: () => p.evaluate(() => window.bench.stats()),
       latency: async () => { await p.bringToFront(); return p.evaluate(() => window.bench.latency()); },
       present: () => p.evaluate(() => window.bench.present()),
+      evalPage: (fn) => p.evaluate(fn),
       close: () => b.close(),
     });
   }
   await nodes[0].present();
   for (let i = 0; i < NODES.length - 1; i++) await nodes[i].child(i + 1);
 
-  const results = { label: LABEL, mode: MODE, lean: LEAN, edge: await browsers[0].version(), native: MODE === 'native' ? NATIVE_BIN : null, at: new Date().toISOString(), networks: {} };
+  const results = { label: LABEL, mode: MODE, lean: LEAN, edge: await browsers[0].version(), native: MODE.startsWith('native') ? NATIVE_BIN : null, at: new Date().toISOString(), networks: {} };
   for (const [net, cfg] of Object.entries(NETWORKS)) {
     Object.assign(impair, { delay: 0, jitter: 0, loss: 0 }, cfg);
     await sleep(SETTLE_MS);
@@ -158,6 +195,10 @@ try {
     await sleep(MEASURE_MS);
     const s1 = await Promise.all(nodes.map((n) => n.stats()));
     const t1 = processTable();
+    if (process.env.BENCH_SNAPSHOT) { // debug: what the viewer shows
+      const url = await nodes.at(-1).evalPage?.(() => { const v = document.getElementById('video'); const c = Object.assign(document.createElement('canvas'), { width: v.videoWidth, height: v.videoHeight }); c.getContext('2d').drawImage(v, 0, 0); return c.toDataURL('image/png'); });
+      if (url) writeFileSync(path.join(dir, 'results', 'snapshot.png'), Buffer.from(url.split(',')[1], 'base64'));
+    }
     const lat = [];
     for (const n of nodes) lat.push(await n.latency());
     const rows = NODES.map((name, i) => {
@@ -179,11 +220,11 @@ try {
         recebe: inn,
         'quadros codificados/s': Math.round((enc(b) - enc(a)) / sec),
         'ms de codificação/s': Math.round((1000 * (encS(b) - encS(a))) / sec),
-        encoder: b.out[0]?.encoder ?? null,
+        encoder: b.out[0]?.encoder ?? (b.native && { ...b.native, 'quadros/s': Math.round((b.native.encoded - a.native.encoded) / sec), 'kbps out': Math.round(((b.native.bytes - a.native.bytes) * 8) / sec / 1000) }) ?? null,
         'altura enviada': b.out[0]?.h ?? null,
         'enviado kbps': Math.round((b.out.reduce((n, o) => n + o.bytes, 0) - a.out.reduce((n, o) => n + o.bytes, 0)) * 8 / sec / 1000),
         plis: b.out.reduce((n, o) => n + o.plis, 0),
-        repasse: b.worker ?? (b.native && { ...b.native, 'kbps in': Math.round(((b.native.bytesIn - a.native.bytesIn) * 8) / sec / 1000), 'pacotes/s': Math.round((b.native.pktsIn - a.native.pktsIn) / sec), 'kbps out': Math.round(((b.native.bytesOut - a.native.bytesOut) * 8) / sec / 1000) }) ?? null,
+        repasse: b.worker ?? (b.native?.bytesIn != null ? { ...b.native, 'kbps in': Math.round(((b.native.bytesIn - a.native.bytesIn) * 8) / sec / 1000), 'pacotes/s': Math.round((b.native.pktsIn - a.native.pktsIn) / sec), 'kbps out': Math.round(((b.native.bytesOut - a.native.bytesOut) * 8) / sec / 1000) } : null) ?? (b.native ? { ...b.native, 'quadros/s': Math.round((b.native.encoded - a.native.encoded) / sec), 'capturados/s': Math.round((b.native.captured - a.native.captured) / sec), 'kbps out': Math.round(((b.native.bytes - a.native.bytes) * 8) / sec / 1000) } : null),
         'fachada/s': Math.round(((b.phWrites ?? 0) - (a.phWrites ?? 0)) / sec),
         'RAM MB': Math.round(u1.mb),
         'CPU %': Math.round((100 * (u1.cpu - u0.cpu)) / sec),
@@ -202,6 +243,7 @@ try {
   process.exitCode = 1;
 } finally {
   for (const n of nodes) await Promise.resolve(n.close()).catch(() => {});
+  await sourceBrowser?.close().catch(() => {});
   turn.kill(); front.close(); http.close();
   for (const b of backs.values()) b.close();
   process.exit(process.exitCode ?? 0);

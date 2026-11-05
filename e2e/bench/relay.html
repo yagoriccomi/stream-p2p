@@ -27,8 +27,13 @@ function newPc(peer) {
 }
 
 // Game-like 1080p60 source with a 24-bit clock on top (same probe as e2e/netsim.js).
-function capture() {
+function capture(show = false) {
   const c = Object.assign(document.createElement('canvas'), { width: W, height: H });
+  if (show) { // native presenter: this window is the "game" it captures
+    c.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh';
+    document.body.style.margin = '0';
+    document.body.appendChild(c);
+  }
   const g = c.getContext('2d');
   const TILE = 512;
   const tex = Object.assign(document.createElement('canvas'), { width: TILE, height: TILE });
@@ -119,8 +124,17 @@ async function onSig(from, { sdp, candidate }) {
   sig(from, { sdp: pc.localDescription.toJSON() });
 }
 
+if (q.get('source')) { capture(true); document.title = 'sp2p-bench-source'; }
+
 window.bench = {
-  present() { stream = capture(); document.getElementById('video').srcObject = stream; },
+  async present() {
+    // screen=1: capture the source window like the app does (getDisplayMedia), instead of the canvas
+    stream = q.get('screen')
+      ? await navigator.mediaDevices.getDisplayMedia({ video: { width: W, height: H, frameRate: FPS }, audio: false })
+      : capture();
+    stream.getVideoTracks()[0].contentHint = 'motion';
+    document.getElementById('video').srcObject = stream;
+  },
   child(id) { stream ? offerTo(id) : pending.push(id); },
   onSig,
   // Median glass-to-glass latency read from the clock blocks of the rendered video.

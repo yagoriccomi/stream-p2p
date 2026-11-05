@@ -1,0 +1,54 @@
+{
+  "label": "tela-direto-1",
+  "mode": "decode",
+  "lean": false,
+  "edge": "Edg/156.0.4314.58",
+  "native": null,
+  "at": "2026-11-05T19:22:54.337Z",
+  "networks": {
+    "boa": {
+      "rede": {},
+      "nodes": [
+        {
+          "nó": "transmissor",
+          "latência ms": 0,
+          "recebe": null,
+          "quadros codificados/s": 48,
+          "ms de codificação/s": 419,
+          "encoder": "libvpx",
+          "altura enviada": 801,
+          "enviado kbps": 7970,
+          "plis": 0,
+          "repasse": null,
+          "fachada/s": 0,
+          "RAM MB": 229,
+          "CPU %": 140,
+          "processos": 7
+        },
+        {
+          "nó": "espectador",
+          "latência ms": 90,
+          "recebe": {
+            "fps": 48,
+            "kbps": 7970,
+            "altura": 801,
+            "congelamentos": 0,
+            "perda %": 0,
+            "buffer ms": 30
+          },
+          "quadros codificados/s": 0,
+          "ms de codificação/s": 0,
+          "encoder": null,
+          "altura enviada": null,
+          "enviado kbps": 0,
+          "plis": 0,
+          "repasse": null,
+          "fachada/s": 0,
+          "RAM MB": 145,
+          "CPU %": 17,
+          "processos": 7
+        }
+      ]
+    }
+  }
+}

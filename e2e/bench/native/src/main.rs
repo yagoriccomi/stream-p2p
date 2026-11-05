@@ -35,11 +35,14 @@ struct Stats {
 }
 
 fn new_rtc(addr: SocketAddr) -> Rtc {
-    let mut rtc = Rtc::builder()
-        .set_rtp_mode(true)
-        .clear_codecs()
-        .enable_vp8(true)
-        .build(Instant::now());
+    // SP2P_CODEC=h264 when the parent is the native presenter (hardware H.264); VP8 otherwise.
+    let mut b = Rtc::builder().set_rtp_mode(true).clear_codecs();
+    if std::env::var("SP2P_CODEC").as_deref() == Ok("h264") {
+        b.codec_config().add_h264(102.into(), Some(103.into()), true, 0x42e01f);
+    } else {
+        b = b.enable_vp8(true);
+    }
+    let mut rtc = b.build(Instant::now());
     rtc.add_local_candidate(Candidate::host(addr, "udp").unwrap());
     rtc
 }
