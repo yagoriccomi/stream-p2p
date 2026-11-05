@@ -1,0 +1,9 @@
+[package]
+name = "sp2p-native-bench"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+str0m = { version = "0.25", default-features = false, features = ["wincrypto"] }
+serde_json = "1"

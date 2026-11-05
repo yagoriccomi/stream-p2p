@@ -4,6 +4,7 @@
 // hop shows, plus the private memory and CPU of each browser.
 //   BENCH_MODE=decode   today's relay: forwards the received track (decode + re-encode)
 //   BENCH_MODE=encoded  scenario 2: forwards encoded frames (RTCRtpScriptTransform)
+//   BENCH_MODE=native   scenario 3: relays 1 and 2 are the Rust relay (bench/native), RTP forward
 //   BENCH_LEAN=1        scenario 2 also launches Edge with memory-saving flags
 // Writes e2e/bench/results/<mode>.json.
 import { spawn, execFileSync } from 'node:child_process';
@@ -13,6 +14,7 @@ import { homedir, tmpdir } from 'node:os';
 import path from 'node:path';
 import dgram from 'node:dgram';
 import puppeteer from 'puppeteer-core';
+import readline from 'node:readline';
 
 const MODE = process.env.BENCH_MODE ?? 'decode';
 const LEAN = Boolean(process.env.BENCH_LEAN);
@@ -27,7 +29,10 @@ const ICE = process.env.BENCH_DIRECT ? [] : [{ urls: `turn:127.0.0.1:${PROXY_POR
 // carry three 8 Mbps hops: even today's relay degrades there on a clean network (2026-11-05).
 const ALL_NETWORKS = { boa: {}, ruim: { delay: 20, jitter: 5, loss: 0.01 } };
 const NETWORKS = Object.fromEntries((process.env.BENCH_NETS ?? 'boa').split(',').map((n) => [n, ALL_NETWORKS[n]]));
-const NODES = ['transmissor', 'relay 1', 'relay 2', 'espectador'];
+// BENCH_NORELAY=1: presenter straight to the viewer, the baseline that gives the cost of each hop.
+const NODES = process.env.BENCH_NORELAY ? ['transmissor', 'espectador'] : ['transmissor', 'relay 1', 'relay 2', 'espectador'];
+const isNative = (i) => MODE === 'native' && i > 0 && i < NODES.length - 1;
+const NATIVE_BIN = path.join(import.meta.dirname, 'bench', 'native', 'target', 'release', 'sp2p-native-bench.exe');
 
 if (process.platform === 'win32') {
   const { default: koffi } = await import('koffi');
@@ -91,13 +96,34 @@ const LEAN_FLAGS = [ // what an optimized WebView2 host can pass in AdditionalBr
   '--disable-site-isolation-trials', '--js-flags=--max-lazy',
 ];
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const browsers = [], pages = [];
+const browsers = [], nodes = [];
 const profiles = path.join(tmpdir(), 'sp2p-bench');
 rmSync(profiles, { recursive: true, force: true });
 
 try {
   await sleep(500);
+  const deliver = (to, from, msg) => nodes[to].onSig(from, msg);
   for (const [i, name] of NODES.entries()) {
+    if (isNative(i)) {
+      const proc = spawn(NATIVE_BIN, [], { stdio: ['pipe', 'pipe', 'inherit'] });
+      const waiting = [];
+      readline.createInterface({ input: proc.stdout }).on('line', (l) => {
+        const m = JSON.parse(l);
+        if (m.stats) return waiting.shift()?.(m.stats);
+        const { to, ...msg } = m;
+        deliver(to, i, msg);
+      });
+      const send = (o) => proc.stdin.write(JSON.stringify(o) + '\n');
+      nodes.push({
+        name, pid: proc.pid, native: true,
+        onSig: (from, msg) => send({ from, ...msg }),
+        child: (c) => send({ cmd: 'child', id: c }),
+        stats: () => new Promise((r) => { waiting.push((st) => r({ native: st, out: [], at: performance.now() })); send({ cmd: 'stats' }); }),
+        latency: async () => null, // no screen
+        close: async () => proc.kill(),
+      });
+      continue;
+    }
     const b = await puppeteer.launch({
       executablePath: EDGE, headless: 'new', userDataDir: path.join(profiles, String(i)),
       args: ['--autoplay-policy=no-user-gesture-required', '--disable-background-timer-throttling', '--disable-renderer-backgrounding',
@@ -106,28 +132,38 @@ try {
     const p = (await b.pages())[0] ?? await b.newPage();
     p.on('pageerror', (e) => console.error(`[${name}] pageerror:`, e.message));
     if (process.env.BENCH_DEBUG) p.on('console', (m) => console.log(`[${name}] ${m.text()}`));
-    await p.exposeFunction('sig', (to, msg) => pages[to].evaluate((from, m) => window.bench.onSig(from, m), i, msg));
-    await p.goto(`http://127.0.0.1:${HTTP_PORT}/relay.html?mode=${MODE}&ph=${process.env.BENCH_PH ?? 2}&phfps=${process.env.BENCH_PHFPS ?? 1000}&minkbps=${process.env.BENCH_MINKBPS ?? 0}&ice=${encodeURIComponent(JSON.stringify(ICE))}`);
-    browsers.push(b); pages.push(p);
+    await p.exposeFunction('sig', (to, msg) => deliver(to, i, msg));
+    const pageMode = MODE === 'native' ? 'decode' : MODE;
+    await p.goto(`http://127.0.0.1:${HTTP_PORT}/relay.html?mode=${pageMode}&ph=${process.env.BENCH_PH ?? 2}&phfps=${process.env.BENCH_PHFPS ?? 1000}&minkbps=${process.env.BENCH_MINKBPS ?? 0}&ice=${encodeURIComponent(JSON.stringify(ICE))}`);
+    browsers.push(b);
+    nodes.push({
+      name, pid: b.process().pid, browser: b,
+      onSig: (from, msg) => p.evaluate((f, m) => window.bench.onSig(f, m), from, msg),
+      child: (c) => p.evaluate((x) => window.bench.child(x), c),
+      stats: () => p.evaluate(() => window.bench.stats()),
+      latency: async () => { await p.bringToFront(); return p.evaluate(() => window.bench.latency()); },
+      present: () => p.evaluate(() => window.bench.present()),
+      close: () => b.close(),
+    });
   }
-  await pages[0].evaluate(() => window.bench.present());
-  for (let i = 0; i < NODES.length - 1; i++) await pages[i].evaluate((c) => window.bench.child(c), i + 1);
+  await nodes[0].present();
+  for (let i = 0; i < NODES.length - 1; i++) await nodes[i].child(i + 1);
 
-  const results = { label: LABEL, mode: MODE, lean: LEAN, edge: await browsers[0].version(), at: new Date().toISOString(), networks: {} };
+  const results = { label: LABEL, mode: MODE, lean: LEAN, edge: await browsers[0].version(), native: MODE === 'native' ? NATIVE_BIN : null, at: new Date().toISOString(), networks: {} };
   for (const [net, cfg] of Object.entries(NETWORKS)) {
     Object.assign(impair, { delay: 0, jitter: 0, loss: 0 }, cfg);
     await sleep(SETTLE_MS);
-    const s0 = await Promise.all(pages.map((p) => p.evaluate(() => window.bench.stats())));
+    const s0 = await Promise.all(nodes.map((n) => n.stats()));
     const t0 = processTable();
     await sleep(MEASURE_MS);
-    const s1 = await Promise.all(pages.map((p) => p.evaluate(() => window.bench.stats())));
+    const s1 = await Promise.all(nodes.map((n) => n.stats()));
     const t1 = processTable();
     const lat = [];
-    for (const p of pages) { await p.bringToFront(); lat.push(await p.evaluate(() => window.bench.latency())); }
-    const nodes = NODES.map((name, i) => {
+    for (const n of nodes) lat.push(await n.latency());
+    const rows = NODES.map((name, i) => {
       const [a, b] = [s0[i], s1[i]];
       const sec = (b.at - a.at) / 1000;
-      const u0 = usage(t0, browsers[i].process().pid), u1 = usage(t1, browsers[i].process().pid);
+      const u0 = usage(t0, nodes[i].pid), u1 = usage(t1, nodes[i].pid);
       const enc = (x) => x.out.reduce((n, o) => n + o.encoded, 0), encS = (x) => x.out.reduce((n, o) => n + o.encodeS, 0);
       const inn = b.in && a.in && {
         fps: Math.round((b.in.frames - a.in.frames) / sec),
@@ -147,16 +183,16 @@ try {
         'altura enviada': b.out[0]?.h ?? null,
         'enviado kbps': Math.round((b.out.reduce((n, o) => n + o.bytes, 0) - a.out.reduce((n, o) => n + o.bytes, 0)) * 8 / sec / 1000),
         plis: b.out.reduce((n, o) => n + o.plis, 0),
-        repasse: b.worker ?? null,
-        'fachada/s': Math.round((b.phWrites - a.phWrites) / sec),
+        repasse: b.worker ?? (b.native && { ...b.native, 'kbps in': Math.round(((b.native.bytesIn - a.native.bytesIn) * 8) / sec / 1000), 'pacotes/s': Math.round((b.native.pktsIn - a.native.pktsIn) / sec), 'kbps out': Math.round(((b.native.bytesOut - a.native.bytesOut) * 8) / sec / 1000) }) ?? null,
+        'fachada/s': Math.round(((b.phWrites ?? 0) - (a.phWrites ?? 0)) / sec),
         'RAM MB': Math.round(u1.mb),
         'CPU %': Math.round((100 * (u1.cpu - u0.cpu)) / sec),
         processos: u1.processes,
       };
     });
-    results.networks[net] = { rede: cfg, nodes };
+    results.networks[net] = { rede: cfg, nodes: rows };
     console.log(`\n${LABEL} · rede ${net}`);
-    console.table(nodes.map((n) => ({ nó: n.nó, 'lat ms': n['latência ms'], fps: n.recebe?.fps, kbps: n.recebe?.kbps, altura: n.recebe?.altura, cong: n.recebe?.congelamentos, 'cod/s': n['quadros codificados/s'], 'RAM MB': n['RAM MB'], 'CPU %': n['CPU %'] })));
+    console.table(rows.map((n) => ({ nó: n.nó, 'lat ms': n['latência ms'], fps: n.recebe?.fps, kbps: n.recebe?.kbps, altura: n.recebe?.altura, cong: n.recebe?.congelamentos, 'cod/s': n['quadros codificados/s'], 'RAM MB': n['RAM MB'], 'CPU %': n['CPU %'] })));
   }
   mkdirSync(path.join(dir, 'results'), { recursive: true });
   writeFileSync(path.join(dir, 'results', `${LABEL}.json`), JSON.stringify(results, null, 2));
@@ -165,7 +201,7 @@ try {
   console.error(e);
   process.exitCode = 1;
 } finally {
-  for (const b of browsers) await b.close().catch(() => {});
+  for (const n of nodes) await Promise.resolve(n.close()).catch(() => {});
   turn.kill(); front.close(); http.close();
   for (const b of backs.values()) b.close();
   process.exit(process.exitCode ?? 0);

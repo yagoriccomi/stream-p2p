@@ -1,0 +1,54 @@
+{
+  "label": "direto-1",
+  "mode": "decode",
+  "lean": false,
+  "edge": "Edg/156.0.4314.58",
+  "native": null,
+  "at": "2026-11-05T18:30:11.906Z",
+  "networks": {
+    "boa": {
+      "rede": {},
+      "nodes": [
+        {
+          "nó": "transmissor",
+          "latência ms": 0,
+          "recebe": null,
+          "quadros codificados/s": 57,
+          "ms de codificação/s": 349,
+          "encoder": null,
+          "altura enviada": 720,
+          "enviado kbps": 7968,
+          "plis": 0,
+          "repasse": null,
+          "fachada/s": 0,
+          "RAM MB": 232,
+          "CPU %": 96,
+          "processos": 7
+        },
+        {
+          "nó": "espectador",
+          "latência ms": 53,
+          "recebe": {
+            "fps": 57,
+            "kbps": 7968,
+            "altura": 720,
+            "congelamentos": 0,
+            "perda %": 0,
+            "buffer ms": 42
+          },
+          "quadros codificados/s": 0,
+          "ms de codificação/s": 0,
+          "encoder": null,
+          "altura enviada": null,
+          "enviado kbps": 0,
+          "plis": 0,
+          "repasse": null,
+          "fachada/s": 0,
+          "RAM MB": 160,
+          "CPU %": 17,
+          "processos": 7
+        }
+      ]
+    }
+  }
+}
