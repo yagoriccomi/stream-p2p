@@ -274,6 +274,19 @@ function leave(id) {
   publish(s);
 }
 
+// A reconnecting client can arrive before the server noticed its old socket died
+// (half-open TCP). Same name + same device = that old connection: drop it instead of 409.
+function evictGhost(s, rawName, device) {
+  if (!device || typeof rawName !== 'string') return;
+  const key = S.nameKey(rawName.trim());
+  for (const m of s.members.values()) {
+    if (m.device !== device || S.nameKey(m.name) !== key) continue;
+    const old = clients.get(m.id);
+    leave(m.id);
+    old?.ws.terminate();
+  }
+}
+
 function lookup(code) {
   const c = S.normalizeCode(code);
   if (!/^[a-z0-9]{4}-[a-z0-9]{2}$/.test(c)) throw new S.HttpError(400, 'O código tem o formato xxxx-xx. Confira se copiou inteiro.');
@@ -450,7 +463,16 @@ function allow(bucket, rate) {
   return true;
 }
 
-new WebSocketServer({ server: http, maxPayload: MAX_MSG_BYTES }).on('connection', (ws) => {
+const wss = new WebSocketServer({ server: http, maxPayload: MAX_MSG_BYTES });
+// Heartbeat: keeps proxies from closing idle sockets and reaps dead ones fast.
+setInterval(() => {
+  for (const ws of wss.clients) {
+    if (!ws.isAlive) { ws.terminate(); continue; }
+    ws.isAlive = false;
+    ws.ping();
+  }
+}, 25_000).unref();
+wss.on('connection', (ws) => {
   const id = randomUUID();
   clients.set(id, {
     ws, code: null,

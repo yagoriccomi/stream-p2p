@@ -177,7 +177,7 @@ export class VideoNet {
       if (sender.track?.kind !== 'video') continue;
       const params = sender.getParameters();
       params.encodings = [{ ...(params.encodings?.[0] ?? {}), maxBitrate: m.kbps * 1000, maxFramerate: m.fps }];
-      params.degradationPreference = 'maintain-framerate';
+      params.degradationPreference = 'balanced'; // maintain-framerate let the resolution collapse on screen content
       await sender.setParameters(params).catch((e) => this.log(`setParameters: ${e.message}`));
     }
   }
