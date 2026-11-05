@@ -465,7 +465,17 @@ function openJoin(code, name) {
   if (name) link.searchParams.set('name', name);
   $('join-app').href = link.href;
   $('join-app').hidden = Boolean(tauri) || !code || !/Windows/.test(navigator.userAgent);
+  // Once this browser has handed a session to the app, invites go straight there. Not for
+  // owner links: the app doesn't carry the one-time owner token. Once per code per tab, so
+  // coming back to this page (app missing, prompt declined) leaves the form usable.
+  const tried = `app-tried:${code}`;
+  if (!$('join-app').hidden && store.get('hasApp', false) && !params.get('owner') && !sessionStorage.getItem(tried)) {
+    sessionStorage.setItem(tried, '1');
+    location.href = link.href;
+    notify('Abrindo no app do Windows… Se nada abrir, entre por aqui mesmo.', 'ok');
+  }
 }
+$('join-app').addEventListener('click', () => store.set('hasApp', true));
 wireEye(document.querySelector('[data-eye="join-code"]'), $('join-code'));
 for (const opt of document.querySelectorAll('.voice-opt')) {
   opt.addEventListener('click', () => {
