@@ -1,5 +1,5 @@
 // Stream P2P client: screens (T01–T14), session state, and wiring between VideoNet and VoiceMesh.
-import { VideoNet, MODES, captureConstraints, randomId } from '/stream.js';
+import { VideoNet, MODES, PRIORITIES, captureConstraints, randomId } from '/stream.js';
 import { VoiceMesh } from '/voice.js';
 import { nativeSystemAudio } from '/sysaudio.js';
 import { playAt, release } from '/boost.js';
@@ -35,7 +35,7 @@ const st = {
   // Allowlist by process NAME (a PID is reused by nothing, by each run of the same program): a
   // name missing here means "allowed" (today's behaviour, until the person unchecks it once).
   audioAllow: store.get('audioAllow', {}),
-  settings: { codec: store.get('codec', ''), latency: store.get('latency', 'auto') },
+  settings: { codec: store.get('codec', ''), priority: store.get('priority', 'balanced'), latency: store.get('latency', 'auto') },
   latency: null, // { targetMs, recommendedMs, auto } from the server while a stream is on
 };
 window.__app = st; // read by e2e
@@ -84,6 +84,7 @@ function connect() {
 const video = new VideoNet({
   send, log, getIce,
   getCodec: () => st.settings.codec,
+  getPriority: () => st.settings.priority,
   onStream: (stream) => {
     $('video').srcObject = stream;
     applyStreamMix(); // the saved volume and mute from the first frame
@@ -1036,6 +1037,8 @@ $('f-settings').addEventListener('click', () => {
   const auto = live ? `Automático (agora: ${live})` : names.length ? `Automático (normalmente ${names[0].toUpperCase()})` : 'Automático';
   $('set-codec').replaceChildren(h('option', { value: '', text: auto }), ...names.map((n) => h('option', { value: n, text: n.toUpperCase() })));
   $('set-codec').value = names.includes(st.settings.codec) ? st.settings.codec : '';
+  $('set-priority').replaceChildren(...Object.entries(PRIORITIES).map(([v, p]) => h('option', { value: v, text: p.label })));
+  $('set-priority').value = PRIORITIES[st.settings.priority] ? st.settings.priority : 'balanced';
   $('set-codec-hint').textContent = 'Vale para a próxima transmissão ou retransmissão. H.264 costuma usar a placa de vídeo; AV1 e VP9 dão mais qualidade por Mbps, com mais CPU.';
   const enc = window.__stats?.encoder;
   $('set-encoder').textContent = enc
@@ -1076,11 +1079,14 @@ $('set-app-check').addEventListener('click', async () => {
 closeOnX($('dlg-settings'));
 $('set-save').addEventListener('click', () => {
   st.settings.codec = $('set-codec').value;
+  st.settings.priority = $('set-priority').value;
+  video.retune(); // live: no restart needed
   st.settings.latency = $('set-latency').value === 'auto' ? 'auto' : Number($('set-latency').value);
   store.set('latency', st.settings.latency);
   if (st.session?.presenterId === st.me) send({ type: 'setLatency', latency: st.settings.latency }); // live: applies now
   st.upload = Number($('set-upload').value) || st.upload;
   store.set('codec', st.settings.codec);
+  store.set('priority', st.settings.priority);
   store.set('upload', st.upload);
   $('dlg-settings').close();
   notify('Configurações salvas neste navegador.', 'ok');

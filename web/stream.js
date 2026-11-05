@@ -7,6 +7,13 @@ export const MODES = {
   '1440p60': { width: 2560, height: 1440, fps: 60, kbps: 15000 },
 };
 
+// What the encoder gives up first when bandwidth or CPU runs short.
+export const PRIORITIES = {
+  quality: { degradation: 'maintain-resolution', hint: 'detail', label: 'Qualidade (nitidez)' },
+  balanced: { degradation: 'balanced', hint: 'motion', label: 'Balanceado' },
+  fps: { degradation: 'maintain-framerate', hint: 'motion', label: 'FPS (fluidez)' },
+};
+
 // Unlock bitrate: Chrome caps video at ~2.5 Mbps by default. b=AS goes in the video m-section.
 export function mungeBitrate(sdp, kbps) {
   return sdp.replace(/(m=video[^\r\n]*\r\n(?:(?!m=)[^\r\n]*\r\n)*?c=[^\r\n]*\r\n)/, `$1b=AS:${kbps}\r\n`);
@@ -73,8 +80,8 @@ export function connectDeadline(pc, onTimeout) {
 }
 
 export class VideoNet {
-  constructor({ send, log, onStream, getIce, getCodec }) {
-    Object.assign(this, { send, log, onStream, getIce, getCodec });
+  constructor({ send, log, onStream, getIce, getCodec, getPriority }) {
+    Object.assign(this, { send, log, onStream, getIce, getCodec, getPriority });
     this.stream = null; // stream we have (captured or received)
     this.mode = null;
     this.upstream = null; // RTCPeerConnection to parent
@@ -171,13 +178,20 @@ export class VideoNet {
     return Boolean(this.stream?.getAudioTracks().length);
   }
 
+  // Re-applies the priority to a live stream without restarting it.
+  async retune() {
+    for (const pc of this.downstream.values()) await this.tuneSender(pc);
+  }
+
   async tuneSender(pc) {
     const m = MODES[this.mode];
     for (const sender of pc.getSenders()) {
       if (sender.track?.kind !== 'video') continue;
       const params = sender.getParameters();
       params.encodings = [{ ...(params.encodings?.[0] ?? {}), maxBitrate: m.kbps * 1000, maxFramerate: m.fps }];
-      params.degradationPreference = 'balanced'; // maintain-framerate let the resolution collapse on screen content
+      const p = PRIORITIES[this.getPriority?.()] ?? PRIORITIES.balanced;
+      params.degradationPreference = p.degradation;
+      sender.track.contentHint = p.hint;
       await sender.setParameters(params).catch((e) => this.log(`setParameters: ${e.message}`));
     }
   }
