@@ -47,20 +47,21 @@ code { font: 13px var(--mono); }
 
 <main>
   <header style="display:grid;gap:10px">
-    <span class="eyebrow">Ticket 05 · etapas 1, 2a e 2b · 5 nov 2026</span>
+    <span class="eyebrow">Ticket 05 · etapas 1, 2a, 2b e 2c · 6 nov 2026</span>
     <h1>Bancada de transmissão: app de hoje, Edge enxuto e 100% Rust</h1>
     <p class="lede">Uma transmissão 1080p60 com movimento de jogo atravessa a árvore transmissor → relay 1 → relay 2 → espectador. Cada nó roda num Edge 156 separado (o mesmo motor do WebView2), tudo neste PC (RTX 4060 Ti, 16 GB). Rede local, sem perdas. Medindo 15 s após 20 s de estabilização. No cenário Rust, os dois relays são um processo nativo (str0m) que repassa os pacotes sem decodificar; transmissor e espectador seguem no Edge.</p>
   </header>
 
   <section class="verdicts" aria-label="Conclusão principal">
     <div class="panel verdict"><span class="pill ok">atinge as metas</span><h2>100% Rust: 87–103 ms em 1080p60</h2><p>Capturando uma janela real, o app de hoje leva 190–243 ms até o espectador e cai para 801p a 32–46 quadros/s. A versão toda em Rust (captura WGC, NVENC, str0m) entrega 87–103 ms, 1080p a 60 quadros/s, com 30 MB no transmissor e 3 MB por relay.</p></div>
+    <div class="panel verdict"><span class="pill wait">fecha o atraso, não a RAM</span><h2>Só trocar para H.264 na GPU: ~100 ms</h2><p>No app de hoje, o H.264 na placa de vídeo corta o atraso de 190–243 para 97–120 ms. Mas a imagem fica em 534p a 46 quadros/s e cada nó continua com ~200 MB.</p></div>
   </section>
 
   <section>
     <div><span class="eyebrow">Etapa 2b · captura real da janela</span><h2>Atraso no espectador, em ms</h2></div>
     <div class="panel">
       <div class="legend" id="real-legend"></div>
-      <svg id="real" viewBox="0 0 640 230" role="img" aria-label="Atraso no espectador com captura real, por cenário"></svg>
+      <svg id="real" viewBox="0 0 640 290" role="img" aria-label="Atraso no espectador com captura real, por cenário"></svg>
       <p class="lede" style="margin-top:8px">A barra vai do menor ao maior valor das rodadas; o número é a média. A linha tracejada é a meta de 100 ms. A janela da "tela do jogo" é a mesma nos três cenários; o Edge a captura com <code>getDisplayMedia</code>, como o app.</p>
     </div>
     <div class="panel wrap" style="margin-top:12px"><table>
@@ -68,9 +69,10 @@ code { font: 13px var(--mono); }
       <tbody>
         <tr><td>App de hoje (Edge, VP8 por software)</td><td>190–243 ms (90–111)</td><td>32–46 · 801p</td><td>228 / ~215 MB</td><td>111–170 %</td></tr>
         <tr><td>Edge transmite, relays em Rust</td><td>115–183 ms</td><td>32–49 · 801p</td><td>227 / 3 MB</td><td>81–146 %</td></tr>
+        <tr><td>App de hoje com H.264 na placa de vídeo (etapa 2c)</td><td>97–120 ms</td><td>46 · 534p</td><td>210 / ~190 MB</td><td>~60 %</td></tr>
         <tr><td><b>100% Rust</b> (WGC + NVENC + str0m)</td><td><b>87–103 ms</b> (74–86)</td><td><b>60 · 1070p</b></td><td><b>30 / 3 MB</b></td><td><b>~10 %</b></td></tr>
       </tbody></table>
-      <p class="lede" style="margin-top:8px">Cuidado: os codecs diferem. O nativo usa H.264 na placa de vídeo; o Edge usou VP8 no processador. O WebView2 do app pode usar H.264 por hardware, o que encurtaria a diferença no transmissor.</p>
+      <p class="lede" style="margin-top:8px">Etapa 2c: com H.264 na placa de vídeo, o mesmo codificador NVIDIA do nativo, o app de hoje cai para ~100 ms. O Edge só usa a placa fora do perfil básico 42e01f; no perfil básico ele codifica no processador (369 ms, 398p). A qualidade fica em 534p a 46 quadros/s e a RAM não muda. A primeira rodada de cada configuração saiu instável e foi descartada. O repasse sem decodificar do Edge não funcionou com H.264.</p>
     </div>
   </section>
 
@@ -198,6 +200,7 @@ const nodes = D.decode.nodes.map((n) => n.n);
   const rows = [
     { label: 'App de hoje', min: 190, max: 243, avg: 217, c: '--c1' },
     { label: 'Edge + relays Rust', min: 115, max: 183, avg: 149, c: '--c2' },
+    { label: 'Hoje, H.264 na GPU', min: 97, max: 120, avg: 108, c: '--c3' },
     { label: '100% Rust', min: 87, max: 103, avg: 96, c: '--c4' },
   ];
   legend('real-legend', rows);
