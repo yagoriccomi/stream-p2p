@@ -1,0 +1,12 @@
+
+focusctl-20261107-mres-edge-base-1 · rede boa
+┌─────────┬───────────────┬────────┬───────────┬───────────┬───────────┬───────────┬───────┬────────┬───────┐
+│ (index) │ nó            │ lat ms │ fps       │ kbps      │ altura    │ cong      │ cod/s │ RAM MB │ CPU % │
+├─────────┼───────────────┼────────┼───────────┼───────────┼───────────┼───────────┼───────┼────────┼───────┤
+│ 0       │ 'transmissor' │ 0      │ undefined │ undefined │ undefined │ undefined │ 25    │ 193    │ 61    │
+│ 1       │ 'espectador'  │ 64     │ 25        │ 8003      │ 1072      │ 0         │ 0     │ 152    │ 26    │
+└─────────┴───────────────┴────────┴───────────┴───────────┴───────────┴───────────┴───────┴────────┴───────┘
+
+BENCH OK → e2e/bench/results/focusctl-20261107-mres-edge-base-1.json
+
+FOCUS {"label":"focusctl-20261107-mres-edge-base-1","exitCode":0,"startedAt":"2026-11-07T20:12:37.323Z","durationMs":48294,"initialForegroundPid":18816,"done":true,"samples":3086,"maxGapMs":26,"transitions":1,"benchProcessesSeen":94,"hits":[]}

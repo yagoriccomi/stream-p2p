@@ -1,0 +1,13 @@
+{
+  "label": "focusctl-20261107-rust-base-3",
+  "exitCode": 0,
+  "startedAt": "2026-11-07T20:10:40.442Z",
+  "durationMs": 45136,
+  "initialForegroundPid": 18816,
+  "done": true,
+  "samples": 2876,
+  "maxGapMs": 25,
+  "transitions": 1,
+  "benchProcessesSeen": 84,
+  "hits": []
+}

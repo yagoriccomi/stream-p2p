@@ -1,0 +1,13 @@
+{
+  "label": "focusctl-20261107-rust-cadeia-1",
+  "exitCode": 0,
+  "startedAt": "2026-11-07T20:05:06.892Z",
+  "durationMs": 44964,
+  "initialForegroundPid": 18816,
+  "done": true,
+  "samples": 2864,
+  "maxGapMs": 21,
+  "transitions": 1,
+  "benchProcessesSeen": 87,
+  "hits": []
+}

@@ -1,0 +1,130 @@
+{
+  "label": "tela-relay-rust-h264hw-1",
+  "mode": "native",
+  "lean": false,
+  "edge": "Edg/156.0.4314.58",
+  "native": "E:\\Projetos\\stream-p2p\\.claude\\worktrees\\app-nativo-edge-benchmark-0b34a3\\e2e\\bench\\native\\target\\release\\sp2p-native-bench.exe",
+  "at": "2026-11-06T18:40:32.353Z",
+  "networks": {
+    "boa": {
+      "rede": {},
+      "nodes": [
+        {
+          "nó": "transmissor",
+          "latência ms": 0,
+          "recebe": null,
+          "quadros codificados/s": 30,
+          "ms de codificação/s": 123,
+          "encoder": "MediaFoundationVideoEncodeAccelerator (NVIDIA H.264 Encoder MFT)",
+          "altura enviada": 534,
+          "enviado kbps": 6777,
+          "plis": 4,
+          "repasse": null,
+          "fachada/s": 0,
+          "RAM MB": 192,
+          "CPU %": 31,
+          "processos": 8
+        },
+        {
+          "nó": "relay 1",
+          "latência ms": null,
+          "quadros codificados/s": 0,
+          "ms de codificação/s": 0,
+          "encoder": {
+            "bytesIn": 42892715,
+            "bytesOut": 42573307,
+            "childPlis": 3,
+            "children": 1,
+            "connected": true,
+            "keyAsks": 4,
+            "pktsIn": 39221,
+            "pktsOut": 38939,
+            "quadros/s": null,
+            "kbps out": null
+          },
+          "altura enviada": null,
+          "enviado kbps": 0,
+          "plis": 0,
+          "repasse": {
+            "bytesIn": 42892715,
+            "bytesOut": 42573307,
+            "childPlis": 3,
+            "children": 1,
+            "connected": true,
+            "keyAsks": 4,
+            "pktsIn": 39221,
+            "pktsOut": 38939,
+            "kbps in": 6774,
+            "pacotes/s": 770,
+            "kbps out": 6774
+          },
+          "fachada/s": 0,
+          "RAM MB": 4,
+          "CPU %": 3,
+          "processos": 1
+        },
+        {
+          "nó": "relay 2",
+          "latência ms": null,
+          "quadros codificados/s": 0,
+          "ms de codificação/s": 0,
+          "encoder": {
+            "bytesIn": 42572154,
+            "bytesOut": 42572154,
+            "childPlis": 2,
+            "children": 1,
+            "connected": true,
+            "keyAsks": 3,
+            "pktsIn": 38938,
+            "pktsOut": 38938,
+            "quadros/s": null,
+            "kbps out": null
+          },
+          "altura enviada": null,
+          "enviado kbps": 0,
+          "plis": 0,
+          "repasse": {
+            "bytesIn": 42572154,
+            "bytesOut": 42572154,
+            "childPlis": 2,
+            "children": 1,
+            "connected": true,
+            "keyAsks": 3,
+            "pktsIn": 38938,
+            "pktsOut": 38938,
+            "kbps in": 6773,
+            "pacotes/s": 770,
+            "kbps out": 6773
+          },
+          "fachada/s": 0,
+          "RAM MB": 3,
+          "CPU %": 3,
+          "processos": 1
+        },
+        {
+          "nó": "espectador",
+          "latência ms": 116,
+          "recebe": {
+            "fps": 28,
+            "kbps": 6778,
+            "altura": 534,
+            "congelamentos": 2,
+            "perda %": 0,
+            "buffer ms": 130
+          },
+          "quadros codificados/s": 0,
+          "ms de codificação/s": 0,
+          "encoder": null,
+          "altura enviada": null,
+          "enviado kbps": 0,
+          "plis": 0,
+          "repasse": null,
+          "fachada/s": 0,
+          "RAM MB": 153,
+          "CPU %": 12,
+          "processos": 8
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "label": "focusctl-20261107-edge-base-1",
+  "exitCode": 0,
+  "startedAt": "2026-11-07T20:02:22.553Z",
+  "durationMs": 48592,
+  "initialForegroundPid": 3604,
+  "done": true,
+  "samples": 3107,
+  "maxGapMs": 23,
+  "transitions": 2,
+  "benchProcessesSeen": 97,
+  "hits": []
+}

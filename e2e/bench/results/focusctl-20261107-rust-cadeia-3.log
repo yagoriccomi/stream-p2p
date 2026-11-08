@@ -1,0 +1,15 @@
+[transmissor] { encoder: 'NVIDIA H.264 Encoder MFT', h: 1072, w: 1906 }
+
+focusctl-20261107-rust-cadeia-3 · rede boa
+┌─────────┬───────────────┬────────┬───────────┬───────────┬───────────┬───────────┬───────┬────────┬───────┐
+│ (index) │ nó            │ lat ms │ fps       │ kbps      │ altura    │ cong      │ cod/s │ RAM MB │ CPU % │
+├─────────┼───────────────┼────────┼───────────┼───────────┼───────────┼───────────┼───────┼────────┼───────┤
+│ 0       │ 'transmissor' │ 0      │ undefined │ undefined │ undefined │ undefined │ 0     │ 29     │ 8     │
+│ 1       │ 'relay 1'     │ null   │ undefined │ undefined │ undefined │ undefined │ 0     │ 3      │ 3     │
+│ 2       │ 'relay 2'     │ null   │ undefined │ undefined │ undefined │ undefined │ 0     │ 3      │ 4     │
+│ 3       │ 'espectador'  │ 56     │ 60        │ 8042      │ 1072      │ 0         │ 0     │ 163    │ 21    │
+└─────────┴───────────────┴────────┴───────────┴───────────┴───────────┴───────────┴───────┴────────┴───────┘
+
+BENCH OK → e2e/bench/results/focusctl-20261107-rust-cadeia-3.json
+
+FOCUS {"label":"focusctl-20261107-rust-cadeia-3","exitCode":0,"startedAt":"2026-11-07T20:11:25.821Z","durationMs":46477,"initialForegroundPid":18816,"done":true,"samples":2959,"maxGapMs":28,"transitions":1,"benchProcessesSeen":86,"hits":[]}

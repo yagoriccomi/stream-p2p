@@ -329,14 +329,6 @@ fn main() {
     let winrt_device: IDirect3DDevice = unsafe { CreateDirect3D11DeviceFromDXGIDevice(&device.cast::<IDXGIDevice>().unwrap()).unwrap().cast().unwrap() };
 
     let hwnd = unsafe { FindWindowW(None, &HSTRING::from(title.as_str())) }.expect("window not found");
-    // DWM stops refreshing a fully covered window: keep the "game" on top while measuring.
-    unsafe {
-        use windows::Win32::UI::WindowsAndMessaging::{SetWindowPos, HWND_TOPMOST, SWP_NOMOVE, SWP_NOSIZE, SWP_SHOWWINDOW};
-        let _ = SetWindowPos(hwnd, Some(HWND_TOPMOST), 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
-    }
-    if std::env::args().nth(2).as_deref() == Some("--pin") {
-        return; // only keep the window on top (used when Edge is the one capturing it)
-    }
     let item: GraphicsCaptureItem = unsafe { windows::core::factory::<GraphicsCaptureItem, IGraphicsCaptureItemInterop>().unwrap().CreateForWindow(hwnd).unwrap() };
     let size = item.Size().unwrap();
     let pool = Direct3D11CaptureFramePool::CreateFreeThreaded(&winrt_device, DirectXPixelFormat::B8G8R8A8UIntNormalized, 2, size).unwrap();

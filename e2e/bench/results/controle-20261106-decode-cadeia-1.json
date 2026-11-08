@@ -1,0 +1,185 @@
+{
+  "label": "controle-20261106-decode-cadeia-1",
+  "mode": "decode",
+  "lean": false,
+  "codec": "h264any",
+  "profile": null,
+  "degradationPreference": "balanced",
+  "screen": true,
+  "direct": true,
+  "norelay": false,
+  "settleMs": 20000,
+  "measureMs": 15000,
+  "presenterReady": null,
+  "edge": "Edg/156.0.4314.58",
+  "native": null,
+  "at": "2026-11-06T20:26:28.426Z",
+  "networks": {
+    "boa": {
+      "rede": {},
+      "nodes": [
+        {
+          "nó": "transmissor",
+          "latência ms": 0,
+          "recebe": null,
+          "quadros codificados/s": 48,
+          "ms de codificação/s": 171,
+          "encoder": "MediaFoundationVideoEncodeAccelerator (NVIDIA H.264 Encoder MFT)",
+          "altura enviada": 536,
+          "largura enviada": 952,
+          "codecsEnviados": [
+            {
+              "mimeType": "video/H264",
+              "sdpFmtpLine": "level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42001f;x-google-start-bitrate=4000"
+            }
+          ],
+          "degradationPreference": "balanced",
+          "captura": {
+            "largura": 1906,
+            "altura": 1072,
+            "fps": 60,
+            "entregues/s": 48
+          },
+          "limitação": {
+            "motivo": "bandwidth",
+            "segundos": {
+              "bandwidth": 16.4,
+              "cpu": 0,
+              "none": 0,
+              "other": 0
+            }
+          },
+          "enviado kbps": 7685,
+          "plis": 0,
+          "repasse": null,
+          "fachada/s": 0,
+          "RAM MB": 206,
+          "CPU %": 52,
+          "processos": 7
+        },
+        {
+          "nó": "relay 1",
+          "latência ms": 56,
+          "recebe": {
+            "fps": 48,
+            "kbps": 7686,
+            "altura": 536,
+            "largura": 952,
+            "codec": {
+              "mimeType": "video/H264",
+              "sdpFmtpLine": "level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42001f"
+            },
+            "congelamentos": 0,
+            "perda %": 0,
+            "buffer ms": 2
+          },
+          "quadros codificados/s": 48,
+          "ms de codificação/s": 144,
+          "encoder": null,
+          "altura enviada": 536,
+          "largura enviada": 952,
+          "codecsEnviados": [
+            {
+              "mimeType": "video/H264",
+              "sdpFmtpLine": "level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42001f;x-google-start-bitrate=4000"
+            }
+          ],
+          "degradationPreference": "balanced",
+          "limitação": {
+            "motivo": "none",
+            "segundos": {
+              "bandwidth": 0,
+              "cpu": 0,
+              "none": 16.4,
+              "other": 0
+            }
+          },
+          "enviado kbps": 7694,
+          "plis": 0,
+          "repasse": null,
+          "fachada/s": 0,
+          "RAM MB": 191,
+          "CPU %": 19,
+          "processos": 7
+        },
+        {
+          "nó": "relay 2",
+          "latência ms": 82,
+          "recebe": {
+            "fps": 48,
+            "kbps": 7694,
+            "altura": 536,
+            "largura": 952,
+            "codec": {
+              "mimeType": "video/H264",
+              "sdpFmtpLine": "level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42001f"
+            },
+            "congelamentos": 0,
+            "perda %": 0,
+            "buffer ms": 7
+          },
+          "quadros codificados/s": 48,
+          "ms de codificação/s": 151,
+          "encoder": null,
+          "altura enviada": 536,
+          "largura enviada": 952,
+          "codecsEnviados": [
+            {
+              "mimeType": "video/H264",
+              "sdpFmtpLine": "level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42001f;x-google-start-bitrate=4000"
+            }
+          ],
+          "degradationPreference": "balanced",
+          "limitação": {
+            "motivo": "bandwidth",
+            "segundos": {
+              "bandwidth": 16.4,
+              "cpu": 0,
+              "none": 0,
+              "other": 0
+            }
+          },
+          "enviado kbps": 7671,
+          "plis": 0,
+          "repasse": null,
+          "fachada/s": 0,
+          "RAM MB": 191,
+          "CPU %": 14,
+          "processos": 7
+        },
+        {
+          "nó": "espectador",
+          "latência ms": 98,
+          "recebe": {
+            "fps": 48,
+            "kbps": 7671,
+            "altura": 536,
+            "largura": 952,
+            "codec": {
+              "mimeType": "video/H264",
+              "sdpFmtpLine": "level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42001f"
+            },
+            "congelamentos": 0,
+            "perda %": 0,
+            "buffer ms": 18
+          },
+          "quadros codificados/s": 0,
+          "ms de codificação/s": 0,
+          "encoder": null,
+          "altura enviada": null,
+          "largura enviada": null,
+          "codecsEnviados": [],
+          "degradationPreference": null,
+          "limitação": null,
+          "enviado kbps": 0,
+          "plis": 0,
+          "repasse": null,
+          "fachada/s": 0,
+          "RAM MB": 140,
+          "CPU %": 12,
+          "processos": 7
+        }
+      ]
+    }
+  }
+}

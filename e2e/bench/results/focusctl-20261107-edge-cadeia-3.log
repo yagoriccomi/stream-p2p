@@ -1,0 +1,14 @@
+
+focusctl-20261107-edge-cadeia-3 · rede boa
+┌─────────┬───────────────┬────────┬───────────┬───────────┬───────────┬───────────┬───────┬────────┬───────┐
+│ (index) │ nó            │ lat ms │ fps       │ kbps      │ altura    │ cong      │ cod/s │ RAM MB │ CPU % │
+├─────────┼───────────────┼────────┼───────────┼───────────┼───────────┼───────────┼───────┼────────┼───────┤
+│ 0       │ 'transmissor' │ 0      │ undefined │ undefined │ undefined │ undefined │ 46    │ 208    │ 67    │
+│ 1       │ 'relay 1'     │ null   │ undefined │ undefined │ undefined │ undefined │ 0     │ 3      │ 4     │
+│ 2       │ 'relay 2'     │ null   │ undefined │ undefined │ undefined │ undefined │ 0     │ 3      │ 4     │
+│ 3       │ 'espectador'  │ 72     │ 46        │ 7685      │ 804       │ 0         │ 0     │ 153    │ 24    │
+└─────────┴───────────────┴────────┴───────────┴───────────┴───────────┴───────────┴───────┴────────┴───────┘
+
+BENCH OK → e2e/bench/results/focusctl-20261107-edge-cadeia-3.json
+
+FOCUS {"label":"focusctl-20261107-edge-cadeia-3","exitCode":0,"startedAt":"2026-11-07T20:09:50.975Z","durationMs":49239,"initialForegroundPid":18816,"done":true,"samples":3144,"maxGapMs":33,"transitions":1,"benchProcessesSeen":103,"hits":[]}

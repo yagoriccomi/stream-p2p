@@ -1,0 +1,13 @@
+{
+  "label": "focusctl-20261107-edge-cadeia-1",
+  "exitCode": 0,
+  "startedAt": "2026-11-07T20:03:32.594Z",
+  "durationMs": 48470,
+  "initialForegroundPid": 18816,
+  "done": true,
+  "samples": 3101,
+  "maxGapMs": 28,
+  "transitions": 1,
+  "benchProcessesSeen": 100,
+  "hits": []
+}

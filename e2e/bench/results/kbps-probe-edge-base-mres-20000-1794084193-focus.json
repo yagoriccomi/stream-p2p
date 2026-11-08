@@ -1,0 +1,13 @@
+{
+  "label": "kbps-probe-edge-base-mres-20000-1794084193",
+  "exitCode": 0,
+  "startedAt": "2026-11-07T20:43:13.177Z",
+  "durationMs": 48589,
+  "initialForegroundPid": 18816,
+  "done": true,
+  "samples": 3102,
+  "maxGapMs": 32,
+  "transitions": 1,
+  "benchProcessesSeen": 98,
+  "hits": []
+}

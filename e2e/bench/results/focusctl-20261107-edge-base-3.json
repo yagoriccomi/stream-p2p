@@ -1,0 +1,101 @@
+{
+  "label": "focusctl-20261107-edge-base-3",
+  "mode": "native",
+  "lean": false,
+  "codec": "h264any",
+  "profile": null,
+  "degradationPreference": "balanced",
+  "screen": true,
+  "direct": true,
+  "norelay": true,
+  "settleMs": 20000,
+  "measureMs": 15000,
+  "presenterReady": null,
+  "secondaryMonitor": {
+    "left": 2560,
+    "width": 1920,
+    "top": 475,
+    "height": 1080
+  },
+  "edge": "Edg/157.0.4341.42",
+  "native": "E:\\Projetos\\stream-p2p\\.claude\\worktrees\\app-nativo-edge-benchmark-0b34a3\\e2e\\bench\\native\\target\\release\\sp2p-native-bench.exe",
+  "at": "2026-11-07T20:09:05.861Z",
+  "networks": {
+    "boa": {
+      "rede": {},
+      "nodes": [
+        {
+          "nó": "transmissor",
+          "latência ms": 0,
+          "recebe": null,
+          "quadros codificados/s": 48,
+          "ms de codificação/s": 283,
+          "encoder": "MediaFoundationVideoEncodeAccelerator (NVIDIA H.264 Encoder MFT)",
+          "altura enviada": 804,
+          "largura enviada": 1428,
+          "codecsEnviados": [
+            {
+              "mimeType": "video/H264",
+              "sdpFmtpLine": "level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42001f;x-google-start-bitrate=4000"
+            }
+          ],
+          "degradationPreference": "balanced",
+          "captura": {
+            "largura": 1906,
+            "altura": 1072,
+            "fps": 60,
+            "entregues/s": 48
+          },
+          "limitação": {
+            "motivo": "bandwidth",
+            "segundos": {
+              "bandwidth": 16.1,
+              "cpu": 0,
+              "none": 0,
+              "other": 0
+            }
+          },
+          "enviado kbps": 7663,
+          "plis": 0,
+          "repasse": null,
+          "fachada/s": 0,
+          "RAM MB": 208,
+          "CPU %": 70,
+          "processos": 7
+        },
+        {
+          "nó": "espectador",
+          "latência ms": 76,
+          "recebe": {
+            "fps": 48,
+            "kbps": 7663,
+            "altura": 804,
+            "largura": 1428,
+            "codec": {
+              "mimeType": "video/H264",
+              "sdpFmtpLine": "level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42001f"
+            },
+            "congelamentos": 0,
+            "perda %": 0,
+            "buffer ms": 1
+          },
+          "quadros codificados/s": 0,
+          "ms de codificação/s": 0,
+          "encoder": null,
+          "altura enviada": null,
+          "largura enviada": null,
+          "codecsEnviados": [],
+          "degradationPreference": null,
+          "limitação": null,
+          "enviado kbps": 0,
+          "plis": 0,
+          "repasse": null,
+          "fachada/s": 0,
+          "RAM MB": 143,
+          "CPU %": 23,
+          "processos": 7
+        }
+      ]
+    }
+  }
+}

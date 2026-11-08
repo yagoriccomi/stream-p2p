@@ -1,0 +1,148 @@
+{
+  "label": "diag-captura-h264hw-mres-2",
+  "mode": "native",
+  "lean": false,
+  "edge": "Edg/156.0.4314.58",
+  "native": "E:\\Projetos\\stream-p2p\\.claude\\worktrees\\app-nativo-edge-benchmark-0b34a3\\e2e\\bench\\native\\target\\release\\sp2p-native-bench.exe",
+  "at": "2026-11-06T18:45:52.856Z",
+  "networks": {
+    "boa": {
+      "rede": {},
+      "nodes": [
+        {
+          "nó": "transmissor",
+          "latência ms": 0,
+          "recebe": null,
+          "quadros codificados/s": 47,
+          "ms de codificação/s": 217,
+          "encoder": "MediaFoundationVideoEncodeAccelerator (NVIDIA H.264 Encoder MFT)",
+          "altura enviada": 712,
+          "captura": {
+            "largura": 1266,
+            "altura": 712,
+            "fps": 60,
+            "entregues/s": 47
+          },
+          "limitação": {
+            "motivo": "none",
+            "segundos": {
+              "bandwidth": 0,
+              "cpu": 0,
+              "none": 17.9,
+              "other": 0
+            }
+          },
+          "enviado kbps": 7592,
+          "plis": 2,
+          "repasse": null,
+          "fachada/s": 0,
+          "RAM MB": 182,
+          "CPU %": 52,
+          "processos": 7
+        },
+        {
+          "nó": "relay 1",
+          "latência ms": null,
+          "quadros codificados/s": 0,
+          "ms de codificação/s": 0,
+          "encoder": {
+            "bytesIn": 33385590,
+            "bytesOut": 33032209,
+            "childPlis": 1,
+            "children": 1,
+            "connected": true,
+            "keyAsks": 2,
+            "pktsIn": 31216,
+            "pktsOut": 30893,
+            "quadros/s": null,
+            "kbps out": null
+          },
+          "altura enviada": null,
+          "limitação": null,
+          "enviado kbps": 0,
+          "plis": 0,
+          "repasse": {
+            "bytesIn": 33385590,
+            "bytesOut": 33032209,
+            "childPlis": 1,
+            "children": 1,
+            "connected": true,
+            "keyAsks": 2,
+            "pktsIn": 31216,
+            "pktsOut": 30893,
+            "kbps in": 7594,
+            "pacotes/s": 883,
+            "kbps out": 7594
+          },
+          "fachada/s": 0,
+          "RAM MB": 3,
+          "CPU %": 3,
+          "processos": 1
+        },
+        {
+          "nó": "relay 2",
+          "latência ms": null,
+          "quadros codificados/s": 0,
+          "ms de codificação/s": 0,
+          "encoder": {
+            "bytesIn": 33032207,
+            "bytesOut": 33032207,
+            "childPlis": 0,
+            "children": 1,
+            "connected": true,
+            "keyAsks": 1,
+            "pktsIn": 30892,
+            "pktsOut": 30892,
+            "quadros/s": null,
+            "kbps out": null
+          },
+          "altura enviada": null,
+          "limitação": null,
+          "enviado kbps": 0,
+          "plis": 0,
+          "repasse": {
+            "bytesIn": 33032207,
+            "bytesOut": 33032207,
+            "childPlis": 0,
+            "children": 1,
+            "connected": true,
+            "keyAsks": 1,
+            "pktsIn": 30892,
+            "pktsOut": 30892,
+            "kbps in": 7594,
+            "pacotes/s": 883,
+            "kbps out": 7594
+          },
+          "fachada/s": 0,
+          "RAM MB": 3,
+          "CPU %": 4,
+          "processos": 1
+        },
+        {
+          "nó": "espectador",
+          "latência ms": 247,
+          "recebe": {
+            "fps": 46,
+            "kbps": 7599,
+            "altura": 712,
+            "congelamentos": 0,
+            "perda %": 0,
+            "buffer ms": 27
+          },
+          "quadros codificados/s": 0,
+          "ms de codificação/s": 0,
+          "encoder": null,
+          "altura enviada": null,
+          "limitação": null,
+          "enviado kbps": 0,
+          "plis": 0,
+          "repasse": null,
+          "fachada/s": 0,
+          "RAM MB": 153,
+          "CPU %": 17,
+          "processos": 7
+        }
+      ]
+    }
+  }
+}

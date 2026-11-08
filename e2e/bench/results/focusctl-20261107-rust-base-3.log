@@ -1,0 +1,13 @@
+[transmissor] { encoder: 'NVIDIA H.264 Encoder MFT', h: 1072, w: 1906 }
+
+focusctl-20261107-rust-base-3 · rede boa
+┌─────────┬───────────────┬────────┬───────────┬───────────┬───────────┬───────────┬───────┬────────┬───────┐
+│ (index) │ nó            │ lat ms │ fps       │ kbps      │ altura    │ cong      │ cod/s │ RAM MB │ CPU % │
+├─────────┼───────────────┼────────┼───────────┼───────────┼───────────┼───────────┼───────┼────────┼───────┤
+│ 0       │ 'transmissor' │ 0      │ undefined │ undefined │ undefined │ undefined │ 0     │ 29     │ 9     │
+│ 1       │ 'espectador'  │ 40     │ 59        │ 7899      │ 1072      │ 0         │ 0     │ 156    │ 7     │
+└─────────┴───────────────┴────────┴───────────┴───────────┴───────────┴───────────┴───────┴────────┴───────┘
+
+BENCH OK → e2e/bench/results/focusctl-20261107-rust-base-3.json
+
+FOCUS {"label":"focusctl-20261107-rust-base-3","exitCode":0,"startedAt":"2026-11-07T20:10:40.442Z","durationMs":45136,"initialForegroundPid":18816,"done":true,"samples":2876,"maxGapMs":25,"transitions":1,"benchProcessesSeen":84,"hits":[]}

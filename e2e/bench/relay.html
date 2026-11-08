@@ -9,7 +9,7 @@
 const q = new URLSearchParams(location.search);
 const MODE = q.get('mode');
 const ICE = JSON.parse(q.get('ice'));
-const W = 1920, H = 1080, FPS = 60, KBPS = 8000;
+const W = 1920, H = 1080, FPS = 60, KBPS = Number(q.get('kbps')) || 8000;
 const pcs = new Map(); // peer -> pc
 let stream = null, parentPc = null, worker = null;
 const pending = [];
@@ -54,7 +54,7 @@ function capture(show = false) {
     g.fillRect(0, 0, W, H);
     for (let i = 0; i < 40; i++) { g.fillStyle = `hsl(${Math.random() * 360} 90% 60%)`; g.fillRect(Math.random() * W, Math.random() * H, 24, 24); }
     const stamp = Date.now() & 0xffffff, bw = W / 32;
-    for (let i = 0; i < 24; i++) { g.fillStyle = (stamp >> i) & 1 ? '#fff' : '#000'; g.fillRect(i * bw, 0, bw, H / 8); }
+    for (let i = 0; i < 32; i++) { g.fillStyle = ((i < 24 ? stamp >> i : 0xa5 >> (i - 24)) & 1) ? '#fff' : '#000'; g.fillRect(i * bw, 0, bw, H / 8); }
   }, 1000 / FPS);
   return c.captureStream(FPS);
 }
@@ -97,7 +97,7 @@ async function offerTo(child) {
   // The placeholder must emit one frame per parent frame, and parent frames arrive in bursts:
   // a frame-rate cap would drop some of them.
   p.encodings = [{ ...(p.encodings?.[0] ?? {}), maxBitrate: KBPS * 1000, maxFramerate: forwardEncoded ? Number(q.get('phfps') || 1000) : FPS }];
-  p.degradationPreference = forwardEncoded ? 'maintain-framerate' : 'balanced'; // placeholder: CPU adaptation must never skip frames
+  p.degradationPreference = forwardEncoded ? 'maintain-framerate' : q.get('deg') || 'balanced'; // placeholder: CPU adaptation must never skip frames
   await tr.sender.setParameters(p);
   const o = await pc.createOffer();
   // Same unlock as the app (mungeBitrate + start bitrate at half the mode).
@@ -134,12 +134,37 @@ async function onSig(from, { sdp, candidate }) {
 
 if (q.get('source')) { capture(true); document.title = 'sp2p-bench-source'; }
 
+// ponytail: centros horizontais proporcionais; captura recortada exige localização bidimensional.
+function readClock({ data, width, height }) {
+  const stamps = new Set();
+  let previous = null, streak = 0;
+  for (let y = 0; y < height; y++) {
+    let bits = 0, valid = true;
+    for (let i = 0; i < 32; i++) {
+      const p = (y * width + Math.floor((i + 0.5) * width / 32)) * 4;
+      const rgb = [data[p], data[p + 1], data[p + 2]];
+      if (rgb.every((v) => v >= 210)) bits |= 1 << i;
+      else if (!rgb.every((v) => v <= 45)) { valid = false; break; }
+    }
+    const stamp = valid && (bits >>> 24) === 0xa5 ? bits & 0xffffff : null;
+    streak = stamp !== null && stamp === previous ? streak + 1 : stamp !== null ? 1 : 0;
+    if (streak >= 3) stamps.add(stamp);
+    previous = stamp;
+  }
+  return stamps.size === 1 ? stamps.values().next().value : null;
+}
+
 window.bench = {
   async present() {
     // screen=1: capture the source window like the app does (getDisplayMedia), instead of the canvas
-    stream = q.get('screen')
-      ? await navigator.mediaDevices.getDisplayMedia({ video: { width: W, height: H, frameRate: FPS }, audio: false })
-      : capture();
+    if (q.get('screen')) {
+      if (typeof CaptureController === 'undefined' || typeof CaptureController.prototype.setFocusBehavior !== 'function') {
+        throw new Error('Captura bloqueada: controle de foco indisponível.');
+      }
+      const controller = new CaptureController();
+      controller.setFocusBehavior('no-focus-change');
+      stream = await navigator.mediaDevices.getDisplayMedia({ video: { width: W, height: H, frameRate: FPS }, audio: false, controller });
+    } else stream = capture();
     stream.getVideoTracks()[0].contentHint = 'motion';
     document.getElementById('video').srcObject = stream;
   },
@@ -151,17 +176,17 @@ window.bench = {
     const c = Object.assign(document.createElement('canvas'), { width: 320, height: 180 });
     const g = c.getContext('2d', { willReadFrequently: true });
     const out = [];
+    let attempts = 0;
     return new Promise((done) => {
       const sample = () => {
-        g.drawImage(v, 0, 0, c.width, c.height);
         const now = Date.now();
-        let stamp = 0;
-        for (let i = 0; i < 24; i++) {
-          const [r, gg, b] = g.getImageData(Math.floor((i + 0.5) * (c.width / 32)), Math.floor(c.height / 16), 1, 1).data;
-          if (r + gg + b > 384) stamp |= 1 << i;
+        if (v.readyState >= 2) {
+          g.drawImage(v, 0, 0, c.width, c.height);
+          const stamp = readClock(g.getImageData(0, 0, c.width, c.height));
+          if (stamp !== null) out.push(((now & 0xffffff) - stamp + 0x1000000) % 0x1000000);
         }
-        out.push(((now & 0xffffff) - stamp + 0x1000000) % 0x1000000);
-        if (out.length < n) setTimeout(sample, 50); else done(out.sort((x, y) => x - y)[n >> 1]);
+        if (++attempts < n) setTimeout(sample, 50);
+        else done(out.length === n ? out.sort((x, y) => x - y)[n >> 1] : null);
       };
       sample();
     });
@@ -169,9 +194,12 @@ window.bench = {
   async stats() {
     const res = { in: null, out: [] };
     for (const pc of pcs.values()) {
-      for (const s of (await pc.getStats()).values()) {
-        if (s.type === 'inbound-rtp' && s.kind === 'video') res.in = { frames: s.framesDecoded, bytes: s.bytesReceived, freezes: s.freezeCount ?? 0, lost: s.packetsLost, recv: s.packetsReceived, h: s.frameHeight, bufS: s.jitterBufferDelay, bufN: s.jitterBufferEmittedCount, decodeS: s.totalDecodeTime, keys: s.keyFramesDecoded };
-        if (s.type === 'outbound-rtp' && s.kind === 'video') res.out.push({ encoded: s.framesEncoded ?? 0, sent: s.framesSent ?? 0, bytes: s.bytesSent, h: s.frameHeight, encodeS: s.totalEncodeTime ?? 0, encoder: s.encoderImplementation, plis: s.pliCount ?? 0 });
+      const stats = await pc.getStats();
+      for (const s of stats.values()) {
+        const codec = stats.get(s.codecId);
+        const negotiated = codec ? { mimeType: codec.mimeType, sdpFmtpLine: codec.sdpFmtpLine ?? '' } : null;
+        if (s.type === 'inbound-rtp' && s.kind === 'video') res.in = { frames: s.framesDecoded, bytes: s.bytesReceived, freezes: s.freezeCount ?? 0, lost: s.packetsLost, recv: s.packetsReceived, h: s.frameHeight, w: s.frameWidth, codec: negotiated, bufS: s.jitterBufferDelay, bufN: s.jitterBufferEmittedCount, decodeS: s.totalDecodeTime, keys: s.keyFramesDecoded };
+        if (s.type === 'outbound-rtp' && s.kind === 'video') res.out.push({ encoded: s.framesEncoded ?? 0, sent: s.framesSent ?? 0, bytes: s.bytesSent, h: s.frameHeight, w: s.frameWidth, codec: negotiated, encodeS: s.totalEncodeTime ?? 0, encoder: s.encoderImplementation, plis: s.pliCount ?? 0, limit: s.qualityLimitationReason, limitS: s.qualityLimitationDurations, degradationPreference: pc.getSenders()[0]?.getParameters().degradationPreference ?? null });
       }
     }
     if (worker) res.worker = await new Promise((r) => {
@@ -179,6 +207,7 @@ window.bench = {
       worker.addEventListener('message', h);
       worker.postMessage('stats');
     });
+    if (!parentPc && stream) { const t = stream.getVideoTracks()[0]; res.source = { ...t.getSettings(), ...(t.stats ? { delivered: t.stats.deliveredFrames } : {}) }; }
     res.phWrites = window.phWrites ?? 0;
     res.at = performance.now();
     return res;

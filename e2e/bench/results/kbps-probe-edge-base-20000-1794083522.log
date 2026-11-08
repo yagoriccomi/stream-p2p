@@ -1,0 +1,12 @@
+
+kbps-probe-edge-base-20000-1794083522 · rede boa
+┌─────────┬───────────────┬────────┬───────────┬───────────┬───────────┬───────────┬───────┬────────┬───────┐
+│ (index) │ nó            │ lat ms │ fps       │ kbps      │ altura    │ cong      │ cod/s │ RAM MB │ CPU % │
+├─────────┼───────────────┼────────┼───────────┼───────────┼───────────┼───────────┼───────┼────────┼───────┤
+│ 0       │ 'transmissor' │ 0      │ undefined │ undefined │ undefined │ undefined │ 48    │ 216    │ 58    │
+│ 1       │ 'espectador'  │ 99     │ 48        │ 17427     │ 804       │ 0         │ 0     │ 144    │ 20    │
+└─────────┴───────────────┴────────┴───────────┴───────────┴───────────┴───────────┴───────┴────────┴───────┘
+
+BENCH OK → e2e/bench/results/kbps-probe-edge-base-20000-1794083522.json
+
+FOCUS {"label":"kbps-probe-edge-base-20000-1794083522","exitCode":0,"startedAt":"2026-11-07T20:32:02.123Z","durationMs":40769,"initialForegroundPid":3604,"done":true,"samples":2605,"maxGapMs":28,"transitions":2,"benchProcessesSeen":86,"hits":[]}

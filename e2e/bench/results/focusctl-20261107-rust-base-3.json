@@ -1,0 +1,114 @@
+{
+  "label": "focusctl-20261107-rust-base-3",
+  "mode": "native-full",
+  "lean": false,
+  "codec": "h264",
+  "profile": "42e01f",
+  "degradationPreference": "balanced",
+  "screen": true,
+  "direct": true,
+  "norelay": true,
+  "settleMs": 20000,
+  "measureMs": 15000,
+  "presenterReady": {
+    "encoder": "NVIDIA H.264 Encoder MFT",
+    "h": 1072,
+    "w": 1906
+  },
+  "secondaryMonitor": {
+    "left": 2560,
+    "width": 1920,
+    "top": 475,
+    "height": 1080
+  },
+  "edge": "Edg/157.0.4341.42",
+  "native": "E:\\Projetos\\stream-p2p\\.claude\\worktrees\\app-nativo-edge-benchmark-0b34a3\\e2e\\bench\\native\\target\\release\\sp2p-native-bench.exe",
+  "at": "2026-11-07T20:10:45.614Z",
+  "networks": {
+    "boa": {
+      "rede": {},
+      "nodes": [
+        {
+          "nó": "transmissor",
+          "latência ms": 0,
+          "quadros codificados/s": 0,
+          "ms de codificação/s": 0,
+          "encoder": {
+            "bytes": 36342505,
+            "captured": 2278,
+            "children": 1,
+            "convertMsAvg": 0.6689321773485503,
+            "encodeMsAvg": 5.661734363295875,
+            "encoded": 2136,
+            "encoder": "NVIDIA H.264 Encoder MFT",
+            "h": 1072,
+            "keys": 1,
+            "skipped": 146,
+            "w": 1906,
+            "quadros/s": 59,
+            "kbps out": 7889
+          },
+          "altura enviada": null,
+          "largura enviada": null,
+          "codecsEnviados": [],
+          "degradationPreference": null,
+          "limitação": null,
+          "enviado kbps": 0,
+          "plis": 0,
+          "repasse": {
+            "bytes": 36342505,
+            "captured": 2278,
+            "children": 1,
+            "convertMsAvg": 0.6689321773485503,
+            "encodeMsAvg": 5.661734363295875,
+            "encoded": 2136,
+            "encoder": "NVIDIA H.264 Encoder MFT",
+            "h": 1072,
+            "keys": 1,
+            "skipped": 146,
+            "w": 1906,
+            "quadros/s": 59,
+            "capturados/s": 63,
+            "kbps out": 7889
+          },
+          "fachada/s": 0,
+          "RAM MB": 29,
+          "CPU %": 9,
+          "processos": 1
+        },
+        {
+          "nó": "espectador",
+          "latência ms": 40,
+          "recebe": {
+            "fps": 59,
+            "kbps": 7899,
+            "altura": 1072,
+            "largura": 1906,
+            "codec": {
+              "mimeType": "video/H264",
+              "sdpFmtpLine": "level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42e01f"
+            },
+            "congelamentos": 0,
+            "perda %": 0,
+            "buffer ms": 9
+          },
+          "quadros codificados/s": 0,
+          "ms de codificação/s": 0,
+          "encoder": null,
+          "altura enviada": null,
+          "largura enviada": null,
+          "codecsEnviados": [],
+          "degradationPreference": null,
+          "limitação": null,
+          "enviado kbps": 0,
+          "plis": 0,
+          "repasse": null,
+          "fachada/s": 0,
+          "RAM MB": 156,
+          "CPU %": 7,
+          "processos": 8
+        }
+      ]
+    }
+  }
+}

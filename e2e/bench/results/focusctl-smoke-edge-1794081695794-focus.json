@@ -1,0 +1,13 @@
+{
+  "label": "focusctl-smoke-edge-1794081695794",
+  "exitCode": 0,
+  "startedAt": "2026-11-07T20:01:36.133Z",
+  "durationMs": 24019,
+  "initialForegroundPid": 3604,
+  "done": true,
+  "samples": 1536,
+  "maxGapMs": 20,
+  "transitions": 1,
+  "benchProcessesSeen": 62,
+  "hits": []
+}

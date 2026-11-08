@@ -34,11 +34,35 @@ struct Stats {
     child_plis: u64,
 }
 
-fn new_rtc(addr: SocketAddr) -> Rtc {
-    // SP2P_CODEC=h264 when the parent is the native presenter (hardware H.264); VP8 otherwise.
+fn h264_profile(value: Option<&str>) -> Result<u32, String> {
+    let Some(value) = value else { return Ok(0x42e01f) };
+    let invalid = || format!("SP2P_H264_PROFILE inválido: {value:?}");
+    if value.len() != 6 || !value.bytes().all(|b| b.is_ascii_hexdigit()) {
+        return Err(invalid());
+    }
+    let profile = u32::from_str_radix(value, 16).map_err(|_| invalid())?;
+    let [_, idc, iop, level] = profile.to_be_bytes();
+    // str0m 0.25: packet/h264_profile.rs (parser privado). Máscaras de PROFILES
+    // e níveis de H264LevelIdc; revisar junto de uma atualização da dependência.
+    let supported = match idc {
+        0x42 => iop & 0x0f == 0,
+        0x4d => iop & 0x0f == 0 && (iop & 0x80 != 0 || iop & 0x20 == 0),
+        0x58 => iop & 0x0f == 0 && iop & 0xc0 != 0x40,
+        0x64 => matches!(iop, 0 | 0x0c),
+        0x6e | 0x7a | 0xf4 => matches!(iop, 0 | 0x10),
+        0x2c => iop == 0x10,
+        _ => false,
+    };
+    if !supported || !matches!(level, 0 | 10 | 11 | 12 | 13 | 20 | 21 | 22 | 30 | 31 | 32 | 40 | 41 | 42 | 50 | 51 | 52) {
+        return Err(invalid());
+    }
+    Ok(profile)
+}
+
+fn new_rtc(addr: SocketAddr, profile: u32) -> Rtc {
     let mut b = Rtc::builder().set_rtp_mode(true).clear_codecs();
     if std::env::var("SP2P_CODEC").as_deref() == Ok("h264") {
-        b.codec_config().add_h264(102.into(), Some(103.into()), true, 0x42e01f);
+        b.codec_config().add_h264(102.into(), Some(103.into()), true, profile);
     } else {
         b = b.enable_vp8(true);
     }
@@ -71,7 +95,41 @@ fn drain(p: &mut Peer, sock: &UdpSocket, evs: &mut Vec<Event>) -> Instant {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::h264_profile;
+
+    #[test]
+    fn default_only_when_absent() {
+        assert_eq!(h264_profile(None).unwrap(), 0x42e01f);
+        for value in ["", " 42e01f", "42e01f ", "+2e01f", "0x42e01f", "142e01f", "zzzzzz", "42e01"] {
+            assert!(h264_profile(Some(value)).unwrap_err().contains("SP2P_H264_PROFILE"));
+        }
+    }
+
+    #[test]
+    fn profiles_and_levels_supported_by_str0m_025() {
+        for value in ["42e01f", "42001f", "4D801F", "4d001f", "58c01f", "58801f", "58001f", "64001f", "640c1f", "6e001f", "6e101f", "7a001f", "7a101f", "f4001f", "f4101f", "2c101f", "42f00a", "420000", "420034"] {
+            assert_eq!(h264_profile(Some(value)).unwrap(), u32::from_str_radix(value, 16).unwrap());
+        }
+        for value in ["000000", "ffffff", "42e11f", "4d201f", "58401f", "64101f", "6e0c1f", "2c001f", "42e009", "42e035", "42e03c"] {
+            assert!(h264_profile(Some(value)).is_err(), "{value}");
+        }
+    }
+}
+
 fn main() {
+    let profile = std::env::var("SP2P_H264_PROFILE")
+        .map(Some)
+        .or_else(|e| match e {
+            std::env::VarError::NotPresent => Ok(None),
+            _ => Err(format!("SP2P_H264_PROFILE inválido: {e}")),
+        })
+        .and_then(|value| h264_profile(value.as_deref()))
+        .unwrap_or_else(|e| {
+            eprintln!("Erro de configuração: {e}");
+            std::process::exit(1);
+        });
     str0m::crypto::from_feature_flags().install_process_default();
     let sock = UdpSocket::bind("127.0.0.1:0").unwrap();
     let addr = sock.local_addr().unwrap();
@@ -102,7 +160,7 @@ fn main() {
                 match cmd {
                     "child" => {
                         let id = v["id"].as_u64().unwrap();
-                        let mut rtc = new_rtc(addr);
+                        let mut rtc = new_rtc(addr, profile);
                         let mut api = rtc.sdp_api();
                         let mid = api.add_media(MediaKind::Video, Direction::SendOnly, Some("relay".into()), Some("video".into()), None);
                         let (offer, pending) = api.apply().unwrap();
@@ -125,7 +183,7 @@ fn main() {
             let Some(sdp) = v["sdp"].as_object() else { continue };
             let text = sdp["sdp"].as_str().unwrap_or_default();
             if sdp["type"] == "offer" {
-                let mut rtc = new_rtc(addr);
+                let mut rtc = new_rtc(addr, profile);
                 let answer = rtc.sdp_api().accept_offer(SdpOffer::from_sdp_string(text).unwrap()).unwrap();
                 out(json!({"to": from, "sdp": {"type": "answer", "sdp": answer.to_sdp_string()}}));
                 parent = Some(Peer { id: from, rtc, mid: None, pending: None });

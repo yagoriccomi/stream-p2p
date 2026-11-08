@@ -1,0 +1,162 @@
+{
+  "label": "diag-native-1080",
+  "mode": "native-full",
+  "lean": false,
+  "edge": "Edg/156.0.4314.58",
+  "native": "E:\\Projetos\\stream-p2p\\.claude\\worktrees\\app-nativo-edge-benchmark-0b34a3\\e2e\\bench\\native\\target\\release\\sp2p-native-bench.exe",
+  "at": "2026-11-06T18:48:10.412Z",
+  "networks": {
+    "boa": {
+      "rede": {},
+      "nodes": [
+        {
+          "nó": "transmissor",
+          "latência ms": 0,
+          "quadros codificados/s": 0,
+          "ms de codificação/s": 0,
+          "encoder": {
+            "bytes": 40345211,
+            "captured": 2497,
+            "children": 1,
+            "convertMsAvg": 1.077456788145776,
+            "encodeMsAvg": 5.2824170588235315,
+            "encoded": 2380,
+            "encoder": "NVIDIA H.264 Encoder MFT",
+            "h": 1072,
+            "keys": 4,
+            "skipped": 135,
+            "w": 1906,
+            "quadros/s": 61,
+            "kbps out": 8207
+          },
+          "altura enviada": null,
+          "limitação": null,
+          "enviado kbps": 0,
+          "plis": 0,
+          "repasse": {
+            "bytes": 40345211,
+            "captured": 2497,
+            "children": 1,
+            "convertMsAvg": 1.077456788145776,
+            "encodeMsAvg": 5.2824170588235315,
+            "encoded": 2380,
+            "encoder": "NVIDIA H.264 Encoder MFT",
+            "h": 1072,
+            "keys": 4,
+            "skipped": 135,
+            "w": 1906,
+            "quadros/s": 61,
+            "capturados/s": 62,
+            "kbps out": 8207
+          },
+          "fachada/s": 0,
+          "RAM MB": 29,
+          "CPU %": 13,
+          "processos": 1
+        },
+        {
+          "nó": "relay 1",
+          "latência ms": null,
+          "quadros codificados/s": 0,
+          "ms de codificação/s": 0,
+          "encoder": {
+            "bytesIn": 38701363,
+            "bytesOut": 38683632,
+            "childPlis": 3,
+            "children": 1,
+            "connected": true,
+            "keyAsks": 4,
+            "pktsIn": 35708,
+            "pktsOut": 35692,
+            "quadros/s": null,
+            "kbps out": null
+          },
+          "altura enviada": null,
+          "limitação": null,
+          "enviado kbps": 0,
+          "plis": 0,
+          "repasse": {
+            "bytesIn": 38701363,
+            "bytesOut": 38683632,
+            "childPlis": 3,
+            "children": 1,
+            "connected": true,
+            "keyAsks": 4,
+            "pktsIn": 35708,
+            "pktsOut": 35692,
+            "kbps in": 8217,
+            "pacotes/s": 947,
+            "kbps out": 8217
+          },
+          "fachada/s": 0,
+          "RAM MB": 3,
+          "CPU %": 5,
+          "processos": 1
+        },
+        {
+          "nó": "relay 2",
+          "latência ms": null,
+          "quadros codificados/s": 0,
+          "ms de codificação/s": 0,
+          "encoder": {
+            "bytesIn": 38683440,
+            "bytesOut": 38312729,
+            "childPlis": 2,
+            "children": 1,
+            "connected": true,
+            "keyAsks": 3,
+            "pktsIn": 35691,
+            "pktsOut": 35348,
+            "quadros/s": null,
+            "kbps out": null
+          },
+          "altura enviada": null,
+          "limitação": null,
+          "enviado kbps": 0,
+          "plis": 0,
+          "repasse": {
+            "bytesIn": 38683440,
+            "bytesOut": 38312729,
+            "childPlis": 2,
+            "children": 1,
+            "connected": true,
+            "keyAsks": 3,
+            "pktsIn": 35691,
+            "pktsOut": 35348,
+            "kbps in": 8217,
+            "pacotes/s": 947,
+            "kbps out": 8217
+          },
+          "fachada/s": 0,
+          "RAM MB": 3,
+          "CPU %": 5,
+          "processos": 1
+        },
+        {
+          "nó": "espectador",
+          "latência ms": 80,
+          "recebe": {
+            "fps": 53,
+            "kbps": 8220,
+            "altura": 1072,
+            "congelamentos": 1,
+            "perda %": 0,
+            "buffer ms": 29
+          },
+          "quadros codificados/s": 0,
+          "ms de codificação/s": 0,
+          "encoder": null,
+          "altura enviada": null,
+          "limitação": null,
+          "enviado kbps": 0,
+          "plis": 0,
+          "repasse": null,
+          "fachada/s": 0,
+          "RAM MB": 168,
+          "CPU %": 20,
+          "processos": 7
+        }
+      ]
+    }
+  }
+}

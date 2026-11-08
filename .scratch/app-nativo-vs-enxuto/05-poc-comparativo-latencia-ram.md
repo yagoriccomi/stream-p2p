@@ -79,4 +79,61 @@ Achados:
 - O repasse sem decodificar no Edge (`encoded`) **não funcionou com H.264**: o relay 2 não recebeu nada. A técnica da "fachada" foi feita para VP8.
 - O relay Rust aceita só o perfil 42e01f. Para combinar Edge com H.264 por hardware e relays Rust, falta aceitar outros perfis (640c1f / 42e01f com o perfil que o Edge oferece).
 
-Conclusão parcial: o H.264 por hardware fecha boa parte da diferença de **atraso** entre o app enxuto e o nativo. As diferenças de **RAM** (210 vs 30 MB; relay 190 vs 3 MB) e de **qualidade** (534p46 vs 1080p60) continuam.
+Conclusão parcial histórica: o H.264 por hardware fecha boa parte da diferença de **atraso** entre o app enxuto e o nativo. As diferenças de **RAM** (210 vs 30 MB; relay 190 vs 3 MB) e de **qualidade** (534p46 vs 1080p60) continuam. A comparação envolve resoluções diferentes; não demonstra vantagem com qualidade equivalente.
+
+## Retomada — itens 3 e 4 (2026-11-06)
+
+Dados exploratórios preservados em `e2e/bench/results/`. Todas as rodadas abaixo contam, inclusive as instáveis. **Aquecimento não foi demonstrado**; as menções anteriores são hipóteses, não justificativa para excluir amostras. Nenhuma destas séries comprova atendimento estável às metas.
+
+| Arquivo JSON (sem extensão) | Latência espectador (ms) | FPS recebidos | Altura recebida | RAM transmissor / relays (MB) |
+|---|---:|---:|---:|---|
+| tela-relay-rust-h264hw-1 | 116 | 28 | 534 | 192 / 4, 3 |
+| tela-relay-rust-h264hw-2 | 75 | 48 | 534 | 192 / 3, 3 |
+| tela-relay-rust-h264hw-3 | 83 | 49 | 534 | 190 / 3, 3 |
+| diag-captura-h264hw | 82 | 48 | 534 | 191 / 3, 3 |
+| diag-captura-h264hw-mres-1 | 79 | 48 | 712 | 182 / 3, 3 |
+| diag-captura-h264hw-mres-2 | 247 | 46 | 712 | 182 / 3, 3 |
+| diag-native-size | 66 | 15 | 712 | 29 / 3, 3 |
+| diag-native-1080 | 80 | 53 | 1072 | 29 / 3, 3 |
+| diag-captura-h264hw-1080 | 299 | 26 | 720 | 230 / 3, 3 |
+| diag-captura-h264hw-1080-2 | 180 | 28 | 804 | 212 / 3, 4 |
+| diag-captura-h264hw-1080-3 | 170 | 31 | 804 | 215 / 3, 3 |
+| diag-captura-h264hw-1080-mres-1 | 2689 | 15 | 1072 | 201 / 4, 3 |
+| diag-captura-h264hw-1080-mres-2 | 103 | 22 | 1072 | 203 / 3, 3 |
+
+### O que os dados sustentam
+
+- Edge H.264 com relays Rust funcionou neste ambiente usando o perfil configurado `42001f`; `encoderImplementation` registrou `MediaFoundationVideoEncodeAccelerator (NVIDIA H.264 Encoder MFT)`. O perfil, sozinho, não garante hardware em outras máquinas. A primeira série inteira ficou em **75–116 ms**, 28–49 FPS e 534p.
+- Em `diag-captura-h264hw`, a captura reportou **1266×712**, configuração de 60 FPS, entrega medida de 48 quadros/s. A saída foi 534p (712 × 0,75), com `qualityLimitationReason=bandwidth` durante todo o intervalo observado. Isso aponta adaptação após a captura; não prova falta de capacidade física da rede local.
+- `maintain-resolution` preservou 712p nas duas rodadas menores, mas a latência variou de **79 a 247 ms**. Preservar resolução não garante latência nem FPS.
+- A janela passou a ser solicitada em 1920×1080 com escala do navegador 1. A captura efetiva variou: **1920×1080** em uma rodada, **1906×1072** nas seguintes. Dimensão solicitada não é dimensão capturada; a causa da diferença histórica de escala não foi isolada.
+- Com captura maior e `balanced`, saída de 720/804p, **170–299 ms**, 26–31 FPS; limitação reportada de banda. Com `maintain-resolution`, saída de 1072p, **103–2689 ms**, 15–22 FPS. Não há melhoria estável demonstrada.
+- O diagnóstico nativo em 1072p recebeu 53 FPS e 80 ms, com um congelamento. Uma rodada não demonstra 60 FPS estáveis. `diag-native-size` usou intervalos menores (8 s de estabilização, 5 s de medição); não deve ser agregado às rodadas padrão.
+
+### Campanha controlada adicional — 2026-11-06
+
+24 execuções sequenciais, sem descarte de amostras: `controle-20261106-{decode,native,native-full}-{base,cadeia}-{1,2,3}.json` e `controle-20261106-native-mres-{base,cadeia}-{1,2,3}.json`. Captura real, ICE direto, rede local; estabilização solicitada de 20 s e medição de 15 s. Metadados incluem codec negociado e dimensões finais. As bases `native` são Edge → Edge, sem processo Rust.
+
+Valores separados por vírgulas seguem a ordem das repetições 1, 2 e 3. Latência é a mediana de cada rodada, não percentil de toda a sessão.
+
+| Cenário | Base (ms) | Cadeia (ms) | Dimensão final base / cadeia | FPS base / cadeia |
+|---|---|---|---|---|
+| Edge + relays Edge, balanced | 61, 63, 56 | 98, 94, 69 | 952×536 em todas | 48, 48, 51 / 48, 48, 51 |
+| Edge + relays Rust, balanced | 58, 123, 124 | 74, 72, 71 | base: 952×536, 1428×804, 952×536; cadeia: 952×536 | 48, 32, 32 / 48, 48, 51 |
+| Transmissor e relays Rust | 44, 41, 42 | 69, 57, 86 | 1906×1072 em todas | 62, 62, 63 / 62, 63, 62 |
+| Edge + relays Rust, maintain-resolution | 63, 67, 70 | 86, 90, 82 | 1906×1072 em todas | 22, 22, 22 / 22, 22, 18 |
+
+- Perfil recebido: `42001f` nas séries Edge; `42e01f` no transmissor Rust. Mesmo perfil dentro de cada par; perfis diferentes entre transmissores.
+- Zero congelamentos nas 18 rodadas balanced. Maintain-resolution: um congelamento na terceira cadeia; zero nas outras cinco rodadas.
+- RAM nas cadeias: Edge balanced, transmissor 206–213 MB e relays Edge 188–191 MB; Edge/Rust balanced, transmissor 210–212 MB e relays 3 MB; transmissor Rust 29–30 MB e relays 3 MB; Edge maintain-resolution, transmissor 199–202 MB e relays 3–4 MB. São processos da bancada, não app completo.
+- Captura Edge da série maintain-resolution: 1906×1072, configuração de 60 FPS, entrega medida de 51–52 FPS; receptor 18–22 FPS. Encoder NVIDIA reportado, limitação `none` no intervalo. Isso localiza a redução de FPS após a entrega da captura, mas não identifica sua causa. `none` não demonstra ausência de limitação interna.
+- Bases 2/3 de Edge/Rust balanced não são equivalentes às cadeias em resolução e/ou FPS; não calcular custo por salto com esses pares. Não selecionar outra base retrospectivamente para obter resultado favorável.
+- Mesmo nos pares semelhantes, diferença base/cadeia inclui buffering e variação entre execuções. Não mede processamento isolado de cada relay nem comprova a meta de 5 ms. Dimensões finais não demonstram resolução constante no intervalo; latência é coletada após as estatísticas.
+
+**Conclusão local:** o caminho Rust apresentou 57–86 ms em 1906×1072 nesta série curta. Edge balanced reduziu resolução; maintain-resolution preservou dimensões à custa de FPS. Nenhuma comparação demonstra qualidade equivalente, estabilidade prolongada ou cumprimento integral das metas. Os 62–63 FPS são valores medidos, não comprovação de 60 quadros únicos por segundo. Não substituir os resultados exploratórios anteriores por esta série mais favorável.
+
+**Bloqueios:** rede ruim não comparável com o proxy TURN atual (saturação e enlaces Rust diretos); segundo PC não validado pela bancada loopback. Faltam sincronização/medição externa, validação de áudio e app real com interface/decodificação. Encerrada a matriz local planejada; conclusão arquitetural e ADR continuam pendentes.
+
+### Limites e próximos passos
+
+Os JSONs exploratórios acima foram produzidos antes do registro completo de configuração; os nomes não substituem metadados. Não reescrever esses dados como se tivessem configuração registrada originalmente. As durações das estatísticas incluem a coleta entre amostras, podendo superar os 15 s solicitados. Falta isolar a causa do FPS baixo e da variabilidade, repetir séries com dimensões equivalentes e medir base sem relays nas mesmas condições antes de estimar custo por salto. Rede ruim, segundo PC e ADR permanecem pendentes. Relatório HTML histórico não atualizado nesta retomada; não usar seus veredictos como comprovação das metas.
