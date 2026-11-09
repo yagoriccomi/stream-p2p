@@ -1,0 +1,140 @@
+{
+  "label": "s1a-2",
+  "at": "2026-11-09T17:40:58.726Z",
+  "viewer": "edge Edg/157.0.4341.42",
+  "source": "synth 1080p60 + relógio",
+  "offeredProfile": "42e01f",
+  "noHw": false,
+  "measureMs": 10000,
+  "firstFrameMs": 856,
+  "steady": {
+    "resolution": "1920x1080",
+    "fps": 59.9,
+    "kbps": 7881,
+    "freezes": 0,
+    "lost": 0,
+    "codec": "video/H264 level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42e01f",
+    "latencyMs": {
+      "median": 96,
+      "p95": 109,
+      "samples": 81
+    },
+    "audio": {
+      "kbps": 128,
+      "packetsPerS": 50,
+      "samplesPerS": 47977,
+      "level": 0.20130008850367748
+    },
+    "presenter": {
+      "workingSetMB": 75.6,
+      "peakWorkingSetMB": 75.6,
+      "cpuMs": 2156.25,
+      "cpuPctOfOneCore": 11
+    },
+    "viewerBuffer": {
+      "jitterBufferTargetMs": 59,
+      "showTimeMs": 60
+    },
+    "maxFrameGap": {
+      "maxGapMs": 79,
+      "frames": 554
+    }
+  },
+  "liveBitrate": [
+    {
+      "kbps": 4000,
+      "viewer": {
+        "maxGapMs": 60,
+        "frames": 121
+      }
+    },
+    {
+      "kbps": 8000,
+      "viewer": {
+        "maxGapMs": 29,
+        "frames": 128
+      }
+    }
+  ],
+  "encoderFaults": [
+    {
+      "injected": 1,
+      "viewer": {
+        "maxGapMs": 24,
+        "frames": 154
+      }
+    },
+    {
+      "injected": 2,
+      "viewer": {
+        "maxGapMs": 99,
+        "frames": 146
+      }
+    }
+  ],
+  "afterFaults": {
+    "resolution": "1920x1080",
+    "framesSinceSteady": 730
+  },
+  "presenterStats": {
+    "audioSamples": 1393920,
+    "bitrate": 8000000,
+    "bytes": 28013225,
+    "captured": 1738,
+    "code": "ug5f-g5",
+    "connected": 1,
+    "dropped": 3,
+    "encodeMsAvg": 6.746136274509805,
+    "encoded": 1734,
+    "encoder": "NVIDIA H.264 Encoder MFT",
+    "faults": 3,
+    "h": 1080,
+    "keys": 1,
+    "live": [
+      {
+        "applyMs": 0.0138,
+        "atMs": 16983,
+        "cmd": "bitrate",
+        "error": null,
+        "kbps": 4000,
+        "maxEncoderGapMs": 20.7237,
+        "ok": true
+      },
+      {
+        "applyMs": 0.0076,
+        "atMs": 19997,
+        "cmd": "bitrate",
+        "error": null,
+        "kbps": 8000,
+        "maxEncoderGapMs": 20.2232,
+        "ok": true
+      },
+      {
+        "atMs": 26116,
+        "error": "0x8000ffff",
+        "event": "recreate",
+        "ms": 75.09190000000001
+      }
+    ],
+    "peers": 1,
+    "profile": "42e01f",
+    "recreates": 1,
+    "skipped": 0,
+    "software": false,
+    "w": 1920
+  },
+  "presenterLog": [
+    "codificador: NVIDIA H.264 Encoder MFT (1920x1080@60, 8000 kbps, perfil 42e01f)",
+    "rede: 192.168.0",
+    ".250:63358 (UDP)",
+    "servidor: conectado",
+    "transmissão: iniciada (1080p60)",
+    "espectador a2fe97: oferta enviada",
+    "espectador a2fe97: conectado",
+    "codificador: erro 0x8000ffff, quadro descartado",
+    "codificador: erro 0x8000ffff, quadro descartado",
+    "aviso: O codificador falhou, reiniciando (falha injetada (teste) (",
+    "0x8000FFFF))"
+  ],
+  "failures": []
+}
