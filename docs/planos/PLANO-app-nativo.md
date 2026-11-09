@@ -43,6 +43,9 @@
 | P2 | Uma fatia = uma sessão de agente com critério medível | Pedido do ticket 12 [#31] | Dividir a fatia em a/b |
 | P3 | Medições na RTX 4060 Ti deste PC até a fatia 13 | Único hardware disponível [a002#6] | Números de AMD/Intel saem na fatia 13 |
 | P4 | Bancadas `e2e/bench/native` e `proto07` são fonte de código a portar, não dependência | São protótipos descartáveis [#6] | — |
+| P5 | Meta de 100 ms medida pela mediana e inclui os ~60 ms de jitter buffer que o servidor define (`server/topology.js:14`) | 1a: mediana 95–97 ms, p95 107–110 ms [Loop] | Reduzir `jitterMs` do servidor para o nativo ou cobrar o p95 |
+| P6 | Congelamento de 99–122 ms ao recriar o encoder na troca de bitrate fica para a fatia 8 | Meta de 100 ms é escolhida, não medida [Loop] | Trocar bitrate sem recriar o MFT (`CODECAPI_AVEncCommonMeanBitRate`) já na 1a |
+| P7 | Fatias empilhadas: cada uma parte da branch da fatia de que depende, PR contra `feature/app-nativo` | Merge é do usuário (Regra nº 6) | Rebase quando o usuário mergear a anterior |
 
 ## 4. Decisão Visual
 
@@ -80,12 +83,12 @@ Ordem obrigatória: transmitir primeiro, com o teste de CPU do redesenho junto [
 
 | Fatia | Módulo | Depende de | Critério de aceite medível | Estado |
 |---|---|---|---|---|
-| **1a** Transmitir pelo app (sem UI rica) | `native/` (núcleo: captura, encode, str0m, cliente WS, sysaudio) | — | Cria sessão no servidor real e um espectador Chrome/Edge/Firefox recebe 1080p60 com áudio do sistema. Latência ponta a ponta < 100 ms e transmissor < 200 MB WS (bancada: 30 MB, 87–103 ms [05]). Espectador que rejeita o formato não derruba o processo e cai para 42e01f [19]. Troca de bitrate ao vivo sem congelar > 100 ms (meta escolhida) [13] | aberta |
-| **1b** Tela de transmitir + teste de CPU do redesenho | `native/ui` | 1a | Janela Slint com picker e prévia do vídeo a 60 Hz. Mede CPU de femtovg × `renderer-skia` × redesenho parcial × swap chain/DComp sob a UI, 3 rodadas cada, e escolhe uma com CPU ≤ 25 % de um núcleo (meta escolhida; hoje 85–89 % com vídeo [07]); se nenhuma chegar, registra o melhor número e abre pergunta. Narrador lê os campos (UIA) [07] | aberta |
+| **1a** Transmitir pelo app (sem UI rica) | `native/` (núcleo: captura, encode, str0m, cliente WS, sysaudio) | — | Cria sessão no servidor real e um espectador Chrome/Edge/Firefox recebe 1080p60 com áudio do sistema. Latência ponta a ponta < 100 ms e transmissor < 200 MB WS (bancada: 30 MB, 87–103 ms [05]). Espectador que rejeita o formato não derruba o processo e cai para 42e01f [19]. Troca de bitrate ao vivo sem congelar > 100 ms (meta escolhida) [13] | PR #4 pronto (PASS; ressalvas P5/P6) |
+| **1b** Tela de transmitir + teste de CPU do redesenho | `native/ui` | 1a | Janela Slint com picker e prévia do vídeo a 60 Hz. Mede CPU de femtovg × `renderer-skia` × redesenho parcial × swap chain/DComp sob a UI, 3 rodadas cada, e escolhe uma com CPU ≤ 25 % de um núcleo (meta escolhida; hoje 85–89 % com vídeo [07]); se nenhuma chegar, registra o melhor número e abre pergunta. Narrador lê os campos (UIA) [07] | em execução |
 | **2** Assistir | `native/viewer` | 1b | Recebe de transmissor web e nativo; 1080p60 decodificado na GPU com `MF_LOW_LATENCY`. Latência até o vsync medida (hoje só até o submit: p50 16,5 ms [07]). Espectador < 200 MB WS. Perda: congela + PLI ≤ 1/500 ms [08]. Áudio Opus em sincronia por Sender Reports | aberta |
 | **3** Repassar intacto | `native/relay` | 2 | Nativo assiste e repassa RTP intacto a um filho web e a um nativo; < 15 ms por salto (bancada 2–7 ms [05 2a]); +RAM do repasse < 10 MB (meta escolhida; bancada 4 MB [05 2a]); reconexão sem 409 (prazo 10 s, backoff 1/2/4/5 s [11]) | aberta |
 | **4** Recodificação sob demanda + realocação | `native/relay` + `server/topology.js` só se precisar de mensagem nova (precisa de pergunta antes) | 3 | Com netsim limitando um filho a 2 Mbps, só ele recebe 720p em ≤ 2 s (meta escolhida; BWE abaixo de 2 Mbps em 3,3–4,0 s [18]), sem congelar os outros; custo ≤ 15 ms por salto (medido 4,2 ms [18]). Com a GPU disputada, o filho vai para outro relay com folga ou recebe o vídeo intacto [a008#4]. BWE entre dois relays nativos coerente (hoje ausente [18]) | aberta |
-| **5** TURN | `native/net` | 1a | Conecta via coturn e Cloudflare em UDP, TCP e TLS 443, com credencial de `/ice.json` renovada antes de expirar [15]. Catálogo: aviso "servidor de apoio" | aberta |
+| **5** TURN | `native/net` | 1a | Conecta via coturn e Cloudflare em UDP, TCP e TLS 443, com credencial de `/ice.json` renovada antes de expirar [15]. Catálogo: aviso "servidor de apoio" | em execução |
 | **6** Voz, chat e moderação | `native/voice`, `native/ui` | 2 | Voz em mesh com Opus, AEC/NS do Windows e PTT V [a008#6]. Teste de eco com alto-falante: o outro lado não ouve o próprio eco (avaliação gravada). Mixer, volume por pessoa, chat, renomear, passar a vez, silenciar, remover e banir iguais à web [r10] | aberta |
 | **7** Demais formatos | `native/codec` | 2, 4 | VP8, VP9 (libvpx), AV1 (MFT ou dav1d) e H.265 (MFT) assistidos a 1080p60; transmitir onde a máquina permite, e o resto cai para H.264 com aviso [a005#1]. SDP anuncia só o que a máquina faz [20] | aberta |
 | **8** Catálogo de problemas | `native/ui` + todos | 1a–7 | Cada linha do ADR §2.9 tem teste que provoca o problema e confere aviso, atalho e plano B. Inclui investigar a causa do `0x8000FFFF` e a recuperação [13] | aberta |
@@ -94,7 +97,7 @@ Ordem obrigatória: transmitir primeiro, com o teste de CPU do redesenho junto [
 | **11** Paridade | — (checklist) | 1a–9 | Cada linha de [r10] marcada como feita ou "some", com evidência | aberta |
 | **12** Migração do Tauri | `app/` (última versão) + release | 11, 13 | A última atualização do Tauri instala o nativo, migra `server.txt` e `device` e remove o Tauri. Rollback: republicar o `latest.json` do Tauri [a008#3] | aberta |
 | **13** Validação AMD/Intel e segundo PC | — (HITL) | 11 | Lista de verificação e executável para o usuário; AMD e Intel com troca ao vivo e `FLUSH` na Intel [14]; dois PCs em rede real < 100 ms | aberta |
-| **14** Aviso do Firefox na web | `web/` | — | Espectador Firefox vê a dica com link do app [a008#7]; testes `e2e` passam | aberta |
+| **14** Aviso do Firefox na web | `web/` | — | Espectador Firefox vê a dica com link do app [a008#7]; testes `e2e` passam | PR #3 pronto (PASS) |
 
 Paralelismo possível: 5 e 14 rodam a qualquer momento depois da 1a; 9 depois da 1b.
 
