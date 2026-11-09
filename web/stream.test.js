@@ -1,6 +1,30 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mungeStartBitrate, randomId } from './stream.js';
+import { mungeStartBitrate, randomId, isFirefox, firefoxHintDue, dismissFirefoxHint } from './stream.js';
+
+const UA = {
+  firefox: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:132.0) Gecko/20100101 Firefox/132.0',
+  chrome: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  edge: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0',
+  fxios: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/132.0 Mobile/15E148 Safari/605.1.15',
+};
+const memStorage = () => { const m = new Map(); return { getItem: (k) => m.get(k) ?? null, setItem: (k, v) => m.set(k, String(v)) }; };
+
+test('firefox hint: detected only on Gecko Firefox', () => {
+  assert.equal(isFirefox(UA.firefox), true);
+  for (const ua of [UA.chrome, UA.edge, UA.fxios, '']) assert.equal(isFirefox(ua), false);
+});
+
+test('firefox hint: shows until dismissed, and the dismissal sticks', () => {
+  const s = memStorage();
+  assert.equal(firefoxHintDue(UA.chrome, s), false);
+  assert.equal(firefoxHintDue(UA.firefox, s), true);
+  dismissFirefoxHint(s);
+  assert.equal(firefoxHintDue(UA.firefox, s), false);
+  const blocked = { getItem() { throw new Error('denied'); }, setItem() { throw new Error('denied'); } };
+  assert.equal(firefoxHintDue(UA.firefox, blocked), true);
+  assert.doesNotThrow(() => dismissFirefoxHint(blocked));
+});
 
 // Trimmed from a real Chrome answer: VP8 has no fmtp line, H264 has one, rtx points at both.
 const SDP = [
