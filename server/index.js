@@ -474,6 +474,8 @@ setInterval(() => {
 }, 25_000).unref();
 wss.on('connection', (ws) => {
   const id = randomUUID();
+  ws.isAlive = true;
+  ws.on('pong', () => { ws.isAlive = true; });
   clients.set(id, {
     ws, code: null,
     actions: { tokens: RATE_PER_SEC, at: Date.now() },
