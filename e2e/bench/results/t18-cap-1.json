@@ -1,0 +1,806 @@
+{
+  "label": "t18-cap-1",
+  "mode": "native-synth",
+  "lean": false,
+  "codec": "h264",
+  "profile": "42e01f",
+  "degradationPreference": "balanced",
+  "kbps": 8000,
+  "screen": false,
+  "direct": false,
+  "norelay": false,
+  "settleMs": 20000,
+  "measureMs": 15000,
+  "presenterReady": {
+    "encoder": "NVIDIA H.264 Encoder MFT",
+    "h": 1080,
+    "profile": "constrained-baseline",
+    "profileLevelId": "42e01f",
+    "software": false,
+    "source": "synth",
+    "w": 1920
+  },
+  "secondaryMonitor": null,
+  "encoderEnv": {
+    "BENCH_ENCODER": null,
+    "BENCH_PROFILE": null
+  },
+  "edge": "Edg/157.0.4341.42",
+  "native": "E:\\Projetos\\stream-p2p\\.claude\\worktrees\\app-nativo-edge-benchmark-0b34a3\\e2e\\bench\\native\\target\\release\\sp2p-native-bench.exe",
+  "at": "2026-11-08T23:14:47.107Z",
+  "networks": {
+    "boa": {
+      "rede": {},
+      "nodes": [
+        {
+          "nó": "transmissor",
+          "latência ms": 0,
+          "quadros codificados/s": 0,
+          "ms de codificação/s": 0,
+          "encoder": {
+            "bitrate": 8000000,
+            "bytes": 36988609,
+            "captured": 2183,
+            "children": 1,
+            "convertMsAvg": 0.5632974347228581,
+            "encodeMsAvg": 5.917288593678427,
+            "encoded": 2183,
+            "encoder": "NVIDIA H.264 Encoder MFT",
+            "h": 1080,
+            "keys": 15,
+            "live": [],
+            "skipped": 0,
+            "w": 1920,
+            "quadros/s": 60,
+            "kbps out": 8222
+          },
+          "altura enviada": null,
+          "largura enviada": null,
+          "codecsEnviados": [],
+          "degradationPreference": null,
+          "limitação": null,
+          "enviado kbps": 0,
+          "plis": 0,
+          "repasse": {
+            "bitrate": 8000000,
+            "bytes": 36988609,
+            "captured": 2183,
+            "children": 1,
+            "convertMsAvg": 0.5632974347228581,
+            "encodeMsAvg": 5.917288593678427,
+            "encoded": 2183,
+            "encoder": "NVIDIA H.264 Encoder MFT",
+            "h": 1080,
+            "keys": 15,
+            "live": [],
+            "skipped": 0,
+            "w": 1920,
+            "quadros/s": 60,
+            "capturados/s": 60,
+            "kbps out": 8222
+          },
+          "fachada/s": 0,
+          "RAM MB": 38,
+          "CPU %": 9,
+          "processos": 1
+        },
+        {
+          "nó": "relay 1",
+          "latência ms": null,
+          "quadros codificados/s": 0,
+          "ms de codificação/s": 0,
+          "encoder": {
+            "bwe": [
+              [
+                1539,
+                2,
+                8000
+              ],
+              [
+                1590,
+                2,
+                114617
+              ],
+              [
+                3479,
+                2,
+                221234
+              ],
+              [
+                6559,
+                2,
+                10024
+              ],
+              [
+                7161,
+                2,
+                10536
+              ],
+              [
+                9559,
+                2,
+                11069
+              ],
+              [
+                9609,
+                2,
+                12125
+              ],
+              [
+                10274,
+                2,
+                12262
+              ],
+              [
+                16452,
+                2,
+                12262
+              ],
+              [
+                20974,
+                2,
+                13339
+              ]
+            ],
+            "bytesIn": 36139945,
+            "bytesOut": 35014068,
+            "childPlis": 13,
+            "children": 1,
+            "connected": true,
+            "keyAsks": 14,
+            "ms": 36367,
+            "pktsIn": 33355,
+            "pktsOut": 32316,
+            "quadros/s": null,
+            "kbps out": null
+          },
+          "altura enviada": null,
+          "largura enviada": null,
+          "codecsEnviados": [],
+          "degradationPreference": null,
+          "limitação": null,
+          "enviado kbps": 0,
+          "plis": 0,
+          "repasse": {
+            "bwe": [
+              [
+                1539,
+                2,
+                8000
+              ],
+              [
+                1590,
+                2,
+                114617
+              ],
+              [
+                3479,
+                2,
+                221234
+              ],
+              [
+                6559,
+                2,
+                10024
+              ],
+              [
+                7161,
+                2,
+                10536
+              ],
+              [
+                9559,
+                2,
+                11069
+              ],
+              [
+                9609,
+                2,
+                12125
+              ],
+              [
+                10274,
+                2,
+                12262
+              ],
+              [
+                16452,
+                2,
+                12262
+              ],
+              [
+                20974,
+                2,
+                13339
+              ]
+            ],
+            "bytesIn": 36139945,
+            "bytesOut": 35014068,
+            "childPlis": 13,
+            "children": 1,
+            "connected": true,
+            "keyAsks": 14,
+            "ms": 36367,
+            "pktsIn": 33355,
+            "pktsOut": 32316,
+            "kbps in": 8232,
+            "pacotes/s": 950,
+            "kbps out": 8232
+          },
+          "fachada/s": 0,
+          "RAM MB": 3,
+          "CPU %": 4,
+          "processos": 1
+        },
+        {
+          "nó": "relay 2",
+          "latência ms": null,
+          "quadros codificados/s": 0,
+          "ms de codificação/s": 0,
+          "encoder": {
+            "bwe": [
+              [
+                967,
+                3,
+                8000
+              ],
+              [
+                1589,
+                3,
+                10742
+              ],
+              [
+                3476,
+                3,
+                13484
+              ],
+              [
+                6026,
+                3,
+                8927
+              ],
+              [
+                7704,
+                3,
+                9373
+              ],
+              [
+                8355,
+                3,
+                9843
+              ],
+              [
+                10105,
+                3,
+                10336
+              ],
+              [
+                10489,
+                3,
+                10853
+              ],
+              [
+                11141,
+                3,
+                11399
+              ],
+              [
+                12197,
+                3,
+                11974
+              ],
+              [
+                13856,
+                3,
+                12598
+              ],
+              [
+                16390,
+                3,
+                12899
+              ],
+              [
+                16619,
+                3,
+                12899
+              ],
+              [
+                21385,
+                3,
+                419
+              ],
+              [
+                21390,
+                3,
+                4169
+              ],
+              [
+                22276,
+                3,
+                6041
+              ],
+              [
+                22854,
+                3,
+                7078
+              ],
+              [
+                23417,
+                3,
+                7761
+              ],
+              [
+                23729,
+                3,
+                8463
+              ],
+              [
+                24389,
+                3,
+                10072
+              ],
+              [
+                24390,
+                3,
+                10610
+              ],
+              [
+                25855,
+                3,
+                11235
+              ],
+              [
+                26419,
+                3,
+                11975
+              ],
+              [
+                26620,
+                3,
+                8998
+              ],
+              [
+                26732,
+                3,
+                6021
+              ],
+              [
+                26756,
+                3,
+                5674
+              ],
+              [
+                26937,
+                3,
+                5288
+              ],
+              [
+                27140,
+                3,
+                4896
+              ],
+              [
+                27307,
+                3,
+                4521
+              ],
+              [
+                27307,
+                3,
+                4272
+              ],
+              [
+                27324,
+                3,
+                4056
+              ],
+              [
+                27745,
+                3,
+                3832
+              ],
+              [
+                30057,
+                3,
+                3624
+              ],
+              [
+                30354,
+                3,
+                3420
+              ],
+              [
+                30358,
+                3,
+                3229
+              ],
+              [
+                30385,
+                3,
+                3065
+              ],
+              [
+                30390,
+                3,
+                2846
+              ],
+              [
+                30401,
+                3,
+                2517
+              ],
+              [
+                30414,
+                3,
+                1529
+              ],
+              [
+                30417,
+                3,
+                1209
+              ],
+              [
+                30421,
+                3,
+                220
+              ],
+              [
+                30437,
+                3,
+                197
+              ],
+              [
+                30747,
+                3,
+                178
+              ],
+              [
+                31059,
+                3,
+                164
+              ],
+              [
+                31371,
+                3,
+                155
+              ],
+              [
+                31698,
+                3,
+                147
+              ],
+              [
+                32251,
+                3,
+                139
+              ],
+              [
+                33309,
+                3,
+                132
+              ]
+            ],
+            "bytesIn": 34988645,
+            "bytesOut": 34988645,
+            "childPlis": 13,
+            "children": 1,
+            "connected": true,
+            "keyAsks": 14,
+            "ms": 36364,
+            "pktsIn": 32293,
+            "pktsOut": 32293,
+            "quadros/s": null,
+            "kbps out": null
+          },
+          "altura enviada": null,
+          "largura enviada": null,
+          "codecsEnviados": [],
+          "degradationPreference": null,
+          "limitação": null,
+          "enviado kbps": 0,
+          "plis": 0,
+          "repasse": {
+            "bwe": [
+              [
+                967,
+                3,
+                8000
+              ],
+              [
+                1589,
+                3,
+                10742
+              ],
+              [
+                3476,
+                3,
+                13484
+              ],
+              [
+                6026,
+                3,
+                8927
+              ],
+              [
+                7704,
+                3,
+                9373
+              ],
+              [
+                8355,
+                3,
+                9843
+              ],
+              [
+                10105,
+                3,
+                10336
+              ],
+              [
+                10489,
+                3,
+                10853
+              ],
+              [
+                11141,
+                3,
+                11399
+              ],
+              [
+                12197,
+                3,
+                11974
+              ],
+              [
+                13856,
+                3,
+                12598
+              ],
+              [
+                16390,
+                3,
+                12899
+              ],
+              [
+                16619,
+                3,
+                12899
+              ],
+              [
+                21385,
+                3,
+                419
+              ],
+              [
+                21390,
+                3,
+                4169
+              ],
+              [
+                22276,
+                3,
+                6041
+              ],
+              [
+                22854,
+                3,
+                7078
+              ],
+              [
+                23417,
+                3,
+                7761
+              ],
+              [
+                23729,
+                3,
+                8463
+              ],
+              [
+                24389,
+                3,
+                10072
+              ],
+              [
+                24390,
+                3,
+                10610
+              ],
+              [
+                25855,
+                3,
+                11235
+              ],
+              [
+                26419,
+                3,
+                11975
+              ],
+              [
+                26620,
+                3,
+                8998
+              ],
+              [
+                26732,
+                3,
+                6021
+              ],
+              [
+                26756,
+                3,
+                5674
+              ],
+              [
+                26937,
+                3,
+                5288
+              ],
+              [
+                27140,
+                3,
+                4896
+              ],
+              [
+                27307,
+                3,
+                4521
+              ],
+              [
+                27307,
+                3,
+                4272
+              ],
+              [
+                27324,
+                3,
+                4056
+              ],
+              [
+                27745,
+                3,
+                3832
+              ],
+              [
+                30057,
+                3,
+                3624
+              ],
+              [
+                30354,
+                3,
+                3420
+              ],
+              [
+                30358,
+                3,
+                3229
+              ],
+              [
+                30385,
+                3,
+                3065
+              ],
+              [
+                30390,
+                3,
+                2846
+              ],
+              [
+                30401,
+                3,
+                2517
+              ],
+              [
+                30414,
+                3,
+                1529
+              ],
+              [
+                30417,
+                3,
+                1209
+              ],
+              [
+                30421,
+                3,
+                220
+              ],
+              [
+                30437,
+                3,
+                197
+              ],
+              [
+                30747,
+                3,
+                178
+              ],
+              [
+                31059,
+                3,
+                164
+              ],
+              [
+                31371,
+                3,
+                155
+              ],
+              [
+                31698,
+                3,
+                147
+              ],
+              [
+                32251,
+                3,
+                139
+              ],
+              [
+                33309,
+                3,
+                132
+              ]
+            ],
+            "bytesIn": 34988645,
+            "bytesOut": 34988645,
+            "childPlis": 13,
+            "children": 1,
+            "connected": true,
+            "keyAsks": 14,
+            "ms": 36364,
+            "pktsIn": 32293,
+            "pktsOut": 32293,
+            "kbps in": 8231,
+            "pacotes/s": 950,
+            "kbps out": 8231
+          },
+          "fachada/s": 0,
+          "RAM MB": 4,
+          "CPU %": 4,
+          "processos": 1
+        },
+        {
+          "nó": "espectador",
+          "latência ms": 12077,
+          "recebe": {
+            "fps": 14,
+            "kbps": 3945,
+            "altura": 1080,
+            "largura": 1920,
+            "codec": {
+              "mimeType": "video/H264",
+              "sdpFmtpLine": "level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42e01f"
+            },
+            "congelamentos": 3,
+            "perda %": 50.5,
+            "buffer ms": 32
+          },
+          "quadros codificados/s": 0,
+          "ms de codificação/s": 0,
+          "encoder": null,
+          "altura enviada": null,
+          "largura enviada": null,
+          "codecsEnviados": [],
+          "degradationPreference": null,
+          "limitação": null,
+          "enviado kbps": 0,
+          "plis": 0,
+          "repasse": null,
+          "fachada/s": 0,
+          "RAM MB": 158,
+          "CPU %": 12,
+          "processos": 8
+        }
+      ]
+    }
+  },
+  "cap": {
+    "kbps": 2000,
+    "afterMs": 5000,
+    "relayMs": [
+      26374,
+      26370
+    ]
+  }
+}

@@ -1,0 +1,17 @@
+[transmissor] {
+  encoder: 'NVIDIA H.264 Encoder MFT',
+  h: 1080,
+  profile: 'main',
+  profileLevelId: '4d001f',
+  software: false,
+  source: 'synth',
+  w: 1920
+}
+
+thread 'main' (34308) panicked at src\bin\presenter.rs:621:125:
+called `Result::unwrap()` on an `Err` value: RemoteSdp("missing a=ice-ufrag/pwd")
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+Error: [transmissor] exited (101)
+    at ChildProcess.<anonymous> (file:///E:/Projetos/stream-p2p/.claude/worktrees/app-nativo-edge-benchmark-0b34a3/e2e/bench-relay.js:224:46)
+    at ChildProcess.emit (node:events:507:28)
+    at ChildProcess._handle.onexit (node:internal/child_process:294:12)

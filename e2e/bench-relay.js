@@ -8,12 +8,16 @@
 //   BENCH_MODE=native-full  scenario 3 complete: the presenter is also native (bench/native presenter:
 //                       window capture + hardware H.264). It captures a visible Edge window that paints
 //                       the clock (the "game"), which is left out of the presenter's RAM and CPU.
+//   BENCH_MODE=native-synth  native presenter without any window: synthetic 1080p60 source with the
+//                       clock (presenter --synth), headless. BENCH_ENCODER / BENCH_PROFILE pass through
+//                       to it; BENCH_LIVE="bitrate:4000,resize:1280x720" applies one change every
+//                       BENCH_LIVE_EVERY_MS during the measurement and times the viewer's reaction.
 //   BENCH_LEAN=1        scenario 2 also launches Edge with memory-saving flags
 // Writes e2e/bench/results/<mode>.json.
 import { spawn, execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { createServer } from 'node:http';
-import { homedir, tmpdir } from 'node:os';
+import { homedir, networkInterfaces, tmpdir } from 'node:os';
 import path from 'node:path';
 import dgram from 'node:dgram';
 import puppeteer from 'puppeteer-core';
@@ -26,6 +30,13 @@ const SETTLE_MS = Number(process.env.BENCH_SETTLE_MS) || 20_000;
 const MEASURE_MS = Number(process.env.BENCH_MEASURE_MS) || 15_000;
 const HTTP_PORT = 3996, TURN_PORT = 3479, PROXY_PORT = 3480;
 const EDGE = process.env.CHROME_PATH ?? 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
+// BENCH_VIEWER=firefox: only the viewer (last node) runs in headless Firefox (WebDriver BiDi);
+// native-synth + BENCH_NORELAY + BENCH_DIRECT only (Firefox would not use the loopback TURN either).
+// FIREFOX_PATH: e.g. the one from `npx @puppeteer/browsers install firefox@stable --path .scratch/browsers`.
+const VIEWER = process.env.BENCH_VIEWER ?? 'edge';
+if (!['edge', 'firefox'].includes(VIEWER) || (VIEWER === 'firefox' && !process.env.FIREFOX_PATH)) {
+  throw new Error(`BENCH_VIEWER inválido: ${JSON.stringify(VIEWER)} (edge | firefox, este exige FIREFOX_PATH)`);
+}
 const TURN_BIN = process.env.NETSIM_TURN_BIN ?? path.join(homedir(), 'go', 'bin', 'simple.exe');
 const ICE = process.env.BENCH_DIRECT ? [] : [{ urls: `turn:127.0.0.1:${PROXY_PORT}?transport=udp`, username: 'sp2p', credential: 'bench' }];
 // Per hop. 'ruim' needs the TURN path (BENCH_DIRECT unset), and the local TURN + proxy cannot
@@ -35,7 +46,8 @@ const NETWORKS = Object.fromEntries((process.env.BENCH_NETS ?? 'boa').split(',')
 // BENCH_NORELAY=1: presenter straight to the viewer, the baseline that gives the cost of each hop.
 const NODES = process.env.BENCH_NORELAY ? ['transmissor', 'espectador'] : ['transmissor', 'relay 1', 'relay 2', 'espectador'];
 const FULL = MODE === 'native-full';
-const isNative = (i) => (MODE === 'native' || FULL) && i > 0 && i < NODES.length - 1;
+const SYNTH = MODE === 'native-synth';
+const isNative = (i) => (MODE === 'native' || FULL || SYNTH) && i > 0 && i < NODES.length - 1;
 const SOURCE_TITLE = 'sp2p-bench-source';
 // BENCH_SCREEN=1: the Edge presenter captures the same source window with getDisplayMedia (like the app).
 const SCREEN = process.env.BENCH_SCREEN === '1';
@@ -45,7 +57,7 @@ if ((FULL || SCREEN || HEADFUL) && process.env.BENCH_ALLOW_VISIBLE !== '1') {
   throw new Error('Teste com janela visível bloqueado. BENCH_ALLOW_VISIBLE=1 autoriza interferência no desktop.');
 }
 // BENCH_CODEC=h264: Edge nodes prefer H.264 (hardware encoder when available) instead of VP8.
-const CODEC = FULL ? 'h264' : process.env.BENCH_CODEC ?? 'vp8';
+const CODEC = FULL || SYNTH ? 'h264' : process.env.BENCH_CODEC ?? 'vp8';
 const H264_PROFILE = CODEC === 'h264' ? '42e01f' : CODEC === 'h264any' && MODE === 'native' && NODES.length > 2 ? (process.env.BENCH_H264_PROFILE ?? '42001f') : null;
 const DEG = process.env.BENCH_DEG ?? 'balanced';
 if (!['balanced', 'maintain-framerate', 'maintain-resolution'].includes(DEG)) {
@@ -53,8 +65,20 @@ if (!['balanced', 'maintain-framerate', 'maintain-resolution'].includes(DEG)) {
 }
 // maxBitrate dos remetentes Edge; o presenter Rust (native-full) fixa 8000 próprio.
 const KBPS = Number(process.env.BENCH_KBPS ?? 8000);
-if (!Number.isInteger(KBPS) || KBPS < 100 || KBPS > 100_000 || (FULL && process.env.BENCH_KBPS !== undefined)) {
+if (!Number.isInteger(KBPS) || KBPS < 100 || KBPS > 100_000 || ((FULL || SYNTH) && process.env.BENCH_KBPS !== undefined)) {
   throw new Error(`BENCH_KBPS inválido: ${JSON.stringify(process.env.BENCH_KBPS)} (inteiro 100–100000; não se aplica a native-full)`);
+}
+const LIVE = (process.env.BENCH_LIVE ?? '').split(',').filter(Boolean).map((a) => {
+  const m = a.match(/^bitrate:(\d+)$|^resize:(\d+)x(\d+)$/);
+  if (!m || !SYNTH) throw new Error(`BENCH_LIVE inválido: ${JSON.stringify(a)} (bitrate:KBPS | resize:WxH; só native-synth)`);
+  return m[1] ? { cmd: 'bitrate', kbps: Number(m[1]) } : { cmd: 'resize', w: Number(m[2]), h: Number(m[3]) };
+});
+const LIVE_EVERY_MS = Number(process.env.BENCH_LIVE_EVERY_MS) || 5000;
+// BENCH_CAP="KBPS@MS": MS after the measurement starts, the proxy (TURN→browser leg) becomes a
+// KBPS bottleneck with a 200 ms drop-tail queue. Needs the TURN path (BENCH_DIRECT unset).
+const CAP = process.env.BENCH_CAP ? process.env.BENCH_CAP.match(/^(\d+)@(\d+)$/)?.slice(1).map(Number) : null;
+if (process.env.BENCH_CAP && (!CAP || CAP[0] < 100 || process.env.BENCH_DIRECT)) {
+  throw new Error(`BENCH_CAP inválido: ${JSON.stringify(process.env.BENCH_CAP)} (KBPS@MS, sem BENCH_DIRECT)`);
 }
 const NATIVE_DIR =path.join(import.meta.dirname, 'bench', 'native', 'target', 'release');
 const NATIVE_BIN = path.join(NATIVE_DIR, 'sp2p-native-bench.exe');
@@ -106,7 +130,8 @@ const http = createServer((req, res) => {
 }).listen(HTTP_PORT, '127.0.0.1');
 
 // ── TURN + impairing proxy on the TURN→browser leg (one degradation per hop) ──
-const impair = { delay: 0, jitter: 0, loss: 0 };
+const impair = { delay: 0, jitter: 0, loss: 0, kbps: 0 };
+let linkFree = 0; // BENCH_CAP: when the bottleneck finishes sending what is queued
 const front = dgram.createSocket('udp4');
 const backs = new Map();
 front.on('message', (msg, from) => {
@@ -116,7 +141,14 @@ front.on('message', (msg, from) => {
     back = dgram.createSocket('udp4');
     back.on('message', (m) => {
       if (Math.random() < impair.loss) return;
-      const ms = Math.max(0, impair.delay + (Math.random() * 2 - 1) * impair.jitter);
+      let ms = Math.max(0, impair.delay + (Math.random() * 2 - 1) * impair.jitter);
+      if (impair.kbps) {
+        const now = performance.now();
+        const queued = Math.max(0, linkFree - now);
+        if (queued > 200) return;
+        linkFree = now + queued + (m.length * 8) / impair.kbps;
+        ms += linkFree - now;
+      }
       ms ? setTimeout(() => front.send(m, from.port, from.address), ms) : front.send(m, from.port, from.address);
     });
     backs.set(key, back);
@@ -210,6 +242,7 @@ try {
         name, pid: proc.pid, native: true, isReady,
         onSig: (from, msg) => send({ from, ...msg }),
         child: (c) => send({ cmd: 'child', id: c }),
+        command: (o) => send(o),
         stats: () => new Promise((resolve, reject) => {
           if (failure) return reject(failure);
           waiting.push({ resolve, reject });
@@ -228,6 +261,17 @@ try {
     if (isNative(i)) {
       // h264any permite negociar o perfil do relay; não determina o encoder usado pelo Edge.
       nodes.push(spawnNative(NATIVE_BIN, [], { SP2P_CODEC: CODEC.startsWith('h264') ? 'h264' : CODEC, SP2P_H264_PROFILE: H264_PROFILE ?? '42e01f' }));
+      continue;
+    }
+    if (SYNTH && i === 0) {
+      // Firefox ignores 127.0.0.1 host candidates (even with ice.loopback): bind a LAN IPv4
+      // (SP2P_BIND_IP wins; else prefer 192.168.x — Tailscale/Hyper-V IPs failed ICE here).
+      const v4 = Object.values(networkInterfaces()).flat().filter((a) => a.family === 'IPv4' && !a.internal).map((a) => a.address);
+      const lan = process.env.SP2P_BIND_IP ?? v4.find((a) => a.startsWith('192.168.')) ?? v4[0];
+      if (VIEWER === 'firefox' && (!lan || !process.env.BENCH_DIRECT)) throw new Error('BENCH_VIEWER=firefox exige BENCH_DIRECT=1 e um IPv4 de rede local');
+      const n = spawnNative(PRESENTER_BIN, ['--synth'], VIEWER === 'firefox' ? { SP2P_BIND_IP: lan } : {});
+      nodes.push(n);
+      presenterReady = await waitFor(n.isReady);
       continue;
     }
     if ((FULL || SCREEN) && i === 0) {
@@ -251,7 +295,10 @@ try {
         continue;
       }
     }
-    const b = await puppeteer.launch({
+    const b = await puppeteer.launch(VIEWER === 'firefox' && i === NODES.length - 1 ? {
+      browser: 'firefox', executablePath: process.env.FIREFOX_PATH, headless: true, userDataDir: path.join(profiles, String(i)),
+      extraPrefsFirefox: { 'media.peerconnection.ice.loopback': true, 'media.peerconnection.ice.obfuscate_host_addresses': false, 'media.autoplay.default': 0, 'media.autoplay.blocking_policy': 0 },
+    } : {
       executablePath: EDGE, headless: HEADFUL ? false : 'new', userDataDir: path.join(profiles, String(i)),
       ...(HEADFUL ? { waitForInitialPage: false, defaultViewport: null } : {}),
       args: [...(HEADFUL ? ['--no-startup-window', '--force-device-scale-factor=1'] : []), ...(SCREEN && i === 0 ? [`--auto-select-desktop-capture-source=${SOURCE_TITLE}`] : []), '--autoplay-policy=no-user-gesture-required', '--disable-background-timer-throttling', '--disable-renderer-backgrounding',
@@ -281,13 +328,46 @@ try {
   const results = { label: LABEL, mode: MODE, lean: LEAN, codec: CODEC, profile: H264_PROFILE,
     degradationPreference: DEG, kbps: KBPS, screen: FULL || SCREEN, direct: Boolean(process.env.BENCH_DIRECT), norelay: NODES.length === 2,
     settleMs: SETTLE_MS, measureMs: MEASURE_MS, presenterReady, secondaryMonitor,
+    encoderEnv: SYNTH ? { BENCH_ENCODER: process.env.BENCH_ENCODER ?? null, BENCH_PROFILE: process.env.BENCH_PROFILE ?? null } : undefined,
+    live: LIVE.length ? { actions: LIVE, everyMs: LIVE_EVERY_MS, events: [] } : undefined,
     edge: await waitFor(browsers[0].version()), native: MODE.startsWith('native') ? NATIVE_BIN : null, at: new Date().toISOString(), networks: {} };
+  // One live change: send it, then poll the viewer until it shows the effect (or 5 s).
+  async function liveChange(action, events) {
+    await sleep(LIVE_EVERY_MS);
+    const viewer = nodes.at(-1);
+    const before = await waitFor(viewer.stats());
+    const sentAt = performance.now();
+    nodes[0].command(action);
+    const ev = { ...action, sentAtMs: Math.round(sentAt), before: { w: before.in?.w, h: before.in?.h, frames: before.in?.frames, freezes: before.in?.freezes }, samples: [] };
+    for (let t = 0; t < 5000; t += 50) {
+      await sleep(50);
+      const s = await waitFor(viewer.stats());
+      ev.samples.push({ ms: Math.round(s.at - sentAt), w: s.in?.w, h: s.in?.h, frames: s.in?.frames, bytes: s.in?.bytes, freezes: s.in?.freezes, keys: s.in?.keys });
+    }
+    const first = action.cmd === 'resize' ? ev.samples.find((x) => x.w === action.w && x.h === action.h) : null;
+    ev.viewerSwitchMs = first?.ms ?? null;
+    // Longest stretch without a new decoded frame after the command.
+    let last = { ms: 0, frames: before.in?.frames }, gap = 0;
+    for (const x of ev.samples) { if (x.frames !== last.frames) { gap = Math.max(gap, x.ms - last.ms); last = x; } }
+    ev.maxFrameGapMs = gap;
+    ev.freezesDuring = (ev.samples.at(-1)?.freezes ?? 0) - (before.in?.freezes ?? 0);
+    events.push(ev);
+    console.log('[live]', action, { viewerSwitchMs: ev.viewerSwitchMs, maxFrameGapMs: gap, freezes: ev.freezesDuring });
+  }
   for (const [net, cfg] of Object.entries(NETWORKS)) {
-    Object.assign(impair, { delay: 0, jitter: 0, loss: 0 }, cfg);
+    Object.assign(impair, { delay: 0, jitter: 0, loss: 0, kbps: 0 }, cfg);
     await sleep(SETTLE_MS);
     const s0 = await waitFor(Promise.all(nodes.map((n) => n.stats())));
     const t0 = processTable();
-    await sleep(MEASURE_MS);
+    const measureEnd = performance.now() + MEASURE_MS;
+    for (const action of LIVE) await liveChange(action, results.live.events);
+    if (CAP) {
+      await sleep(CAP[1]);
+      impair.kbps = CAP[0];
+      // relay clock (ms since it started) at the drop, to read its bwe series against
+      results.cap = { kbps: CAP[0], afterMs: CAP[1], relayMs: (await waitFor(Promise.all(nodes.slice(1, -1).map((n) => n.stats())))).map((x) => x.native?.ms ?? null) };
+    }
+    await sleep(Math.max(0, measureEnd - performance.now()));
     const s1 = await waitFor(Promise.all(nodes.map((n) => n.stats())));
     const t1 = processTable();
     if (process.env.BENCH_SNAPSHOT) { // debug: what the viewer shows

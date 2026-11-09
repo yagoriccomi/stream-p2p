@@ -174,6 +174,14 @@ test('janelas visíveis exigem autorização explícita antes dos efeitos colate
   }
 });
 
+test('BENCH_VIEWER: edge padrão; firefox exige FIREFOX_PATH; outro valor falha', () => {
+  assert.equal(runInNewContext('VIEWER', context()), 'edge');
+  assert.equal(runInNewContext('VIEWER', context({ BENCH_VIEWER: 'firefox', FIREFOX_PATH: '/ff' })), 'firefox');
+  for (const env of [{ BENCH_VIEWER: 'firefox' }, { BENCH_VIEWER: 'safari' }, { BENCH_VIEWER: '' }]) {
+    assert.throws(() => context(env), /BENCH_VIEWER inválido/);
+  }
+});
+
 test('navegador padrão permanece headless e coleta latência sem tomar foco', async () => {
   const ctx = context();
   ctx.HEADFUL = false;

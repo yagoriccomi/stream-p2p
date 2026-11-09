@@ -1,6 +1,6 @@
 ---
 Type: prototype
-Status: claimed
+Status: resolved
 Blocked by: 01, 02 (resolvidos)
 ---
 

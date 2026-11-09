@@ -1,0 +1,24 @@
+[transmissor] {
+  encoder: 'NVIDIA H.264 Encoder MFT',
+  h: 1080,
+  profile: 'constrained-baseline',
+  profileLevelId: '42e01f',
+  software: false,
+  source: 'synth',
+  w: 1920
+}
+[live] { cmd: 'bitrate', kbps: 4000 } { viewerSwitchMs: null, maxFrameGapMs: 53, freezes: 0 }
+ProcessOutput: Error { code: HRESULT(0x8000FFFF), message: "Falha catastrófica" }
+[live] { cmd: 'resize', w: 1280, h: 720 } { viewerSwitchMs: -1680, maxFrameGapMs: 54, freezes: 0 }
+[live] { cmd: 'bitrate', kbps: 8000 } { viewerSwitchMs: null, maxFrameGapMs: 53, freezes: 0 }
+[live] { cmd: 'resize', w: 1920, h: 1080 } { viewerSwitchMs: -1680, maxFrameGapMs: 54, freezes: 0 }
+
+fb13-live-hw-cb-2 · rede boa
+┌─────────┬───────────────┬────────┬───────────┬───────────┬───────────┬───────────┬───────┬────────┬───────┐
+│ (index) │ nó            │ lat ms │ fps       │ kbps      │ altura    │ cong      │ cod/s │ RAM MB │ CPU % │
+├─────────┼───────────────┼────────┼───────────┼───────────┼───────────┼───────────┼───────┼────────┼───────┤
+│ 0       │ 'transmissor' │ 0      │ undefined │ undefined │ undefined │ undefined │ 0     │ 48     │ 7     │
+│ 1       │ 'espectador'  │ 42     │ 60        │ 6256      │ 1080      │ 0         │ 0     │ 145    │ 15    │
+└─────────┴───────────────┴────────┴───────────┴───────────┴───────────┴───────────┴───────┴────────┴───────┘
+
+BENCH OK → e2e/bench/results/fb13-live-hw-cb-2.json

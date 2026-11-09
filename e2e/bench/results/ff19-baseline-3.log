@@ -1,0 +1,19 @@
+[transmissor] {
+  encoder: 'NVIDIA H.264 Encoder MFT',
+  h: 1080,
+  profile: 'baseline',
+  profileLevelId: '42001f',
+  software: false,
+  source: 'synth',
+  w: 1920
+}
+
+ff19-baseline-3 · rede boa
+┌─────────┬───────────────┬────────┬───────────┬───────────┬───────────┬───────────┬───────┬────────┬───────┐
+│ (index) │ nó            │ lat ms │ fps       │ kbps      │ altura    │ cong      │ cod/s │ RAM MB │ CPU % │
+├─────────┼───────────────┼────────┼───────────┼───────────┼───────────┼───────────┼───────┼────────┼───────┤
+│ 0       │ 'transmissor' │ 0      │ undefined │ undefined │ undefined │ undefined │ 0     │ 38     │ 9     │
+│ 1       │ 'espectador'  │ 35     │ 60        │ 8021      │ 1080      │ 0         │ 0     │ 442    │ 80    │
+└─────────┴───────────────┴────────┴───────────┴───────────┴───────────┴───────────┴───────┴────────┴───────┘
+
+BENCH OK → e2e/bench/results/ff19-baseline-3.json

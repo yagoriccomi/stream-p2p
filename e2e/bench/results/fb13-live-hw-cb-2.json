@@ -1,0 +1,3891 @@
+{
+  "label": "fb13-live-hw-cb-2",
+  "mode": "native-synth",
+  "lean": false,
+  "codec": "h264",
+  "profile": "42e01f",
+  "degradationPreference": "balanced",
+  "kbps": 8000,
+  "screen": false,
+  "direct": true,
+  "norelay": true,
+  "settleMs": 20000,
+  "measureMs": 15000,
+  "presenterReady": {
+    "encoder": "NVIDIA H.264 Encoder MFT",
+    "h": 1080,
+    "profile": "constrained-baseline",
+    "profileLevelId": "42e01f",
+    "software": false,
+    "source": "synth",
+    "w": 1920
+  },
+  "secondaryMonitor": null,
+  "encoderEnv": {
+    "BENCH_ENCODER": null,
+    "BENCH_PROFILE": null
+  },
+  "live": {
+    "actions": [
+      {
+        "cmd": "bitrate",
+        "kbps": 4000
+      },
+      {
+        "cmd": "resize",
+        "w": 1280,
+        "h": 720
+      },
+      {
+        "cmd": "bitrate",
+        "kbps": 8000
+      },
+      {
+        "cmd": "resize",
+        "w": 1920,
+        "h": 1080
+      }
+    ],
+    "everyMs": 5000,
+    "events": [
+      {
+        "cmd": "bitrate",
+        "kbps": 4000,
+        "sentAtMs": 27772,
+        "before": {
+          "w": 1920,
+          "h": 1080,
+          "frames": 1526,
+          "freezes": 0
+        },
+        "samples": [
+          {
+            "ms": -1680,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1529,
+            "bytes": 25717972,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": -1629,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1532,
+            "bytes": 25733381,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": -1578,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1535,
+            "bytes": 25761497,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": -1527,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1538,
+            "bytes": 25785491,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": -1476,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1541,
+            "bytes": 25804130,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": -1425,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1544,
+            "bytes": 25845788,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": -1374,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1547,
+            "bytes": 25853473,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": -1323,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1550,
+            "bytes": 25862756,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": -1272,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1553,
+            "bytes": 25872345,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": -1221,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1557,
+            "bytes": 25902724,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": -1170,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1560,
+            "bytes": 25918846,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": -1118,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1562,
+            "bytes": 25942652,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": -1067,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1566,
+            "bytes": 25973312,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": -1016,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1569,
+            "bytes": 25986144,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": -963,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1572,
+            "bytes": 26004208,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": -912,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1574,
+            "bytes": 26034222,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": -861,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1578,
+            "bytes": 26052116,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": -810,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1581,
+            "bytes": 26066442,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": -759,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1584,
+            "bytes": 26082291,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": -708,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1588,
+            "bytes": 26112046,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": -656,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1591,
+            "bytes": 26122047,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": -603,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1593,
+            "bytes": 26142673,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": -552,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1597,
+            "bytes": 26160024,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": -501,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1600,
+            "bytes": 26188685,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": -448,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1603,
+            "bytes": 26208843,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": -396,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1605,
+            "bytes": 26264195,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": -345,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1609,
+            "bytes": 26272474,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": -294,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1612,
+            "bytes": 26280007,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": -243,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1615,
+            "bytes": 26288700,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": -192,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1619,
+            "bytes": 26305388,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": -141,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1622,
+            "bytes": 26329533,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": -91,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1624,
+            "bytes": 26353768,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": -39,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1627,
+            "bytes": 26374021,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 12,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1631,
+            "bytes": 26407498,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 63,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1634,
+            "bytes": 26420736,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 114,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1636,
+            "bytes": 26436914,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 166,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1639,
+            "bytes": 26468790,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 217,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1643,
+            "bytes": 26491003,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 268,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1646,
+            "bytes": 26513481,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 319,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1649,
+            "bytes": 26549215,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 371,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1652,
+            "bytes": 26558588,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 423,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1655,
+            "bytes": 26568158,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 476,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1658,
+            "bytes": 26597614,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 527,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1662,
+            "bytes": 26612701,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 578,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1665,
+            "bytes": 26647969,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 629,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1667,
+            "bytes": 26664238,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 680,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1670,
+            "bytes": 26714174,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 731,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1674,
+            "bytes": 26722399,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 782,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1677,
+            "bytes": 26730653,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 833,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1680,
+            "bytes": 26740664,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 885,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1683,
+            "bytes": 26768902,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 938,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1686,
+            "bytes": 26801014,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 989,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1689,
+            "bytes": 26817998,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 1040,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1692,
+            "bytes": 26856463,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 1092,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1696,
+            "bytes": 26869843,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 1143,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1698,
+            "bytes": 26884071,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 1194,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1701,
+            "bytes": 26898554,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 1246,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1705,
+            "bytes": 26931501,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 1297,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1708,
+            "bytes": 26955843,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 1350,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1711,
+            "bytes": 26971158,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 1402,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1714,
+            "bytes": 27017878,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 1453,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1717,
+            "bytes": 27026734,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 1504,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1720,
+            "bytes": 27051824,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 1557,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1723,
+            "bytes": 27069641,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 1608,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1727,
+            "bytes": 27091091,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 1659,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1729,
+            "bytes": 27116242,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 1710,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1732,
+            "bytes": 27133467,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 1762,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1736,
+            "bytes": 27193774,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 1814,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1739,
+            "bytes": 27201462,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 1866,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1742,
+            "bytes": 27209258,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 1918,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1745,
+            "bytes": 27219488,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 1970,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1748,
+            "bytes": 27258867,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 2022,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1751,
+            "bytes": 27283157,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 2075,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1755,
+            "bytes": 27303157,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 2127,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1757,
+            "bytes": 27336509,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 2178,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1760,
+            "bytes": 27350476,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 2230,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1764,
+            "bytes": 27364283,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 2283,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1767,
+            "bytes": 27396895,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 2334,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1770,
+            "bytes": 27418336,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 2385,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1773,
+            "bytes": 27439907,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 2436,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1776,
+            "bytes": 27453829,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 2487,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1779,
+            "bytes": 27489960,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 2539,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1782,
+            "bytes": 27506017,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 2590,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1786,
+            "bytes": 27521827,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 2643,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1788,
+            "bytes": 27542789,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 2695,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1791,
+            "bytes": 27566538,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 2747,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1795,
+            "bytes": 27594300,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 2799,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1798,
+            "bytes": 27614941,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 2852,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1800,
+            "bytes": 27850269,
+            "freezes": 0,
+            "keys": 3
+          },
+          {
+            "ms": 2903,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1804,
+            "bytes": 27874324,
+            "freezes": 0,
+            "keys": 4
+          },
+          {
+            "ms": 2954,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1807,
+            "bytes": 27945783,
+            "freezes": 0,
+            "keys": 4
+          },
+          {
+            "ms": 3005,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1810,
+            "bytes": 27968111,
+            "freezes": 0,
+            "keys": 4
+          },
+          {
+            "ms": 3056,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1813,
+            "bytes": 27984044,
+            "freezes": 0,
+            "keys": 4
+          },
+          {
+            "ms": 3108,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1816,
+            "bytes": 28034394,
+            "freezes": 0,
+            "keys": 4
+          },
+          {
+            "ms": 3160,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1819,
+            "bytes": 28060803,
+            "freezes": 0,
+            "keys": 4
+          },
+          {
+            "ms": 3211,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1822,
+            "bytes": 28098176,
+            "freezes": 0,
+            "keys": 4
+          },
+          {
+            "ms": 3263,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1826,
+            "bytes": 28117065,
+            "freezes": 0,
+            "keys": 4
+          },
+          {
+            "ms": 3314,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1829,
+            "bytes": 28136841,
+            "freezes": 0,
+            "keys": 4
+          },
+          {
+            "ms": 3365,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1831,
+            "bytes": 28180592,
+            "freezes": 0,
+            "keys": 4
+          },
+          {
+            "ms": 3416,
+            "w": 1920,
+            "h": 1080,
+            "frames": 1834,
+            "bytes": 28212046,
+            "freezes": 0,
+            "keys": 4
+          }
+        ],
+        "viewerSwitchMs": null,
+        "maxFrameGapMs": 53,
+        "freezesDuring": 0
+      },
+      {
+        "cmd": "resize",
+        "w": 1280,
+        "h": 720,
+        "sentAtMs": 37920,
+        "before": {
+          "w": 1920,
+          "h": 1080,
+          "frames": 2135,
+          "freezes": 0
+        },
+        "samples": [
+          {
+            "ms": -1680,
+            "w": 1280,
+            "h": 720,
+            "frames": 2137,
+            "bytes": 30918802,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": -1628,
+            "w": 1280,
+            "h": 720,
+            "frames": 2140,
+            "bytes": 30936544,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": -1577,
+            "w": 1280,
+            "h": 720,
+            "frames": 2143,
+            "bytes": 30939912,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": -1526,
+            "w": 1280,
+            "h": 720,
+            "frames": 2146,
+            "bytes": 30947620,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": -1474,
+            "w": 1280,
+            "h": 720,
+            "frames": 2149,
+            "bytes": 30982838,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": -1423,
+            "w": 1280,
+            "h": 720,
+            "frames": 2152,
+            "bytes": 30991963,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": -1372,
+            "w": 1280,
+            "h": 720,
+            "frames": 2156,
+            "bytes": 31002157,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": -1321,
+            "w": 1280,
+            "h": 720,
+            "frames": 2158,
+            "bytes": 31022698,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": -1269,
+            "w": 1280,
+            "h": 720,
+            "frames": 2161,
+            "bytes": 31059219,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": -1218,
+            "w": 1280,
+            "h": 720,
+            "frames": 2164,
+            "bytes": 31070292,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": -1166,
+            "w": 1280,
+            "h": 720,
+            "frames": 2168,
+            "bytes": 31081941,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": -1115,
+            "w": 1280,
+            "h": 720,
+            "frames": 2171,
+            "bytes": 31106497,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": -1062,
+            "w": 1280,
+            "h": 720,
+            "frames": 2173,
+            "bytes": 31133981,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": -1009,
+            "w": 1280,
+            "h": 720,
+            "frames": 2177,
+            "bytes": 31163023,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": -957,
+            "w": 1280,
+            "h": 720,
+            "frames": 2180,
+            "bytes": 31181330,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": -906,
+            "w": 1280,
+            "h": 720,
+            "frames": 2183,
+            "bytes": 31218647,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": -854,
+            "w": 1280,
+            "h": 720,
+            "frames": 2187,
+            "bytes": 31233944,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": -801,
+            "w": 1280,
+            "h": 720,
+            "frames": 2189,
+            "bytes": 31268884,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": -750,
+            "w": 1280,
+            "h": 720,
+            "frames": 2192,
+            "bytes": 31290272,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": -699,
+            "w": 1280,
+            "h": 720,
+            "frames": 2196,
+            "bytes": 31316321,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": -649,
+            "w": 1280,
+            "h": 720,
+            "frames": 2199,
+            "bytes": 31339987,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": -596,
+            "w": 1280,
+            "h": 720,
+            "frames": 2202,
+            "bytes": 31373661,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": -545,
+            "w": 1280,
+            "h": 720,
+            "frames": 2204,
+            "bytes": 31401625,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": -492,
+            "w": 1280,
+            "h": 720,
+            "frames": 2208,
+            "bytes": 31428210,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": -441,
+            "w": 1280,
+            "h": 720,
+            "frames": 2211,
+            "bytes": 31460114,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": -390,
+            "w": 1280,
+            "h": 720,
+            "frames": 2214,
+            "bytes": 31492963,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": -338,
+            "w": 1280,
+            "h": 720,
+            "frames": 2217,
+            "bytes": 31521245,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": -288,
+            "w": 1280,
+            "h": 720,
+            "frames": 2220,
+            "bytes": 31542354,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": -236,
+            "w": 1280,
+            "h": 720,
+            "frames": 2223,
+            "bytes": 31578304,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": -186,
+            "w": 1280,
+            "h": 720,
+            "frames": 2226,
+            "bytes": 31610565,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": -134,
+            "w": 1280,
+            "h": 720,
+            "frames": 2230,
+            "bytes": 31630625,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": -83,
+            "w": 1280,
+            "h": 720,
+            "frames": 2233,
+            "bytes": 31664916,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": -31,
+            "w": 1280,
+            "h": 720,
+            "frames": 2235,
+            "bytes": 31695460,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 22,
+            "w": 1280,
+            "h": 720,
+            "frames": 2239,
+            "bytes": 31725182,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 73,
+            "w": 1280,
+            "h": 720,
+            "frames": 2242,
+            "bytes": 31744676,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 124,
+            "w": 1280,
+            "h": 720,
+            "frames": 2245,
+            "bytes": 31768748,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 177,
+            "w": 1280,
+            "h": 720,
+            "frames": 2248,
+            "bytes": 31814303,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 229,
+            "w": 1280,
+            "h": 720,
+            "frames": 2251,
+            "bytes": 31828148,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 279,
+            "w": 1280,
+            "h": 720,
+            "frames": 2254,
+            "bytes": 31863267,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 330,
+            "w": 1280,
+            "h": 720,
+            "frames": 2257,
+            "bytes": 31880211,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 381,
+            "w": 1280,
+            "h": 720,
+            "frames": 2260,
+            "bytes": 31909950,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 432,
+            "w": 1280,
+            "h": 720,
+            "frames": 2263,
+            "bytes": 31933770,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 484,
+            "w": 1280,
+            "h": 720,
+            "frames": 2266,
+            "bytes": 31958437,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 535,
+            "w": 1280,
+            "h": 720,
+            "frames": 2270,
+            "bytes": 31997693,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 587,
+            "w": 1280,
+            "h": 720,
+            "frames": 2273,
+            "bytes": 32014594,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 639,
+            "w": 1280,
+            "h": 720,
+            "frames": 2276,
+            "bytes": 32051274,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 690,
+            "w": 1280,
+            "h": 720,
+            "frames": 2279,
+            "bytes": 32081523,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 742,
+            "w": 1280,
+            "h": 720,
+            "frames": 2282,
+            "bytes": 32108147,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 792,
+            "w": 1280,
+            "h": 720,
+            "frames": 2285,
+            "bytes": 32120781,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 844,
+            "w": 1280,
+            "h": 720,
+            "frames": 2288,
+            "bytes": 32174652,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 894,
+            "w": 1280,
+            "h": 720,
+            "frames": 2291,
+            "bytes": 32189672,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 945,
+            "w": 1280,
+            "h": 720,
+            "frames": 2294,
+            "bytes": 32213252,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 996,
+            "w": 1280,
+            "h": 720,
+            "frames": 2297,
+            "bytes": 32240987,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 1048,
+            "w": 1280,
+            "h": 720,
+            "frames": 2300,
+            "bytes": 32263328,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 1099,
+            "w": 1280,
+            "h": 720,
+            "frames": 2304,
+            "bytes": 32293209,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 1151,
+            "w": 1280,
+            "h": 720,
+            "frames": 2306,
+            "bytes": 32312062,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 1202,
+            "w": 1280,
+            "h": 720,
+            "frames": 2309,
+            "bytes": 32370892,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 1253,
+            "w": 1280,
+            "h": 720,
+            "frames": 2313,
+            "bytes": 32380559,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 1305,
+            "w": 1280,
+            "h": 720,
+            "frames": 2316,
+            "bytes": 32409594,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 1358,
+            "w": 1280,
+            "h": 720,
+            "frames": 2319,
+            "bytes": 32437268,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 1409,
+            "w": 1280,
+            "h": 720,
+            "frames": 2322,
+            "bytes": 32455535,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 1461,
+            "w": 1280,
+            "h": 720,
+            "frames": 2325,
+            "bytes": 32484886,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 1512,
+            "w": 1280,
+            "h": 720,
+            "frames": 2328,
+            "bytes": 32510704,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 1564,
+            "w": 1280,
+            "h": 720,
+            "frames": 2331,
+            "bytes": 32547574,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 1615,
+            "w": 1280,
+            "h": 720,
+            "frames": 2335,
+            "bytes": 32566674,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 1666,
+            "w": 1280,
+            "h": 720,
+            "frames": 2337,
+            "bytes": 32585806,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 1718,
+            "w": 1280,
+            "h": 720,
+            "frames": 2340,
+            "bytes": 32619355,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 1769,
+            "w": 1280,
+            "h": 720,
+            "frames": 2344,
+            "bytes": 32653465,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 1820,
+            "w": 1280,
+            "h": 720,
+            "frames": 2347,
+            "bytes": 32671905,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 1871,
+            "w": 1280,
+            "h": 720,
+            "frames": 2350,
+            "bytes": 32705959,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 1921,
+            "w": 1280,
+            "h": 720,
+            "frames": 2352,
+            "bytes": 32736399,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 1973,
+            "w": 1280,
+            "h": 720,
+            "frames": 2356,
+            "bytes": 32757585,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 2024,
+            "w": 1280,
+            "h": 720,
+            "frames": 2359,
+            "bytes": 32789092,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 2075,
+            "w": 1280,
+            "h": 720,
+            "frames": 2362,
+            "bytes": 32807786,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 2126,
+            "w": 1280,
+            "h": 720,
+            "frames": 2365,
+            "bytes": 32821962,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 2178,
+            "w": 1280,
+            "h": 720,
+            "frames": 2368,
+            "bytes": 32858458,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 2228,
+            "w": 1280,
+            "h": 720,
+            "frames": 2371,
+            "bytes": 32885678,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 2280,
+            "w": 1280,
+            "h": 720,
+            "frames": 2374,
+            "bytes": 32929008,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 2334,
+            "w": 1280,
+            "h": 720,
+            "frames": 2378,
+            "bytes": 32942434,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 2385,
+            "w": 1280,
+            "h": 720,
+            "frames": 2380,
+            "bytes": 32973497,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 2436,
+            "w": 1280,
+            "h": 720,
+            "frames": 2383,
+            "bytes": 32999320,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 2490,
+            "w": 1280,
+            "h": 720,
+            "frames": 2387,
+            "bytes": 33011536,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 2541,
+            "w": 1280,
+            "h": 720,
+            "frames": 2390,
+            "bytes": 33049333,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 2592,
+            "w": 1280,
+            "h": 720,
+            "frames": 2393,
+            "bytes": 33068965,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 2645,
+            "w": 1280,
+            "h": 720,
+            "frames": 2396,
+            "bytes": 33111072,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 2698,
+            "w": 1280,
+            "h": 720,
+            "frames": 2399,
+            "bytes": 33128742,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 2749,
+            "w": 1280,
+            "h": 720,
+            "frames": 2402,
+            "bytes": 33156557,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 2802,
+            "w": 1280,
+            "h": 720,
+            "frames": 2406,
+            "bytes": 33189549,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 2856,
+            "w": 1280,
+            "h": 720,
+            "frames": 2409,
+            "bytes": 33207287,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 2909,
+            "w": 1280,
+            "h": 720,
+            "frames": 2412,
+            "bytes": 33238582,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 2960,
+            "w": 1280,
+            "h": 720,
+            "frames": 2415,
+            "bytes": 33270117,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 3010,
+            "w": 1280,
+            "h": 720,
+            "frames": 2418,
+            "bytes": 33301941,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 3061,
+            "w": 1280,
+            "h": 720,
+            "frames": 2421,
+            "bytes": 33319128,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 3112,
+            "w": 1280,
+            "h": 720,
+            "frames": 2424,
+            "bytes": 33351258,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 3163,
+            "w": 1280,
+            "h": 720,
+            "frames": 2427,
+            "bytes": 33371590,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 3217,
+            "w": 1280,
+            "h": 720,
+            "frames": 2430,
+            "bytes": 33393778,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 3268,
+            "w": 1280,
+            "h": 720,
+            "frames": 2434,
+            "bytes": 33421817,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 3319,
+            "w": 1280,
+            "h": 720,
+            "frames": 2437,
+            "bytes": 33446284,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 3372,
+            "w": 1280,
+            "h": 720,
+            "frames": 2439,
+            "bytes": 33488707,
+            "freezes": 0,
+            "keys": 5
+          },
+          {
+            "ms": 3424,
+            "w": 1280,
+            "h": 720,
+            "frames": 2442,
+            "bytes": 33497797,
+            "freezes": 0,
+            "keys": 5
+          }
+        ],
+        "viewerSwitchMs": -1680,
+        "maxFrameGapMs": 54,
+        "freezesDuring": 0
+      },
+      {
+        "cmd": "bitrate",
+        "kbps": 8000,
+        "sentAtMs": 48077,
+        "before": {
+          "w": 1280,
+          "h": 720,
+          "frames": 2743,
+          "freezes": 0
+        },
+        "samples": [
+          {
+            "ms": -1680,
+            "w": 1280,
+            "h": 720,
+            "frames": 2746,
+            "bytes": 36125663,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": -1629,
+            "w": 1280,
+            "h": 720,
+            "frames": 2749,
+            "bytes": 36158119,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": -1578,
+            "w": 1280,
+            "h": 720,
+            "frames": 2752,
+            "bytes": 36202107,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": -1527,
+            "w": 1280,
+            "h": 720,
+            "frames": 2755,
+            "bytes": 36243402,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": -1476,
+            "w": 1280,
+            "h": 720,
+            "frames": 2758,
+            "bytes": 36306850,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": -1425,
+            "w": 1280,
+            "h": 720,
+            "frames": 2761,
+            "bytes": 36345575,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": -1373,
+            "w": 1280,
+            "h": 720,
+            "frames": 2764,
+            "bytes": 36388515,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": -1321,
+            "w": 1280,
+            "h": 720,
+            "frames": 2768,
+            "bytes": 36429720,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": -1268,
+            "w": 1280,
+            "h": 720,
+            "frames": 2770,
+            "bytes": 36493601,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": -1217,
+            "w": 1280,
+            "h": 720,
+            "frames": 2773,
+            "bytes": 36542923,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": -1166,
+            "w": 1280,
+            "h": 720,
+            "frames": 2777,
+            "bytes": 36583692,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": -1113,
+            "w": 1280,
+            "h": 720,
+            "frames": 2780,
+            "bytes": 36639005,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": -1062,
+            "w": 1280,
+            "h": 720,
+            "frames": 2782,
+            "bytes": 36679912,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": -1011,
+            "w": 1280,
+            "h": 720,
+            "frames": 2786,
+            "bytes": 36729905,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": -960,
+            "w": 1280,
+            "h": 720,
+            "frames": 2789,
+            "bytes": 36784447,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": -908,
+            "w": 1280,
+            "h": 720,
+            "frames": 2792,
+            "bytes": 36824245,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": -857,
+            "w": 1280,
+            "h": 720,
+            "frames": 2796,
+            "bytes": 36874479,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": -806,
+            "w": 1280,
+            "h": 720,
+            "frames": 2799,
+            "bytes": 36936216,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": -755,
+            "w": 1280,
+            "h": 720,
+            "frames": 2801,
+            "bytes": 36971872,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": -702,
+            "w": 1280,
+            "h": 720,
+            "frames": 2804,
+            "bytes": 37030131,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": -651,
+            "w": 1280,
+            "h": 720,
+            "frames": 2808,
+            "bytes": 37077251,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": -600,
+            "w": 1280,
+            "h": 720,
+            "frames": 2811,
+            "bytes": 37121014,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": -549,
+            "w": 1280,
+            "h": 720,
+            "frames": 2814,
+            "bytes": 37164801,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": -496,
+            "w": 1280,
+            "h": 720,
+            "frames": 2818,
+            "bytes": 37207322,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": -445,
+            "w": 1280,
+            "h": 720,
+            "frames": 2820,
+            "bytes": 37255610,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": -394,
+            "w": 1280,
+            "h": 720,
+            "frames": 2823,
+            "bytes": 37310808,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": -343,
+            "w": 1280,
+            "h": 720,
+            "frames": 2826,
+            "bytes": 37358879,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": -292,
+            "w": 1280,
+            "h": 720,
+            "frames": 2830,
+            "bytes": 37393013,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": -241,
+            "w": 1280,
+            "h": 720,
+            "frames": 2833,
+            "bytes": 37441410,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": -189,
+            "w": 1280,
+            "h": 720,
+            "frames": 2835,
+            "bytes": 37497940,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": -138,
+            "w": 1280,
+            "h": 720,
+            "frames": 2839,
+            "bytes": 37525086,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": -87,
+            "w": 1280,
+            "h": 720,
+            "frames": 2842,
+            "bytes": 37584144,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": -34,
+            "w": 1280,
+            "h": 720,
+            "frames": 2845,
+            "bytes": 37633117,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 17,
+            "w": 1280,
+            "h": 720,
+            "frames": 2848,
+            "bytes": 37681551,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 68,
+            "w": 1280,
+            "h": 720,
+            "frames": 2851,
+            "bytes": 37708862,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 119,
+            "w": 1280,
+            "h": 720,
+            "frames": 2854,
+            "bytes": 37780494,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 171,
+            "w": 1280,
+            "h": 720,
+            "frames": 2857,
+            "bytes": 37816977,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 222,
+            "w": 1280,
+            "h": 720,
+            "frames": 2861,
+            "bytes": 37867465,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 273,
+            "w": 1280,
+            "h": 720,
+            "frames": 2863,
+            "bytes": 37914469,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 324,
+            "w": 1280,
+            "h": 720,
+            "frames": 2866,
+            "bytes": 37964453,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 375,
+            "w": 1280,
+            "h": 720,
+            "frames": 2869,
+            "bytes": 38004951,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 427,
+            "w": 1280,
+            "h": 720,
+            "frames": 2873,
+            "bytes": 38054893,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 478,
+            "w": 1280,
+            "h": 720,
+            "frames": 2876,
+            "bytes": 38097072,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 529,
+            "w": 1280,
+            "h": 720,
+            "frames": 2879,
+            "bytes": 38155038,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 580,
+            "w": 1280,
+            "h": 720,
+            "frames": 2881,
+            "bytes": 38182608,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 631,
+            "w": 1280,
+            "h": 720,
+            "frames": 2885,
+            "bytes": 38268051,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 683,
+            "w": 1280,
+            "h": 720,
+            "frames": 2888,
+            "bytes": 38294392,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 735,
+            "w": 1280,
+            "h": 720,
+            "frames": 2891,
+            "bytes": 38339206,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 788,
+            "w": 1280,
+            "h": 720,
+            "frames": 2895,
+            "bytes": 38379689,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 841,
+            "w": 1280,
+            "h": 720,
+            "frames": 2897,
+            "bytes": 38416917,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 892,
+            "w": 1280,
+            "h": 720,
+            "frames": 2900,
+            "bytes": 38466206,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 943,
+            "w": 1280,
+            "h": 720,
+            "frames": 2904,
+            "bytes": 38511057,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 995,
+            "w": 1280,
+            "h": 720,
+            "frames": 2907,
+            "bytes": 38552430,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 1046,
+            "w": 1280,
+            "h": 720,
+            "frames": 2910,
+            "bytes": 38603128,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 1097,
+            "w": 1280,
+            "h": 720,
+            "frames": 2913,
+            "bytes": 38664202,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 1149,
+            "w": 1280,
+            "h": 720,
+            "frames": 2916,
+            "bytes": 38713458,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 1200,
+            "w": 1280,
+            "h": 720,
+            "frames": 2919,
+            "bytes": 38765886,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 1251,
+            "w": 1280,
+            "h": 720,
+            "frames": 2922,
+            "bytes": 38811930,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 1304,
+            "w": 1280,
+            "h": 720,
+            "frames": 2925,
+            "bytes": 38852281,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 1355,
+            "w": 1280,
+            "h": 720,
+            "frames": 2928,
+            "bytes": 38916237,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 1406,
+            "w": 1280,
+            "h": 720,
+            "frames": 2931,
+            "bytes": 38955067,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 1459,
+            "w": 1280,
+            "h": 720,
+            "frames": 2935,
+            "bytes": 38995076,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 1510,
+            "w": 1280,
+            "h": 720,
+            "frames": 2938,
+            "bytes": 39040229,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 1562,
+            "w": 1280,
+            "h": 720,
+            "frames": 2940,
+            "bytes": 39087326,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 1613,
+            "w": 1280,
+            "h": 720,
+            "frames": 2944,
+            "bytes": 39130468,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 1666,
+            "w": 1280,
+            "h": 720,
+            "frames": 2947,
+            "bytes": 39190097,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 1719,
+            "w": 1280,
+            "h": 720,
+            "frames": 2950,
+            "bytes": 39252750,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 1770,
+            "w": 1280,
+            "h": 720,
+            "frames": 2954,
+            "bytes": 39285143,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 1821,
+            "w": 1280,
+            "h": 720,
+            "frames": 2956,
+            "bytes": 39331966,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 1872,
+            "w": 1280,
+            "h": 720,
+            "frames": 2959,
+            "bytes": 39375719,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 1924,
+            "w": 1280,
+            "h": 720,
+            "frames": 2962,
+            "bytes": 39412431,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 1976,
+            "w": 1280,
+            "h": 720,
+            "frames": 2966,
+            "bytes": 39459060,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 2028,
+            "w": 1280,
+            "h": 720,
+            "frames": 2969,
+            "bytes": 39508159,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 2078,
+            "w": 1280,
+            "h": 720,
+            "frames": 2971,
+            "bytes": 39569792,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 2131,
+            "w": 1280,
+            "h": 720,
+            "frames": 2975,
+            "bytes": 39627328,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 2184,
+            "w": 1280,
+            "h": 720,
+            "frames": 2978,
+            "bytes": 39674509,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 2235,
+            "w": 1280,
+            "h": 720,
+            "frames": 2981,
+            "bytes": 39733842,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 2286,
+            "w": 1280,
+            "h": 720,
+            "frames": 2984,
+            "bytes": 39774888,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 2337,
+            "w": 1280,
+            "h": 720,
+            "frames": 2987,
+            "bytes": 39824708,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 2389,
+            "w": 1280,
+            "h": 720,
+            "frames": 2990,
+            "bytes": 39874868,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 2440,
+            "w": 1280,
+            "h": 720,
+            "frames": 2994,
+            "bytes": 39929064,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 2492,
+            "w": 1280,
+            "h": 720,
+            "frames": 2997,
+            "bytes": 39977530,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 2545,
+            "w": 1280,
+            "h": 720,
+            "frames": 2999,
+            "bytes": 40025724,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 2597,
+            "w": 1280,
+            "h": 720,
+            "frames": 3003,
+            "bytes": 40090504,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 2649,
+            "w": 1280,
+            "h": 720,
+            "frames": 3006,
+            "bytes": 40140262,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 2702,
+            "w": 1280,
+            "h": 720,
+            "frames": 3009,
+            "bytes": 40189294,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 2753,
+            "w": 1280,
+            "h": 720,
+            "frames": 3013,
+            "bytes": 40241645,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 2804,
+            "w": 1280,
+            "h": 720,
+            "frames": 3015,
+            "bytes": 40297428,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 2856,
+            "w": 1280,
+            "h": 720,
+            "frames": 3018,
+            "bytes": 40348738,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 2909,
+            "w": 1280,
+            "h": 720,
+            "frames": 3021,
+            "bytes": 40391304,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 2960,
+            "w": 1280,
+            "h": 720,
+            "frames": 3025,
+            "bytes": 40440749,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 3011,
+            "w": 1280,
+            "h": 720,
+            "frames": 3028,
+            "bytes": 40489504,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 3063,
+            "w": 1280,
+            "h": 720,
+            "frames": 3030,
+            "bytes": 40557266,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 3116,
+            "w": 1280,
+            "h": 720,
+            "frames": 3034,
+            "bytes": 40608383,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 3167,
+            "w": 1280,
+            "h": 720,
+            "frames": 3037,
+            "bytes": 40658623,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 3218,
+            "w": 1280,
+            "h": 720,
+            "frames": 3040,
+            "bytes": 40708688,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 3270,
+            "w": 1280,
+            "h": 720,
+            "frames": 3044,
+            "bytes": 40757727,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 3321,
+            "w": 1280,
+            "h": 720,
+            "frames": 3046,
+            "bytes": 40814855,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 3373,
+            "w": 1280,
+            "h": 720,
+            "frames": 3049,
+            "bytes": 40858604,
+            "freezes": 0,
+            "keys": 6
+          },
+          {
+            "ms": 3426,
+            "w": 1280,
+            "h": 720,
+            "frames": 3053,
+            "bytes": 40908520,
+            "freezes": 0,
+            "keys": 6
+          }
+        ],
+        "viewerSwitchMs": null,
+        "maxFrameGapMs": 53,
+        "freezesDuring": 0
+      },
+      {
+        "cmd": "resize",
+        "w": 1920,
+        "h": 1080,
+        "sentAtMs": 58235,
+        "before": {
+          "w": 1280,
+          "h": 720,
+          "frames": 3353,
+          "freezes": 0
+        },
+        "samples": [
+          {
+            "ms": -1680,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3355,
+            "bytes": 46828746,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": -1629,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3358,
+            "bytes": 46835632,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": -1577,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3362,
+            "bytes": 46843920,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": -1526,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3365,
+            "bytes": 46876361,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": -1474,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3368,
+            "bytes": 46882337,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": -1423,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3370,
+            "bytes": 46921993,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": -1372,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3374,
+            "bytes": 46941290,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": -1321,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3377,
+            "bytes": 46989533,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": -1270,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3380,
+            "bytes": 47027329,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": -1218,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3384,
+            "bytes": 47061265,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": -1166,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3386,
+            "bytes": 47116211,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": -1112,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3389,
+            "bytes": 47157859,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": -1061,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3393,
+            "bytes": 47231008,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": -1010,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3396,
+            "bytes": 47256633,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": -959,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3399,
+            "bytes": 47347393,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": -906,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3402,
+            "bytes": 47378385,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": -855,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3405,
+            "bytes": 47461038,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": -804,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3408,
+            "bytes": 47504198,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": -751,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3411,
+            "bytes": 47555322,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": -700,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3414,
+            "bytes": 47603619,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": -648,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3417,
+            "bytes": 47651997,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": -597,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3420,
+            "bytes": 47725156,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": -545,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3424,
+            "bytes": 47755188,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": -495,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3427,
+            "bytes": 47817119,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": -443,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3430,
+            "bytes": 47884051,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": -392,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3432,
+            "bytes": 47940321,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": -341,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3436,
+            "bytes": 47970212,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": -291,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3439,
+            "bytes": 48052240,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": -239,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3442,
+            "bytes": 48099479,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": -188,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3445,
+            "bytes": 48146932,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": -138,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3448,
+            "bytes": 48210305,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": -86,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3451,
+            "bytes": 48240612,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": -35,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3454,
+            "bytes": 48310393,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 18,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3458,
+            "bytes": 48343276,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 70,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3461,
+            "bytes": 48413261,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 121,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3463,
+            "bytes": 48492697,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 172,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3467,
+            "bytes": 48525818,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 224,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3470,
+            "bytes": 48579082,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 275,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3473,
+            "bytes": 48629631,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 326,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3476,
+            "bytes": 48678811,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 378,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3479,
+            "bytes": 48738644,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 429,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3482,
+            "bytes": 48776127,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 480,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3485,
+            "bytes": 48859450,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 531,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3489,
+            "bytes": 48902947,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 584,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3491,
+            "bytes": 48959942,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 637,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3494,
+            "bytes": 49019259,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 688,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3498,
+            "bytes": 49064072,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 739,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3501,
+            "bytes": 49131913,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 790,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3504,
+            "bytes": 49177469,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 841,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3506,
+            "bytes": 49249351,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 892,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3510,
+            "bytes": 49276753,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 943,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3513,
+            "bytes": 49350378,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 994,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3516,
+            "bytes": 49369971,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 1047,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3519,
+            "bytes": 49452130,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 1099,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3522,
+            "bytes": 49479925,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 1150,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3525,
+            "bytes": 49591503,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 1201,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3528,
+            "bytes": 49616633,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 1253,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3532,
+            "bytes": 49642132,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 1304,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3534,
+            "bytes": 49716425,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 1355,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3537,
+            "bytes": 49745313,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 1407,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3541,
+            "bytes": 49827373,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 1458,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3544,
+            "bytes": 49854200,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 1511,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3547,
+            "bytes": 49959223,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 1564,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3550,
+            "bytes": 49985404,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 1616,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3553,
+            "bytes": 50029288,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 1667,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3556,
+            "bytes": 50087193,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 1719,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3559,
+            "bytes": 50149219,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 1771,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3562,
+            "bytes": 50203489,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 1821,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3565,
+            "bytes": 50236331,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 1875,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3569,
+            "bytes": 50347445,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 1927,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3572,
+            "bytes": 50365235,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 1979,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3575,
+            "bytes": 50438478,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 2031,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3577,
+            "bytes": 50462511,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 2083,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3581,
+            "bytes": 50536808,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 2135,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3584,
+            "bytes": 50581568,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 2186,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3587,
+            "bytes": 50630486,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 2237,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3591,
+            "bytes": 50718572,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 2288,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3593,
+            "bytes": 50738647,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 2339,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3596,
+            "bytes": 50809492,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 2391,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3600,
+            "bytes": 50851621,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 2441,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3603,
+            "bytes": 50902456,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 2493,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3606,
+            "bytes": 50931972,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 2544,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3608,
+            "bytes": 51001804,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 2595,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3612,
+            "bytes": 51064939,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 2646,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3615,
+            "bytes": 51113355,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 2698,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3618,
+            "bytes": 51165581,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 2750,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3621,
+            "bytes": 51242204,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 2800,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3624,
+            "bytes": 51274465,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 2853,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3627,
+            "bytes": 51318450,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 2904,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3630,
+            "bytes": 51379021,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 2954,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3634,
+            "bytes": 51457609,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 3006,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3637,
+            "bytes": 51490385,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 3057,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3639,
+            "bytes": 51560685,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 3108,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3642,
+            "bytes": 51585578,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 3159,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3646,
+            "bytes": 51625451,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 3211,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3649,
+            "bytes": 51680688,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 3263,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3652,
+            "bytes": 51736017,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 3314,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3655,
+            "bytes": 51820688,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 3366,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3658,
+            "bytes": 51840428,
+            "freezes": 0,
+            "keys": 8
+          },
+          {
+            "ms": 3419,
+            "w": 1920,
+            "h": 1080,
+            "frames": 3661,
+            "bytes": 51894039,
+            "freezes": 0,
+            "keys": 8
+          }
+        ],
+        "viewerSwitchMs": -1680,
+        "maxFrameGapMs": 54,
+        "freezesDuring": 0
+      }
+    ]
+  },
+  "edge": "Edg/157.0.4341.42",
+  "native": "E:\\Projetos\\stream-p2p\\.claude\\worktrees\\app-nativo-edge-benchmark-0b34a3\\e2e\\bench\\native\\target\\release\\sp2p-native-bench.exe",
+  "at": "2026-11-08T18:40:58.216Z",
+  "networks": {
+    "boa": {
+      "rede": {},
+      "nodes": [
+        {
+          "nó": "transmissor",
+          "latência ms": 0,
+          "quadros codificados/s": 0,
+          "ms de codificação/s": 0,
+          "encoder": {
+            "bitrate": 8000000,
+            "bytes": 53104321,
+            "captured": 3723,
+            "children": 1,
+            "convertMsAvg": 0.4863372011818429,
+            "encodeMsAvg": 5.706363296585112,
+            "encoded": 3719,
+            "encoder": "NVIDIA H.264 Encoder MFT",
+            "h": 1080,
+            "keys": 3,
+            "live": [
+              {
+                "applyMs": 0.0092,
+                "atMs": 26424,
+                "cmd": "bitrate",
+                "kbps": 4000,
+                "ok": true
+              },
+              {
+                "atMs": 36571,
+                "cmd": "resize",
+                "h": 720,
+                "ok": true,
+                "restartMs": 0.2121,
+                "w": 1280
+              },
+              {
+                "event": "firstOutputAfterResize",
+                "ms": 18.6883
+              },
+              {
+                "applyMs": 0.0132,
+                "atMs": 46728,
+                "cmd": "bitrate",
+                "kbps": 8000,
+                "ok": true
+              },
+              {
+                "atMs": 56887,
+                "cmd": "resize",
+                "h": 1080,
+                "ok": true,
+                "restartMs": 0.1821,
+                "w": 1920
+              },
+              {
+                "event": "firstOutputAfterResize",
+                "ms": 20.454
+              }
+            ],
+            "skipped": 2,
+            "w": 1920,
+            "quadros/s": 60,
+            "kbps out": 6249
+          },
+          "altura enviada": null,
+          "largura enviada": null,
+          "codecsEnviados": [],
+          "degradationPreference": null,
+          "limitação": null,
+          "enviado kbps": 0,
+          "plis": 0,
+          "repasse": {
+            "bitrate": 8000000,
+            "bytes": 53104321,
+            "captured": 3723,
+            "children": 1,
+            "convertMsAvg": 0.4863372011818429,
+            "encodeMsAvg": 5.706363296585112,
+            "encoded": 3719,
+            "encoder": "NVIDIA H.264 Encoder MFT",
+            "h": 1080,
+            "keys": 3,
+            "live": [
+              {
+                "applyMs": 0.0092,
+                "atMs": 26424,
+                "cmd": "bitrate",
+                "kbps": 4000,
+                "ok": true
+              },
+              {
+                "atMs": 36571,
+                "cmd": "resize",
+                "h": 720,
+                "ok": true,
+                "restartMs": 0.2121,
+                "w": 1280
+              },
+              {
+                "event": "firstOutputAfterResize",
+                "ms": 18.6883
+              },
+              {
+                "applyMs": 0.0132,
+                "atMs": 46728,
+                "cmd": "bitrate",
+                "kbps": 8000,
+                "ok": true
+              },
+              {
+                "atMs": 56887,
+                "cmd": "resize",
+                "h": 1080,
+                "ok": true,
+                "restartMs": 0.1821,
+                "w": 1920
+              },
+              {
+                "event": "firstOutputAfterResize",
+                "ms": 20.454
+              }
+            ],
+            "skipped": 2,
+            "w": 1920,
+            "quadros/s": 60,
+            "capturados/s": 60,
+            "kbps out": 6249
+          },
+          "fachada/s": 0,
+          "RAM MB": 48,
+          "CPU %": 7,
+          "processos": 1
+        },
+        {
+          "nó": "espectador",
+          "latência ms": 42,
+          "recebe": {
+            "fps": 60,
+            "kbps": 6256,
+            "altura": 1080,
+            "largura": 1920,
+            "codec": {
+              "mimeType": "video/H264",
+              "sdpFmtpLine": "level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42e01f"
+            },
+            "congelamentos": 0,
+            "perda %": 0,
+            "buffer ms": 12
+          },
+          "quadros codificados/s": 0,
+          "ms de codificação/s": 0,
+          "encoder": null,
+          "altura enviada": null,
+          "largura enviada": null,
+          "codecsEnviados": [],
+          "degradationPreference": null,
+          "limitação": null,
+          "enviado kbps": 0,
+          "plis": 0,
+          "repasse": null,
+          "fachada/s": 0,
+          "RAM MB": 145,
+          "CPU %": 15,
+          "processos": 8
+        }
+      ]
+    }
+  }
+}

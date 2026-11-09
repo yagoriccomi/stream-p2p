@@ -15,6 +15,7 @@ use str0m::change::{SdpAnswer, SdpOffer, SdpPendingOffer};
 use str0m::media::{Direction, KeyframeRequestKind, MediaKind, Mid};
 use str0m::net::{Protocol, Receive};
 use str0m::rtp::RtpWrite;
+use str0m::bwe::{Bitrate, BweKind};
 use str0m::{Candidate, Event, Input, Output, Rtc};
 
 struct Peer {
@@ -32,6 +33,17 @@ struct Stats {
     bytes_out: u64,
     key_asks: u64,
     child_plis: u64,
+    /// RELAY_BWE: (ms since start, child id, estimate kbps) per EgressBitrateEstimate.
+    bwe: Vec<(u64, u64, u64)>,
+}
+
+/// RELAY_BWE=<kbps>: GCC/TWCC toward children, initial and desired estimate in kbps.
+/// RELAY_BWE_PACED=1 keeps the pacer (default with BWE: set_unpaced(true)).
+fn bwe_kbps() -> Option<u64> {
+    std::env::var("RELAY_BWE").ok().map(|v| v.parse().unwrap_or_else(|_| {
+        eprintln!("Erro de configuração: RELAY_BWE inválido: {v:?}");
+        std::process::exit(1);
+    }))
 }
 
 fn h264_profile(value: Option<&str>) -> Result<u32, String> {
@@ -59,14 +71,17 @@ fn h264_profile(value: Option<&str>) -> Result<u32, String> {
     Ok(profile)
 }
 
-fn new_rtc(addr: SocketAddr, profile: u32) -> Rtc {
-    let mut b = Rtc::builder().set_rtp_mode(true).clear_codecs();
+fn new_rtc(addr: SocketAddr, profile: u32, bwe: Option<u64>) -> Rtc {
+    let mut b = Rtc::builder().set_rtp_mode(true).clear_codecs().enable_bwe(bwe.map(Bitrate::kbps));
     if std::env::var("SP2P_CODEC").as_deref() == Ok("h264") {
         b.codec_config().add_h264(102.into(), Some(103.into()), true, profile);
     } else {
         b = b.enable_vp8(true);
     }
     let mut rtc = b.build(Instant::now());
+    if let Some(k) = bwe {
+        rtc.bwe().set_bitrate(Bitrate::kbps(k / 10), Bitrate::kbps(k));
+    }
     rtc.add_local_candidate(Candidate::host(addr, "udp").unwrap());
     rtc
 }
@@ -151,6 +166,9 @@ fn main() {
     let mut last_ask = Instant::now() - Duration::from_secs(10);
     let mut want_key = false;
     let mut buf = vec![0u8; 2000];
+    let bwe = bwe_kbps();
+    let unpaced = std::env::var("RELAY_BWE_PACED").as_deref() != Ok("1");
+    let start = Instant::now();
     let mut evs = vec![];
 
     loop {
@@ -160,7 +178,7 @@ fn main() {
                 match cmd {
                     "child" => {
                         let id = v["id"].as_u64().unwrap();
-                        let mut rtc = new_rtc(addr, profile);
+                        let mut rtc = new_rtc(addr, profile, bwe);
                         let mut api = rtc.sdp_api();
                         let mid = api.add_media(MediaKind::Video, Direction::SendOnly, Some("relay".into()), Some("video".into()), None);
                         let (offer, pending) = api.apply().unwrap();
@@ -173,6 +191,8 @@ fn main() {
                         "keyAsks": stats.key_asks, "childPlis": stats.child_plis,
                         "connected": parent.as_ref().map(|p| p.rtc.is_connected()),
                         "children": children.iter().filter(|c| c.rtc.is_connected()).count(),
+                        "ms": start.elapsed().as_millis() as u64,
+                        "bwe": stats.bwe.iter().map(|&(t, id, k)| json!([t, id, k])).collect::<Vec<_>>(),
                     }})),
                     _ => {}
                 }
@@ -183,7 +203,7 @@ fn main() {
             let Some(sdp) = v["sdp"].as_object() else { continue };
             let text = sdp["sdp"].as_str().unwrap_or_default();
             if sdp["type"] == "offer" {
-                let mut rtc = new_rtc(addr, profile);
+                let mut rtc = new_rtc(addr, profile, None);
                 let answer = rtc.sdp_api().accept_offer(SdpOffer::from_sdp_string(text).unwrap()).unwrap();
                 out(json!({"to": from, "sdp": {"type": "answer", "sdp": answer.to_sdp_string()}}));
                 parent = Some(Peer { id: from, rtc, mid: None, pending: None });
@@ -220,6 +240,9 @@ fn main() {
                         want_key = true;
                     }
                     Event::Connected => want_key = true,
+                    Event::EgressBitrateEstimate(BweKind::Twcc { estimate, .. } | BweKind::Remb { estimate, .. }) => {
+                        stats.bwe.push((start.elapsed().as_millis() as u64, c.id, estimate.as_u64() / 1000));
+                    }
                     _ => {}
                 }
             }
@@ -232,6 +255,9 @@ fn main() {
                 let Some(pt) = c.rtc.codec_config().iter().next().map(|p| p.pt()) else { continue };
                 let mut api = c.rtc.direct_api();
                 let Some(tx) = api.stream_tx_by_mid(mid, None) else { continue };
+                if bwe.is_some() && unpaced {
+                    tx.set_unpaced(true);
+                }
                 tx.write_rtp(
                     RtpWrite::new(pt, pkt.seq_no, pkt.header.timestamp, pkt.timestamp, pkt.payload.clone())
                         .marker(pkt.header.marker)

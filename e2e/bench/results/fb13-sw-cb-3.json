@@ -1,0 +1,122 @@
+{
+  "label": "fb13-sw-cb-3",
+  "mode": "native-synth",
+  "lean": false,
+  "codec": "h264",
+  "profile": "42e01f",
+  "degradationPreference": "balanced",
+  "kbps": 8000,
+  "screen": false,
+  "direct": true,
+  "norelay": true,
+  "settleMs": 20000,
+  "measureMs": 15000,
+  "presenterReady": {
+    "encoder": "Microsoft H264 Video Encoder MFT (software)",
+    "h": 1080,
+    "profile": "constrained-baseline",
+    "profileLevelId": "42e01f",
+    "software": true,
+    "source": "synth",
+    "w": 1920
+  },
+  "secondaryMonitor": null,
+  "encoderEnv": {
+    "BENCH_ENCODER": "software",
+    "BENCH_PROFILE": null
+  },
+  "edge": "Edg/157.0.4341.42",
+  "native": "E:\\Projetos\\stream-p2p\\.claude\\worktrees\\app-nativo-edge-benchmark-0b34a3\\e2e\\bench\\native\\target\\release\\sp2p-native-bench.exe",
+  "at": "2026-11-08T18:39:01.193Z",
+  "networks": {
+    "boa": {
+      "rede": {},
+      "nodes": [
+        {
+          "nó": "transmissor",
+          "latência ms": 0,
+          "quadros codificados/s": 0,
+          "ms de codificação/s": 0,
+          "encoder": {
+            "bitrate": 8000000,
+            "bytes": 36774089,
+            "captured": 2188,
+            "children": 1,
+            "convertMsAvg": 0.6532343692870205,
+            "encodeMsAvg": 6.740386837294336,
+            "encoded": 2188,
+            "encoder": "Microsoft H264 Video Encoder MFT (software)",
+            "h": 1080,
+            "keys": 1,
+            "live": [],
+            "skipped": 0,
+            "w": 1920,
+            "quadros/s": 60,
+            "kbps out": 8024
+          },
+          "altura enviada": null,
+          "largura enviada": null,
+          "codecsEnviados": [],
+          "degradationPreference": null,
+          "limitação": null,
+          "enviado kbps": 0,
+          "plis": 0,
+          "repasse": {
+            "bitrate": 8000000,
+            "bytes": 36774089,
+            "captured": 2188,
+            "children": 1,
+            "convertMsAvg": 0.6532343692870205,
+            "encodeMsAvg": 6.740386837294336,
+            "encoded": 2188,
+            "encoder": "Microsoft H264 Video Encoder MFT (software)",
+            "h": 1080,
+            "keys": 1,
+            "live": [],
+            "skipped": 0,
+            "w": 1920,
+            "quadros/s": 60,
+            "capturados/s": 60,
+            "kbps out": 8024
+          },
+          "fachada/s": 0,
+          "RAM MB": 91,
+          "CPU %": 159,
+          "processos": 1
+        },
+        {
+          "nó": "espectador",
+          "latência ms": 47,
+          "recebe": {
+            "fps": 60,
+            "kbps": 8019,
+            "altura": 1080,
+            "largura": 1920,
+            "codec": {
+              "mimeType": "video/H264",
+              "sdpFmtpLine": "level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42e01f"
+            },
+            "congelamentos": 0,
+            "perda %": 0,
+            "buffer ms": 12
+          },
+          "quadros codificados/s": 0,
+          "ms de codificação/s": 0,
+          "encoder": null,
+          "altura enviada": null,
+          "largura enviada": null,
+          "codecsEnviados": [],
+          "degradationPreference": null,
+          "limitação": null,
+          "enviado kbps": 0,
+          "plis": 0,
+          "repasse": null,
+          "fachada/s": 0,
+          "RAM MB": 159,
+          "CPU %": 9,
+          "processos": 8
+        }
+      ]
+    }
+  }
+}

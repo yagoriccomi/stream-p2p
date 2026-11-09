@@ -1,0 +1,648 @@
+{
+  "label": "t18-d-on-1",
+  "mode": "native-synth",
+  "lean": false,
+  "codec": "h264",
+  "profile": "42e01f",
+  "degradationPreference": "balanced",
+  "kbps": 8000,
+  "screen": false,
+  "direct": true,
+  "norelay": false,
+  "settleMs": 20000,
+  "measureMs": 15000,
+  "presenterReady": {
+    "encoder": "NVIDIA H.264 Encoder MFT",
+    "h": 1080,
+    "profile": "constrained-baseline",
+    "profileLevelId": "42e01f",
+    "software": false,
+    "source": "synth",
+    "w": 1920
+  },
+  "secondaryMonitor": null,
+  "encoderEnv": {
+    "BENCH_ENCODER": null,
+    "BENCH_PROFILE": null
+  },
+  "edge": "Edg/157.0.4341.42",
+  "native": "E:\\Projetos\\stream-p2p\\.claude\\worktrees\\app-nativo-edge-benchmark-0b34a3\\e2e\\bench\\native\\target\\release\\sp2p-native-bench.exe",
+  "at": "2026-11-08T23:09:56.413Z",
+  "networks": {
+    "boa": {
+      "rede": {},
+      "nodes": [
+        {
+          "nó": "transmissor",
+          "latência ms": 0,
+          "quadros codificados/s": 0,
+          "ms de codificação/s": 0,
+          "encoder": {
+            "bitrate": 8000000,
+            "bytes": 36576946,
+            "captured": 2186,
+            "children": 1,
+            "convertMsAvg": 0.5660317474839882,
+            "encodeMsAvg": 5.9405562013730036,
+            "encoded": 2185,
+            "encoder": "NVIDIA H.264 Encoder MFT",
+            "h": 1080,
+            "keys": 4,
+            "live": [],
+            "skipped": 0,
+            "w": 1920,
+            "quadros/s": 60,
+            "kbps out": 7946
+          },
+          "altura enviada": null,
+          "largura enviada": null,
+          "codecsEnviados": [],
+          "degradationPreference": null,
+          "limitação": null,
+          "enviado kbps": 0,
+          "plis": 0,
+          "repasse": {
+            "bitrate": 8000000,
+            "bytes": 36576946,
+            "captured": 2186,
+            "children": 1,
+            "convertMsAvg": 0.5660317474839882,
+            "encodeMsAvg": 5.9405562013730036,
+            "encoded": 2185,
+            "encoder": "NVIDIA H.264 Encoder MFT",
+            "h": 1080,
+            "keys": 4,
+            "live": [],
+            "skipped": 0,
+            "w": 1920,
+            "quadros/s": 60,
+            "capturados/s": 60,
+            "kbps out": 7946
+          },
+          "fachada/s": 0,
+          "RAM MB": 34,
+          "CPU %": 9,
+          "processos": 1
+        },
+        {
+          "nó": "relay 1",
+          "latência ms": null,
+          "quadros codificados/s": 0,
+          "ms de codificação/s": 0,
+          "encoder": {
+            "bwe": [
+              [
+                1607,
+                2,
+                8000
+              ],
+              [
+                1657,
+                2,
+                202635
+              ],
+              [
+                3474,
+                2,
+                397271
+              ],
+              [
+                6675,
+                2,
+                13548
+              ],
+              [
+                11690,
+                2,
+                7401
+              ],
+              [
+                12145,
+                2,
+                7771
+              ],
+              [
+                14907,
+                2,
+                8161
+              ],
+              [
+                15307,
+                2,
+                7481
+              ],
+              [
+                15313,
+                2,
+                6917
+              ],
+              [
+                15329,
+                2,
+                7547
+              ],
+              [
+                16425,
+                2,
+                9811
+              ],
+              [
+                19431,
+                2,
+                10335
+              ],
+              [
+                23770,
+                2,
+                10533
+              ],
+              [
+                29778,
+                2,
+                10534
+              ],
+              [
+                32779,
+                2,
+                11225
+              ],
+              [
+                35781,
+                2,
+                11450
+              ]
+            ],
+            "bytesIn": 35713026,
+            "bytesOut": 34485893,
+            "childPlis": 2,
+            "children": 1,
+            "connected": true,
+            "keyAsks": 3,
+            "ms": 36409,
+            "pktsIn": 32966,
+            "pktsOut": 31833,
+            "quadros/s": null,
+            "kbps out": null
+          },
+          "altura enviada": null,
+          "largura enviada": null,
+          "codecsEnviados": [],
+          "degradationPreference": null,
+          "limitação": null,
+          "enviado kbps": 0,
+          "plis": 0,
+          "repasse": {
+            "bwe": [
+              [
+                1607,
+                2,
+                8000
+              ],
+              [
+                1657,
+                2,
+                202635
+              ],
+              [
+                3474,
+                2,
+                397271
+              ],
+              [
+                6675,
+                2,
+                13548
+              ],
+              [
+                11690,
+                2,
+                7401
+              ],
+              [
+                12145,
+                2,
+                7771
+              ],
+              [
+                14907,
+                2,
+                8161
+              ],
+              [
+                15307,
+                2,
+                7481
+              ],
+              [
+                15313,
+                2,
+                6917
+              ],
+              [
+                15329,
+                2,
+                7547
+              ],
+              [
+                16425,
+                2,
+                9811
+              ],
+              [
+                19431,
+                2,
+                10335
+              ],
+              [
+                23770,
+                2,
+                10533
+              ],
+              [
+                29778,
+                2,
+                10534
+              ],
+              [
+                32779,
+                2,
+                11225
+              ],
+              [
+                35781,
+                2,
+                11450
+              ]
+            ],
+            "bytesIn": 35713026,
+            "bytesOut": 34485893,
+            "childPlis": 2,
+            "children": 1,
+            "connected": true,
+            "keyAsks": 3,
+            "ms": 36409,
+            "pktsIn": 32966,
+            "pktsOut": 31833,
+            "kbps in": 7957,
+            "pacotes/s": 918,
+            "kbps out": 7957
+          },
+          "fachada/s": 0,
+          "RAM MB": 3,
+          "CPU %": 4,
+          "processos": 1
+        },
+        {
+          "nó": "relay 2",
+          "latência ms": null,
+          "quadros codificados/s": 0,
+          "ms de codificação/s": 0,
+          "encoder": {
+            "bwe": [
+              [
+                837,
+                3,
+                8000
+              ],
+              [
+                1626,
+                3,
+                146990
+              ],
+              [
+                3483,
+                3,
+                285980
+              ],
+              [
+                5939,
+                3,
+                6220
+              ],
+              [
+                9006,
+                3,
+                6532
+              ],
+              [
+                9504,
+                3,
+                6859
+              ],
+              [
+                10072,
+                3,
+                7202
+              ],
+              [
+                10605,
+                3,
+                7563
+              ],
+              [
+                11170,
+                3,
+                7942
+              ],
+              [
+                11588,
+                3,
+                8340
+              ],
+              [
+                11923,
+                3,
+                8757
+              ],
+              [
+                12323,
+                3,
+                9195
+              ],
+              [
+                12638,
+                3,
+                9655
+              ],
+              [
+                13080,
+                3,
+                10139
+              ],
+              [
+                13550,
+                3,
+                10646
+              ],
+              [
+                14157,
+                3,
+                11186
+              ],
+              [
+                14859,
+                3,
+                11754
+              ],
+              [
+                15776,
+                3,
+                12356
+              ],
+              [
+                16689,
+                3,
+                12671
+              ],
+              [
+                18064,
+                3,
+                12684
+              ],
+              [
+                21296,
+                3,
+                12895
+              ],
+              [
+                26519,
+                3,
+                12242
+              ],
+              [
+                26623,
+                3,
+                11628
+              ],
+              [
+                27789,
+                3,
+                11044
+              ],
+              [
+                27991,
+                3,
+                10463
+              ],
+              [
+                28053,
+                3,
+                9812
+              ],
+              [
+                32504,
+                3,
+                10587
+              ]
+            ],
+            "bytesIn": 34454533,
+            "bytesOut": 34454533,
+            "childPlis": 1,
+            "children": 1,
+            "connected": true,
+            "keyAsks": 2,
+            "ms": 36406,
+            "pktsIn": 31805,
+            "pktsOut": 31805,
+            "quadros/s": null,
+            "kbps out": null
+          },
+          "altura enviada": null,
+          "largura enviada": null,
+          "codecsEnviados": [],
+          "degradationPreference": null,
+          "limitação": null,
+          "enviado kbps": 0,
+          "plis": 0,
+          "repasse": {
+            "bwe": [
+              [
+                837,
+                3,
+                8000
+              ],
+              [
+                1626,
+                3,
+                146990
+              ],
+              [
+                3483,
+                3,
+                285980
+              ],
+              [
+                5939,
+                3,
+                6220
+              ],
+              [
+                9006,
+                3,
+                6532
+              ],
+              [
+                9504,
+                3,
+                6859
+              ],
+              [
+                10072,
+                3,
+                7202
+              ],
+              [
+                10605,
+                3,
+                7563
+              ],
+              [
+                11170,
+                3,
+                7942
+              ],
+              [
+                11588,
+                3,
+                8340
+              ],
+              [
+                11923,
+                3,
+                8757
+              ],
+              [
+                12323,
+                3,
+                9195
+              ],
+              [
+                12638,
+                3,
+                9655
+              ],
+              [
+                13080,
+                3,
+                10139
+              ],
+              [
+                13550,
+                3,
+                10646
+              ],
+              [
+                14157,
+                3,
+                11186
+              ],
+              [
+                14859,
+                3,
+                11754
+              ],
+              [
+                15776,
+                3,
+                12356
+              ],
+              [
+                16689,
+                3,
+                12671
+              ],
+              [
+                18064,
+                3,
+                12684
+              ],
+              [
+                21296,
+                3,
+                12895
+              ],
+              [
+                26519,
+                3,
+                12242
+              ],
+              [
+                26623,
+                3,
+                11628
+              ],
+              [
+                27789,
+                3,
+                11044
+              ],
+              [
+                27991,
+                3,
+                10463
+              ],
+              [
+                28053,
+                3,
+                9812
+              ],
+              [
+                32504,
+                3,
+                10587
+              ]
+            ],
+            "bytesIn": 34454533,
+            "bytesOut": 34454533,
+            "childPlis": 1,
+            "children": 1,
+            "connected": true,
+            "keyAsks": 2,
+            "ms": 36406,
+            "pktsIn": 31805,
+            "pktsOut": 31805,
+            "kbps in": 7957,
+            "pacotes/s": 918,
+            "kbps out": 7957
+          },
+          "fachada/s": 0,
+          "RAM MB": 3,
+          "CPU %": 4,
+          "processos": 1
+        },
+        {
+          "nó": "espectador",
+          "latência ms": 48,
+          "recebe": {
+            "fps": 60,
+            "kbps": 7959,
+            "altura": 1080,
+            "largura": 1920,
+            "codec": {
+              "mimeType": "video/H264",
+              "sdpFmtpLine": "level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42e01f"
+            },
+            "congelamentos": 0,
+            "perda %": 0,
+            "buffer ms": 24
+          },
+          "quadros codificados/s": 0,
+          "ms de codificação/s": 0,
+          "encoder": null,
+          "altura enviada": null,
+          "largura enviada": null,
+          "codecsEnviados": [],
+          "degradationPreference": null,
+          "limitação": null,
+          "enviado kbps": 0,
+          "plis": 0,
+          "repasse": null,
+          "fachada/s": 0,
+          "RAM MB": 143,
+          "CPU %": 11,
+          "processos": 8
+        }
+      ]
+    }
+  }
+}

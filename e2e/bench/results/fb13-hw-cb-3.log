@@ -1,0 +1,19 @@
+[transmissor] {
+  encoder: 'NVIDIA H.264 Encoder MFT',
+  h: 1080,
+  profile: 'constrained-baseline',
+  profileLevelId: '42e01f',
+  software: false,
+  source: 'synth',
+  w: 1920
+}
+
+fb13-hw-cb-3 · rede boa
+┌─────────┬───────────────┬────────┬───────────┬───────────┬───────────┬───────────┬───────┬────────┬───────┐
+│ (index) │ nó            │ lat ms │ fps       │ kbps      │ altura    │ cong      │ cod/s │ RAM MB │ CPU % │
+├─────────┼───────────────┼────────┼───────────┼───────────┼───────────┼───────────┼───────┼────────┼───────┤
+│ 0       │ 'transmissor' │ 0      │ undefined │ undefined │ undefined │ undefined │ 0     │ 38     │ 7     │
+│ 1       │ 'espectador'  │ 32     │ 60        │ 8010      │ 1080      │ 0         │ 0     │ 156    │ 6     │
+└─────────┴───────────────┴────────┴───────────┴───────────┴───────────┴───────────┴───────┴────────┴───────┘
+
+BENCH OK → e2e/bench/results/fb13-hw-cb-3.json

@@ -1,0 +1,19 @@
+[transmissor] {
+  encoder: 'Microsoft H264 Video Encoder MFT (software)',
+  h: 1080,
+  profile: 'constrained-baseline',
+  profileLevelId: '42e01f',
+  software: true,
+  source: 'synth',
+  w: 1920
+}
+
+fb13-sw-cb-3 · rede boa
+┌─────────┬───────────────┬────────┬───────────┬───────────┬───────────┬───────────┬───────┬────────┬───────┐
+│ (index) │ nó            │ lat ms │ fps       │ kbps      │ altura    │ cong      │ cod/s │ RAM MB │ CPU % │
+├─────────┼───────────────┼────────┼───────────┼───────────┼───────────┼───────────┼───────┼────────┼───────┤
+│ 0       │ 'transmissor' │ 0      │ undefined │ undefined │ undefined │ undefined │ 0     │ 91     │ 159   │
+│ 1       │ 'espectador'  │ 47     │ 60        │ 8019      │ 1080      │ 0         │ 0     │ 159    │ 9     │
+└─────────┴───────────────┴────────┴───────────┴───────────┴───────────┴───────────┴───────┴────────┴───────┘
+
+BENCH OK → e2e/bench/results/fb13-sw-cb-3.json
