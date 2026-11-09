@@ -1,0 +1,7 @@
+# UI Automation (PowerShell UIAutomationClient) on the running proto07 window, 2026-11-09
+ControlType.Text | name='STREAM P2P' | value='' | focusable=False
+ControlType.Text | name='● AO VIVO · abcd-ef' | value='' | focusable=False   (console showed '?'/'�': codepage of the shell, not of UIA)
+ControlType.Image | name='Tela compartilhada' | value='' | focusable=False
+ControlType.Edit | name='Seu nome' | value='Yago' | focusable=True
+ControlType.Button | name='Entrar' | value='' | focusable=True
+ControlType.Text | name='Entrar' | value='' | focusable=False

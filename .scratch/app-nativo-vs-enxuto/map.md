@@ -9,7 +9,7 @@ ADR escrito (06) + plano em fatias para agentes (12) do app Windows nativo em Ru
 - Números: `docs/planos/ENTREGA-benchmark-retomada.md`; handoff `handoff/app-nativo-vs-enxuto/002 …`.
 - Captura de áudio do sistema já existe em Rust (`app/src-tauri/src/sysaudio.rs`).
 - Regra geral do app (answers 005): todo problema conhecido tem aviso em linguagem simples, atalho para resolver e plano B automático quando der.
-- Restrições: testes sem roubar foco; sem commit/push/PR sem pedido; não extrapolar dados.
+- Restrições: testes sem roubar foco (exceto protótipo 07, liberado em answers 006); sem commit/push/PR sem pedido; não extrapolar dados.
 - Skills: `sabatina-mp`, `modelagem-de-dominio-mp`, `criar-projeto` (no 06), `escrever-para-agentes-mp` (no 12).
 
 ## Decisões até aqui
@@ -28,6 +28,9 @@ ADR escrito (06) + plano em fatias para agentes (12) do app Windows nativo em Ru
 - [13 Fallback e perfis neste PC](13-medir-fallback-e-perfis-local.md): três perfis H.264 a 1080p60 na NVIDIA; software MFT 1080p60 a ~1,5 núcleo e 91 MB; troca ao vivo sem congelar. Só este PC.
 - [10 Inventário de paridade Tauri](10-inventario-paridade-tauri.md): reescrever WebRTC+voz+UI (~1900 linhas JS); reaproveitar áudio, bandeja, CLI, deep link; servidor intacto. Voz/chat/moderação entram na paridade.
 - [18 Medir BWE e recodificação no relay](18-medir-bwe-e-recodificacao-relay.md): BWE+unpaced sem atraso mensurável; reage a queda em ~250 ms; recodificar 1080p→720p custa 4,2 ms/quadro (p95 ≤ 6,1) na NVIDIA, cabe em < 15 ms. Exige `MF_LOW_LATENCY`.
+- [19 Firefox 1080p60](19-validar-safari-firefox-1080p60.md): 42e01f e 42001f entregam 1080p60 ao Firefox; main não negocia. iPhone fora do lançamento (answers 006).
+- [07 Protótipo Slint](07-prototipo-toolkit-ui.md): vídeo 1080p60 GPU→Slint sem cópia CPU, ~59 fps, decoder→submit p50 ~16,5 ms; Narrador/UIA ok. RAM 155 MB WS / 308 MB private (meta < 50 MB reprovada; 76 MB só do device wgpu DX12) e 85–89 % de um núcleo no redesenho do Slint.
+- [14 AMD/Intel](14-validar-amd-intel.md): adiado como risco; validação entra no plano (12) antes do lançamento (answers 006).
 
 ## Ainda não especificado
 - Erro `ProcessOutput 0x8000FFFF` do MFT após troca de bitrate (13): causa e recuperação.
@@ -41,6 +44,9 @@ ADR escrito (06) + plano em fatias para agentes (12) do app Windows nativo em Ru
 - Firefox ignora candidatos 127.0.0.1: testes locais com Firefox exigem IP de LAN (19).
 - BWE entre dois relays nativos veio ausente/incoerente (18): causa não investigada.
 - Recodificação com GPU disputada (jogo/captura) chegou a p95 25–31 ms (18): prioridade/limite de filhos recodificados.
+- CPU do Slint/femtovg-wgpu a 60 Hz: 78–89 % de um núcleo só redesenhando (07). Testar `renderer-skia`, região de redesenho parcial ou vídeo em swap chain/DirectComposition própria sob a UI. Primeira fatia do plano (12), answers 007.
+- RAM: meta do toolkit subiu para < 200 MB (answers 007); 76 MB WS só do device wgpu DX12 (07).
+- Latência até o vsync/composição (Present a 144 Hz) não medida no 07; só até o submit.
 - Áudio no pipeline nativo (Opus, sincronia com vídeo) e voz em mesh com supressão de ruído/eco/PTT (WebRTC APM nativo?).
 
 ## Fora de escopo
