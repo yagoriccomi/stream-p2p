@@ -1,5 +1,5 @@
 // Stream P2P client: screens (T01–T14), session state, and wiring between VideoNet and VoiceMesh.
-import { VideoNet, MODES, PRIORITIES, captureConstraints, randomId } from '/stream.js';
+import { VideoNet, MODES, PRIORITIES, captureConstraints, randomId, firefoxHintDue, dismissFirefoxHint } from '/stream.js';
 import { VoiceMesh } from '/voice.js';
 import { nativeSystemAudio } from '/sysaudio.js';
 import { playAt, release } from '/boost.js';
@@ -281,6 +281,7 @@ function renderStage() {
   $('s-who').hidden = !presenter;
   $('s-who').textContent = presenter ? (mine ? 'Você está transmitindo' : `${presenter.name} transmitindo`) : '';
   $('pbar').hidden = !mine;
+  $('ff-hint').hidden = !presenter || mine || !firefoxHintDue(navigator.userAgent, localStorage);
   const grant = s.grant && s.grant.until > Date.now() ? member(s.grant.id) : null;
   $('ov-empty-title').textContent = grant ? (grant.id === st.me ? 'Sua vez de transmitir' : `Vez de ${grant.name}`) : 'Ninguém transmitindo';
   $('ov-empty-text').textContent = grant && grant.id !== st.me
@@ -1210,6 +1211,12 @@ $('install-x').addEventListener('click', () => {
   store.set('installDismissed', true);
 });
 addEventListener('appinstalled', () => { $('banner-install').hidden = true; });
+
+// ── Firefox viewer hint (answers 008 #7: only warn) ──
+$('ff-hint-x').addEventListener('click', () => {
+  dismissFirefoxHint(localStorage);
+  $('ff-hint').hidden = true;
+});
 
 // ── T14 · Atualização (PWA via service worker; app via tauri-plugin-updater) ──
 let applyUpdate = null;

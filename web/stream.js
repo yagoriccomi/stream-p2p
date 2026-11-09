@@ -68,6 +68,19 @@ export function randomId() {
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
 }
 
+// Firefox decodes 1080p60 at ~440 MB and 75–93 % CPU (research 19), so a viewer there gets a
+// dismissible hint toward Chrome/Edge or the app. Video is unchanged. Firefox on iOS is WebKit
+// ("FxiOS", no "Firefox/"), so it is left out on purpose.
+const FF_HINT_KEY = 'sp2p.firefoxHintDismissed';
+export const isFirefox = (ua) => /\bFirefox\//.test(ua) && !/\bSeamonkey\//i.test(ua);
+export function firefoxHintDue(ua, storage) {
+  if (!isFirefox(ua)) return false;
+  try { return storage.getItem(FF_HINT_KEY) === null; } catch { return true; }
+}
+export function dismissFirefoxHint(storage) {
+  try { storage.setItem(FF_HINT_KEY, 'true'); } catch {}
+}
+
 // Re-negotiation after a failed connection (stream.js and voice.js).
 export const RECOVER_BASE_MS = 1000;
 export const RECOVER_MAX_MS = 5000; // short: the connect deadline already spaces attempts out
