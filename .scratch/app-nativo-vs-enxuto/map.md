@@ -30,24 +30,13 @@ ADR escrito (06) + plano em fatias para agentes (12) do app Windows nativo em Ru
 - [18 Medir BWE e recodificação no relay](18-medir-bwe-e-recodificacao-relay.md): BWE+unpaced sem atraso mensurável; reage a queda em ~250 ms; recodificar 1080p→720p custa 4,2 ms/quadro (p95 ≤ 6,1) na NVIDIA, cabe em < 15 ms. Exige `MF_LOW_LATENCY`.
 - [19 Firefox 1080p60](19-validar-safari-firefox-1080p60.md): 42e01f e 42001f entregam 1080p60 ao Firefox; main não negocia. iPhone fora do lançamento (answers 006).
 - [07 Protótipo Slint](07-prototipo-toolkit-ui.md): vídeo 1080p60 GPU→Slint sem cópia CPU, ~59 fps, decoder→submit p50 ~16,5 ms; Narrador/UIA ok. RAM 155 MB WS / 308 MB private (meta < 50 MB reprovada; 76 MB só do device wgpu DX12) e 85–89 % de um núcleo no redesenho do Slint.
+- [06 ADR](06-adr-decisao-arquitetural.md): `docs/planos/ADR-app-nativo.md` — nativo Rust em `native/`, str0m + WGC + MF + Slint/wgpu DX12; metas < 100 ms, < 15 ms/salto, < 200 MB WS; catálogo de problemas §2.9; riscos §5.
+- [12 Plano em fatias](12-plano-em-fatias.md): `docs/planos/PLANO-app-nativo.md` — 15 fatias, transmitir primeiro (1a núcleo, 1b UI + CPU do redesenho).
 - [14 AMD/Intel](14-validar-amd-intel.md): adiado como risco; validação entra no plano (12) antes do lançamento (answers 006).
 
 ## Ainda não especificado
-- Erro `ProcessOutput 0x8000FFFF` do MFT após troca de bitrate (13): causa e recuperação.
-- Intervalo de keyframe do transmissor (hoje GOP 10 s) × PLI e custo de keyframes grandes na árvore.
-- TURN: testar o cliente (15) contra coturn e Cloudflare TLS 443; nenhum TURN local aguenta 3 × 8 Mbps.
-- Validação em segundo PC (rede real entre máquinas).
-- Instalador, assinatura e atualização automática do executável nativo.
-- Migração dos usuários Tauri → nativo (quando e como trocar).
-- Presenter entra em pânico quando o espectador rejeita o formato (`RemoteSdp missing a=ice-ufrag/pwd`, 19 com main/4d001f): precisa recusar e cair para 42e01f (answers 005).
-- Espectador Firefox gastou ~440 MB / 75–93 % CPU a 1080p60 (19): decode por software? Afeta quem assiste pela web no Firefox.
+- Itens cobertos pelo ADR/plano (ponteiros): Erro `ProcessOutput 0x8000FFFF` do MFT após troca de bitrate → ADR §2.9 / fatia 8; Intervalo de keyframe do transmissor → ADR §2.5 / fatia 10; TURN → fatia 5; Validação em segundo PC → fatia 13; Instalador, assinatura e atualização automática do executável nativo. → ADR §2.6 / fatia 9; Migração dos usuários Tauri → nativo → ADR §2.6 / fatia 12; Presenter entra em pânico quando o espectador rejeita o formato → ADR §2.9 / fatia 1a; Espectador Firefox gastou ~440 MB / 75–93 % CPU a 1080p60 → ADR §2.8 / fatia 14; BWE entre dois relays nativos veio ausente/incoerente → ADR §5 / fatia 4; Recodificação com GPU disputada → ADR §2.4 / fatia 4; CPU do Slint/femtovg-wgpu a 60 Hz → ADR §5 / fatia 1b; RAM → ADR §1, §4; Latência até o vsync/composição → ADR §5 / fatia 2; Áudio no pipeline nativo → ADR §2.1 / fatias 2 e 6.
 - Firefox ignora candidatos 127.0.0.1: testes locais com Firefox exigem IP de LAN (19).
-- BWE entre dois relays nativos veio ausente/incoerente (18): causa não investigada.
-- Recodificação com GPU disputada (jogo/captura) chegou a p95 25–31 ms (18): prioridade/limite de filhos recodificados.
-- CPU do Slint/femtovg-wgpu a 60 Hz: 78–89 % de um núcleo só redesenhando (07). Testar `renderer-skia`, região de redesenho parcial ou vídeo em swap chain/DirectComposition própria sob a UI. Primeira fatia do plano (12), answers 007.
-- RAM: meta do toolkit subiu para < 200 MB (answers 007); 76 MB WS só do device wgpu DX12 (07).
-- Latência até o vsync/composição (Present a 144 Hz) não medida no 07; só até o submit.
-- Áudio no pipeline nativo (Opus, sincronia com vídeo) e voz em mesh com supressão de ruído/eco/PTT (WebRTC APM nativo?).
 
 ## Fora de escopo
 - Construir o app (o mapa para no plano).
