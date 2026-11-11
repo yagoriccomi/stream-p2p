@@ -6,3 +6,4 @@ app/node_modules/
 worker/.wrangler/
 # scripts de diagnóstico descartáveis (convenção do projeto)
 e2e/_*.tmp.*
+native/target/

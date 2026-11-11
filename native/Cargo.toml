@@ -1,0 +1,58 @@
+[package]
+name = "sp2p-native"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[[bin]]
+name = "native"
+path = "src/main.rs"
+
+[dependencies]
+str0m = { version = "0.25", default-features = false, features = ["wincrypto"] }
+serde_json = "1"
+tungstenite = { version = "0.30", features = ["native-tls"] }
+opus1 = "0.3"
+wasapi = "0.26"
+# 1b UI: Slint on our wgpu DX12 device (preview without CPU copy, as in e2e/bench/proto07).
+slint = { version = "~1.18", default-features = false, features = ["std", "compat-1-2", "backend-winit", "renderer-femtovg-wgpu", "renderer-skia", "renderer-software", "accessibility", "unstable-wgpu-30", "raw-window-handle-06"] }
+wgpu = { version = "30", default-features = false, features = ["dx12"] }
+wgpu-hal = { version = "30", features = ["dx12"] }
+raw-window-handle = "0.6"
+
+[dependencies.windows]
+version = "0.62"
+features = [
+  "Foundation",
+  "Foundation_Numerics",
+  "Graphics",
+  "Graphics_Capture",
+  "Graphics_DirectX",
+  "Graphics_DirectX_Direct3D11",
+  "Win32_Foundation",
+  "Win32_Graphics_Direct3D",
+  "Win32_Graphics_Direct3D11",
+  "Win32_Graphics_Direct3D12",
+  "Win32_Graphics_Dwm",
+  "Win32_Graphics_DirectComposition",
+  "Win32_Graphics_Dxgi",
+  "Win32_Graphics_Dxgi_Common",
+  "Win32_Graphics_Gdi",
+  "Win32_Media",
+  "Win32_Media_MediaFoundation",
+  "Win32_System_Com",
+  "Win32_System_Diagnostics_ToolHelp",
+  "Win32_System_ProcessStatus",
+  "Win32_Security",
+  "Win32_UI_WindowsAndMessaging",
+  "Win32_System_Ole",
+  "Win32_System_Threading",
+  "Win32_System_Variant",
+  "Win32_System_WinRT",
+  "Win32_System_WinRT_Direct3D11",
+  "Win32_System_WinRT_Graphics_Capture",
+  "Win32_UI_HiDpi",
+]
+
+[profile.release]
+debug = 1
