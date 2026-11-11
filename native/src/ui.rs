@@ -398,6 +398,7 @@ fn worker(rx: Receiver<Msg>, tx: Sender<Msg>, d11: ID3D11Device, c11: ID3D11Devi
     let mut ovs: Vec<ID3D11VideoProcessorOutputView> = vec![];
     let (mut k, mut sig) = (0usize, 0u64);
     let mut pace = Pace { next: Instant::now() };
+    let mut shown = false; // swapchain: placeholder text hidden after the first present
     let ovd = D3D11_VIDEO_PROCESSOR_OUTPUT_VIEW_DESC {
         ViewDimension: D3D11_VPOV_DIMENSION_TEXTURE2D,
         Anonymous: D3D11_VIDEO_PROCESSOR_OUTPUT_VIEW_DESC_0 { Texture2D: D3D11_TEX2D_VPOV { MipSlice: 0 } },
@@ -512,6 +513,10 @@ fn worker(rx: Receiver<Msg>, tx: Sender<Msg>, d11: ID3D11Device, c11: ID3D11Devi
                                 let _ = blt(&ov);
                             }
                             let _ = sc.Present(1, DXGI_PRESENT(0));
+                            if !shown {
+                                shown = true;
+                                let _ = app.upgrade_in_event_loop(|a| a.set_has_video(true));
+                            }
                         }
                         Target::Swapchain(None) => {}
                     }

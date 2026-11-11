@@ -56,10 +56,10 @@ struct Args {
     bench: Option<u64>,
 }
 
-const USAGE: &str = "uso: native.exe --server <url> [--ui [--render femtovg|skia|partial|swapchain] [--bench <s>]] [--name <apelido>] [--monitor <n> | --window <hwnd>] [--synth] [--audio system|tone|off] [--profile 42e01f|42001f|4d001f] [--encoder hardware|software] [--kbps <n>] [--upload <Mbps>]";
+const USAGE: &str = "uso: native.exe --server <url> [--ui [--render swapchain|femtovg|skia|partial] [--bench <s>]] [--name <apelido>] [--monitor <n> | --window <hwnd>] [--synth] [--audio system|tone|off] [--profile 42e01f|42001f|4d001f] [--encoder hardware|software] [--kbps <n>] [--upload <Mbps>]";
 
 fn parse_args(mut it: impl Iterator<Item = String>) -> Result<Args, String> {
-    let mut a = Args { server: String::new(), name: "Transmissor".into(), monitor: None, synth: false, audio: "system".into(), profile: Profile::ConstrainedBaseline, software: false, kbps: DEFAULT_KBPS, upload_mbps: 50.0, window: None, ui: false, render: ui::Render::Femtovg, bench: None };
+    let mut a = Args { server: String::new(), name: "Transmissor".into(), monitor: None, synth: false, audio: "system".into(), profile: Profile::ConstrainedBaseline, software: false, kbps: DEFAULT_KBPS, upload_mbps: 50.0, window: None, ui: false, render: ui::Render::Swapchain, bench: None };
     while let Some(k) = it.next() {
         let mut val = || it.next().ok_or_else(|| format!("{k} precisa de um valor\n{USAGE}"));
         match k.as_str() {
