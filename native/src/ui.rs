@@ -279,6 +279,23 @@ fn tex(d11: &ID3D11Device, w: u32, h: u32, fmt: DXGI_FORMAT, bind: u32, usage: D
     t.unwrap()
 }
 
+/// 60 Hz cadence over a faster source (e.g. 144 Hz display ticks): a frame is taken when its
+/// slot is due; slots advance by exactly 1/60 s so the average holds at 60.
+struct Pace {
+    next: Instant,
+}
+
+impl Pace {
+    const STEP: Duration = Duration::from_nanos(1_000_000_000 / FPS as u64);
+    fn take(&mut self, now: Instant) -> bool {
+        if now < self.next {
+            return false;
+        }
+        self.next = if now - self.next > Self::STEP { now + Self::STEP } else { self.next + Self::STEP };
+        true
+    }
+}
+
 /// GPU sync between the D3D11 writer and wgpu's D3D12 queue (pool mode), as in proto07.
 struct Sync {
     f11: ID3D11Fence,
@@ -335,7 +352,7 @@ fn open(src: Src, d11: &ID3D11Device, c11: &ID3D11DeviceContext, tx: &Sender<Msg
     let session = pool.CreateCaptureSession(&item)?;
     let _ = session.SetIsBorderRequired(false);
     let _ = session.SetIsCursorCaptureEnabled(true);
-    let _ = session.SetMinUpdateInterval(windows::Foundation::TimeSpan { Duration: 10_000_000 / FPS as i64 }); // preview: 60 Hz max
+    let _ = session.SetMinUpdateInterval(windows::Foundation::TimeSpan { Duration: 10_000 }); // 1 ms; Pace caps at 60 Hz
     let vdev: ID3D11VideoDevice = d11.cast()?;
     let vctx: ID3D11VideoContext = c11.cast()?;
     let cd = D3D11_VIDEO_PROCESSOR_CONTENT_DESC {
@@ -380,6 +397,7 @@ fn worker(rx: Receiver<Msg>, tx: Sender<Msg>, d11: ID3D11Device, c11: ID3D11Devi
     let mut cap: Option<Cap> = None;
     let mut ovs: Vec<ID3D11VideoProcessorOutputView> = vec![];
     let (mut k, mut sig) = (0usize, 0u64);
+    let mut pace = Pace { next: Instant::now() };
     let ovd = D3D11_VIDEO_PROCESSOR_OUTPUT_VIEW_DESC {
         ViewDimension: D3D11_VPOV_DIMENSION_TEXTURE2D,
         Anonymous: D3D11_VIDEO_PROCESSOR_OUTPUT_VIEW_DESC_0 { Texture2D: D3D11_TEX2D_VPOV { MipSlice: 0 } },
@@ -433,6 +451,11 @@ fn worker(rx: Receiver<Msg>, tx: Sender<Msg>, d11: ID3D11Device, c11: ID3D11Devi
                     }
                 }
                 let Some(f) = frame else { continue };
+                // 1 ms of slack: a 144 Hz tick lands a hair before the slot
+                if !pace.take(Instant::now() + Duration::from_millis(1)) {
+                    let _ = f.Close();
+                    continue;
+                }
                 unsafe {
                     let surface = f.Surface().unwrap();
                     let t: ID3D11Texture2D = surface.cast::<IDirect3DDxgiInterfaceAccess>().unwrap().GetInterface().unwrap();
@@ -810,6 +833,15 @@ mod tests {
         assert_eq!(letterbox(1000, 1000, 960, 540), r(210, 0, 750, 540));
         assert_eq!(letterbox(3440, 1440, 960, 540), r(0, 69, 960, 471));
         assert_eq!(letterbox(640, 360, 960, 540), r(0, 0, 960, 540)); // small windows are scaled up
+    }
+
+    #[test]
+    fn pace_averages_60_over_144hz_ticks() {
+        let t0 = Instant::now();
+        let mut p = Pace { next: t0 };
+        let tick = Duration::from_nanos(1_000_000_000 / 144);
+        let taken = (0..1440).filter(|&i| p.take(t0 + tick * i + Duration::from_millis(1))).count();
+        assert!((598..=602).contains(&taken), "{taken}");
     }
 
     #[test]
