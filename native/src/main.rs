@@ -54,12 +54,14 @@ struct Args {
     ui: bool,
     render: ui::Render,
     bench: Option<u64>,
+    // Filho da janela: stdin fechado = pai morreu (inclusive à força), então encerra.
+    exit_on_eof: bool,
 }
 
 const USAGE: &str = "uso: native.exe --server <url> [--ui [--render swapchain|femtovg|skia|partial] [--bench <s>]] [--name <apelido>] [--monitor <n> | --window <hwnd>] [--synth] [--audio system|tone|off] [--profile 42e01f|42001f|4d001f] [--encoder hardware|software] [--kbps <n>] [--upload <Mbps>]";
 
 fn parse_args(mut it: impl Iterator<Item = String>) -> Result<Args, String> {
-    let mut a = Args { server: String::new(), name: "Transmissor".into(), monitor: None, synth: false, audio: "system".into(), profile: Profile::ConstrainedBaseline, software: false, kbps: DEFAULT_KBPS, upload_mbps: 50.0, window: None, ui: false, render: ui::Render::Swapchain, bench: None };
+    let mut a = Args { server: String::new(), name: "Transmissor".into(), monitor: None, synth: false, audio: "system".into(), profile: Profile::ConstrainedBaseline, software: false, kbps: DEFAULT_KBPS, upload_mbps: 50.0, window: None, ui: false, render: ui::Render::Swapchain, bench: None, exit_on_eof: false };
     while let Some(k) = it.next() {
         let mut val = || it.next().ok_or_else(|| format!("{k} precisa de um valor\n{USAGE}"));
         match k.as_str() {
@@ -74,6 +76,7 @@ fn parse_args(mut it: impl Iterator<Item = String>) -> Result<Args, String> {
             }
             "--bench" => a.bench = Some(val()?.parse().map_err(|_| "--bench: segundos")?),
             "--synth" => a.synth = true,
+            "--exit-on-stdin-eof" => a.exit_on_eof = true,
             "--audio" => a.audio = val()?.to_string(),
             "--profile" => {
                 let v = val()?;
@@ -223,6 +226,7 @@ fn main() {
     let device_id = device_id();
 
     let (cmd_tx, cmd_rx) = mpsc::channel::<Value>();
+    let exit_on_eof = args.exit_on_eof;
     std::thread::spawn(move || {
         for line in std::io::stdin().lock().lines().map_while(Result::ok) {
             if let Ok(v) = serde_json::from_str(&line) {
@@ -230,6 +234,9 @@ fn main() {
                     break;
                 }
             }
+        }
+        if exit_on_eof {
+            std::process::exit(0);
         }
     });
 

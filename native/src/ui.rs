@@ -627,7 +627,7 @@ thread_local! {
 /// The presenter (slice 1a) as a child process; its first stdout line is the invite.
 fn start(server: &str, audio: &str, name: &str, src: Src, app: slint::Weak<App>) -> std::io::Result<Child> {
     let name = if name.is_empty() { "Transmissor" } else { name };
-    let mut a = vec!["--server".to_string(), server.into(), "--name".into(), name.into(), "--audio".into(), audio.into()];
+    let mut a = vec!["--server".to_string(), server.into(), "--name".into(), name.into(), "--audio".into(), audio.into(), "--exit-on-stdin-eof".into()];
     a.extend(src.args());
     let mut child = Command::new(std::env::current_exe()?).args(&a).stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::inherit()).spawn()?;
     let out = child.stdout.take().unwrap();
