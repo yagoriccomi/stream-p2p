@@ -46,9 +46,8 @@ pub fn tex(device: &ID3D11Device, w: u32, h: u32, fmt: DXGI_FORMAT, init: Option
     Ok(t.unwrap())
 }
 
-/// Monitor `index` in EnumDisplayMonitors order, or the primary one.
-fn monitor(index: Option<usize>) -> Option<HMONITOR> {
-    let Some(i) = index else { return Some(unsafe { MonitorFromPoint(POINT { x: 0, y: 0 }, MONITOR_DEFAULTTOPRIMARY) }) };
+/// Monitors in EnumDisplayMonitors order (the `--monitor` index).
+pub fn monitors() -> Vec<HMONITOR> {
     unsafe extern "system" fn push(m: HMONITOR, _: HDC, _: *mut RECT, list: LPARAM) -> BOOL {
         (*(list.0 as *mut Vec<HMONITOR>)).push(m);
         true.into()
@@ -57,7 +56,24 @@ fn monitor(index: Option<usize>) -> Option<HMONITOR> {
     unsafe {
         let _ = EnumDisplayMonitors(None, None, Some(push), LPARAM(&mut list as *mut _ as isize));
     }
-    list.get(i).copied()
+    list
+}
+
+/// What to capture: a window (HWND), monitor `index`, or the primary monitor.
+pub fn item(index: Option<usize>, window: Option<isize>) -> Result<GraphicsCaptureItem> {
+    let interop = windows::core::factory::<GraphicsCaptureItem, IGraphicsCaptureItemInterop>()?;
+    if let Some(h) = window {
+        return unsafe { interop.CreateForWindow(windows::Win32::Foundation::HWND(h as _)) };
+    }
+    let hmon = match index {
+        None => unsafe { MonitorFromPoint(POINT { x: 0, y: 0 }, MONITOR_DEFAULTTOPRIMARY) },
+        Some(i) => *monitors().get(i).ok_or_else(|| windows::core::Error::new(windows::Win32::Foundation::E_INVALIDARG, "monitor não existe"))?,
+    };
+    unsafe { interop.CreateForMonitor(hmon) }
+}
+
+pub fn winrt_device(device: &ID3D11Device) -> Result<IDirect3DDevice> {
+    unsafe { CreateDirect3D11DeviceFromDXGIDevice(&device.cast::<IDXGIDevice>()?)?.cast() }
 }
 
 pub struct Screen {
@@ -84,14 +100,12 @@ pub struct Screen {
 pub const REPEAT: std::time::Duration = std::time::Duration::from_millis(100);
 
 impl Screen {
-    pub fn new(device: &ID3D11Device, ctx: &ID3D11DeviceContext, index: Option<usize>) -> Result<Screen> {
-        let hmon = monitor(index).ok_or_else(|| windows::core::Error::new(windows::Win32::Foundation::E_INVALIDARG, "monitor não existe"))?;
-        let winrt: IDirect3DDevice = unsafe { CreateDirect3D11DeviceFromDXGIDevice(&device.cast::<IDXGIDevice>()?)?.cast()? };
-        let item: GraphicsCaptureItem = unsafe { windows::core::factory::<GraphicsCaptureItem, IGraphicsCaptureItemInterop>()?.CreateForMonitor(hmon)? };
+    pub fn new(device: &ID3D11Device, ctx: &ID3D11DeviceContext, item: &GraphicsCaptureItem) -> Result<Screen> {
+        let winrt = winrt_device(device)?;
         let size = item.Size()?;
         let (sw, sh) = (size.Width as u32, size.Height as u32);
         let pool = Direct3D11CaptureFramePool::CreateFreeThreaded(&winrt, DirectXPixelFormat::B8G8R8A8UIntNormalized, 2, size)?;
-        let session = pool.CreateCaptureSession(&item)?;
+        let session = pool.CreateCaptureSession(item)?;
         let _ = session.SetIsBorderRequired(false);
         let _ = session.SetMinUpdateInterval(windows::Foundation::TimeSpan { Duration: 10_000 }); // 1 ms: no 60 Hz cap of its own
         session.StartCapture()?;
@@ -119,7 +133,7 @@ impl Screen {
         };
         let mut iv = None;
         unsafe { vdev.CreateVideoProcessorInputView(&bgra, &venum, &ivd, Some(&mut iv))? };
-        eprintln!("captura: monitor {sw}x{sh} → {w}x{h}");
+        eprintln!("captura: {sw}x{sh} → {w}x{h}");
         Ok(Screen { pool, _session: session, device: device.clone(), ctx: ctx.clone(), vdev, vctx, vp, venum, bgra, input_view: iv.unwrap(), w, h, skipped: 0, last: None, last_at: std::time::Instant::now() })
     }
 

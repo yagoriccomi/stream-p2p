@@ -6,11 +6,15 @@
 //! stdout: the invite link, then JSON lines answering stdin commands (tests, and the 1b UI later):
 //!   {"cmd":"stats"} | {"cmd":"bitrate","kbps":N} | {"cmd":"fault","n":N}
 //! stderr: the log (catalog §2.9 plan-B messages included).
+//! --ui (slice 1b): the "Transmitir" window (picker + preview); the button runs this same exe
+//! headless as a child process, so the 1a path is what streams.
 mod audio;
 mod capture;
 mod encode;
+mod msvc_shim;
 mod net;
 mod sysaudio;
+mod ui;
 mod ws;
 
 use std::collections::HashMap;
@@ -46,18 +50,29 @@ struct Args {
     software: bool,
     kbps: u32,
     upload_mbps: f64,
+    window: Option<isize>,
+    ui: bool,
+    render: ui::Render,
+    bench: Option<u64>,
 }
 
-const USAGE: &str = "uso: native.exe --server <url> [--name <apelido>] [--monitor <n>] [--synth] [--audio system|tone|off] [--profile 42e01f|42001f|4d001f] [--encoder hardware|software] [--kbps <n>] [--upload <Mbps>]";
+const USAGE: &str = "uso: native.exe --server <url> [--ui [--render femtovg|skia|partial|swapchain] [--bench <s>]] [--name <apelido>] [--monitor <n> | --window <hwnd>] [--synth] [--audio system|tone|off] [--profile 42e01f|42001f|4d001f] [--encoder hardware|software] [--kbps <n>] [--upload <Mbps>]";
 
 fn parse_args(mut it: impl Iterator<Item = String>) -> Result<Args, String> {
-    let mut a = Args { server: String::new(), name: "Transmissor".into(), monitor: None, synth: false, audio: "system".into(), profile: Profile::ConstrainedBaseline, software: false, kbps: DEFAULT_KBPS, upload_mbps: 50.0 };
+    let mut a = Args { server: String::new(), name: "Transmissor".into(), monitor: None, synth: false, audio: "system".into(), profile: Profile::ConstrainedBaseline, software: false, kbps: DEFAULT_KBPS, upload_mbps: 50.0, window: None, ui: false, render: ui::Render::Femtovg, bench: None };
     while let Some(k) = it.next() {
         let mut val = || it.next().ok_or_else(|| format!("{k} precisa de um valor\n{USAGE}"));
         match k.as_str() {
             "--server" => a.server = val()?,
             "--name" => a.name = val()?,
             "--monitor" => a.monitor = Some(val()?.parse().map_err(|_| "--monitor: número")?),
+            "--window" => a.window = Some(val()?.parse().map_err(|_| "--window: HWND em decimal")?),
+            "--ui" => a.ui = true,
+            "--render" => {
+                let v = val()?;
+                a.render = ui::Render::parse(&v).ok_or_else(|| format!("--render inválido: {v}"))?
+            }
+            "--bench" => a.bench = Some(val()?.parse().map_err(|_| "--bench: segundos")?),
             "--synth" => a.synth = true,
             "--audio" => a.audio = val()?.to_string(),
             "--profile" => {
@@ -162,6 +177,10 @@ fn main() {
         eprintln!("{e}");
         std::process::exit(2);
     });
+    if args.ui {
+        ui::run(&args); // winit needs the main thread as STA: no RoInitialize(MTA) here
+        return;
+    }
     unsafe {
         let _ = windows::Win32::UI::HiDpi::SetProcessDpiAwarenessContext(windows::Win32::UI::HiDpi::DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
         windows::Win32::Media::timeBeginPeriod(1);
@@ -173,7 +192,7 @@ fn main() {
     let mut source = if args.synth {
         Source::Synth(Synth::new(MAX_W, MAX_H), Instant::now())
     } else {
-        match Screen::new(&device, &ctx, args.monitor) {
+        match capture::item(args.monitor, args.window).and_then(|item| Screen::new(&device, &ctx, &item)) {
             Ok(s) => Source::Screen(s),
             Err(e) => {
                 eprintln!("erro: não foi possível capturar a tela: {e}");
@@ -572,5 +591,8 @@ mod tests {
         assert!(args(&["--server", "http://x", "--profile", "high"]).is_err());
         assert!(args(&["--server", "http://x", "--kbps", "5"]).is_err());
         assert_eq!(args(&["--server", "http://x", "--profile", "main"]).unwrap().profile, Profile::Main);
+        let u = args(&["--server", "http://x", "--ui", "--render", "swapchain", "--window", "1234"]).unwrap();
+        assert_eq!((u.ui, u.render, u.window), (true, ui::Render::Swapchain, Some(1234)));
+        assert!(args(&["--server", "http://x", "--render", "gdi"]).is_err());
     }
 }
