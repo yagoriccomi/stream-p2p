@@ -127,7 +127,6 @@
           <button type="button" class="voice-opt" role="radio" data-voice="listen" aria-checked="false">Só ouvir</button>
         </div>
       </div>
-      <p class="small muted">Usa o apelido do lado. Se não tiver, a gente pergunta.</p>
     </form>
   </div>
   <div class="bot-add" id="bot-add" hidden>
@@ -260,7 +259,7 @@
 <dialog id="dlg-setup" aria-labelledby="setup-h">
   <form class="dlg" method="dialog" id="setup-form">
     <div class="dlg-head"><h2 id="setup-h">Mostrar tela</h2><button class="btn ghost icon" value="cancel" aria-label="Fechar"><svg class="i"><use href="#i-close"/></svg></button></div>
-    <div class="section" style="border: 0; padding: 0">
+    <div class="section">
       <h3>Fonte</h3>
       <div class="seg" role="tablist" aria-label="Categoria da fonte" id="src-tabs">
         <button type="button" role="tab" data-src="monitor" aria-selected="true">Monitor <span class="count"></span></button>
@@ -299,8 +298,8 @@
 <dialog id="dlg-audio" aria-labelledby="audio-h">
   <div class="dlg">
     <div class="dlg-head"><h2 id="audio-h">Volume</h2><button class="btn ghost icon" type="button" data-close aria-label="Fechar"><svg class="i"><use href="#i-close"/></svg></button></div>
-    <div class="section" style="border: 0; padding: 0">
-      <h3>Volume</h3>
+    <div class="section">
+      <h3>Geral</h3>
       <div class="mix-row"><span class="name">Tela</span><input type="range" min="0" max="400" value="50" id="mx-stream" aria-label="Volume da transmissão"><output for="mx-stream">50</output><button class="btn icon" type="button" id="mx-stream-mute" aria-pressed="false" aria-label="Silenciar transmissão"><svg class="i"><use href="#i-volume"/></svg></button></div>
       <div class="mix-row"><span class="name">Conversa</span><input type="range" min="0" max="100" value="50" id="mx-voice" aria-label="Volume da voz"><output for="mx-voice">50</output><button class="btn icon" type="button" id="mx-voice-mute" aria-pressed="false" aria-label="Silenciar voz"><svg class="i"><use href="#i-volume"/></svg></button></div>
     </div>
@@ -335,7 +334,7 @@
 <dialog id="dlg-settings" aria-labelledby="settings-h">
   <div class="dlg">
     <div class="dlg-head"><h2 id="settings-h">Ajustes</h2><button class="btn ghost icon" type="button" data-close aria-label="Fechar"><svg class="i"><use href="#i-close"/></svg></button></div>
-    <div class="section" style="border: 0; padding: 0">
+    <div class="section">
       <h3>Imagem</h3>
       <label class="field">Codec preferido<select id="set-codec"></select></label>
       <p class="small muted" id="set-codec-hint"></p>

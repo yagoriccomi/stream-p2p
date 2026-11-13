@@ -156,3 +156,11 @@ export const store = {
     } catch {}
   },
 };
+
+// Range sliders paint their filled part from --p (WebKit has no ::range-progress).
+const paintRange = (r) => r.style.setProperty('--p', `${((r.value - (r.min || 0)) / ((r.max || 100) - (r.min || 0))) * 100}%`);
+const paintAll = (root) => root.querySelectorAll?.('input[type=range]').forEach(paintRange);
+document.addEventListener('input', (e) => e.target.matches?.('input[type=range]') && paintRange(e.target));
+new MutationObserver((list) => list.forEach((m) => m.addedNodes.forEach((n) => (n.matches?.('input[type=range]') ? paintRange(n) : paintAll(n))))).observe(document.body, { childList: true, subtree: true });
+document.addEventListener('click', () => requestAnimationFrame(() => paintAll(document)), true);
+paintAll(document);
