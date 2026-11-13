@@ -1,0 +1,260 @@
+<title>Stream P2P Layout Final</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: glass panels over a violet glow; condensed uppercase display type for titles; 16px radii; plain, friendly copy. */
+:root{color-scheme:dark;--bg:#0A0A0B;--s1:#141416;--s2:#1C1C20;--line:#2A2A30;--text:#F2F2F4;--muted:#A1A1AA;--violet:#7F00FF;--vt:#B266FF;--vsoft:#22103D;--live:#2EE59D;--red:#FF4D4D;--warn:#FFB020;
+--glass:rgba(22,22,28,.58);--gline:rgba(255,255,255,.09);--r:16px;--rs:12px;
+--fi:Inter,system-ui,sans-serif;--fa:Archivo,'Arial Narrow',system-ui,sans-serif;--fm:'JetBrains Mono',ui-monospace,monospace}
+*{box-sizing:border-box}
+body{margin:0;background:#050506;color:var(--text);font:14px/1.45 var(--fi);padding-block:24px 80px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1180px;margin:0 auto;display:grid;gap:16px}
+.h{font-family:var(--fa);font-stretch:72%;font-weight:900;text-transform:uppercase;line-height:.92;letter-spacing:-.005em;text-wrap:balance}
+.k{font:800 11px var(--fa);font-stretch:90%;letter-spacing:.14em;text-transform:uppercase;color:var(--vt)}
+h1.page{font-size:34px;margin:0}
+.lead{color:var(--muted);margin:0;max-width:72ch}
+nav{display:flex;gap:6px;flex-wrap:wrap;position:sticky;top:env(safe-area-inset-top,0px);background:#050506;padding-block:10px;z-index:30}
+nav button{background:var(--s1);color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:8px 14px;font:600 13px var(--fi);cursor:pointer}
+nav button[aria-selected=true]{background:var(--violet);color:#fff;border-color:var(--violet)}
+button:focus-visible{outline:2px solid var(--vt);outline-offset:2px}
+.screen{display:none;gap:12px}.screen.on{display:grid}
+.notes{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.notes div{background:var(--s1);border-radius:var(--rs);padding:10px 12px;color:var(--muted);font-size:13px;min-width:0}
+.notes b{color:var(--text)}
+.scroll{overflow-x:auto;border-radius:20px;border:1px solid var(--line)}
+.f{min-width:960px;height:560px;position:relative;overflow:hidden;color:var(--text);
+ background:radial-gradient(60% 70% at 12% 8%,#7f00ff4d,transparent 60%),radial-gradient(50% 60% at 96% 100%,#7f00ff2e,transparent 60%),var(--bg)}
+svg.i{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+svg.lg{width:30px;height:26px;flex:none}
+.row{display:flex;gap:8px;align-items:center}.col{display:flex;flex-direction:column;gap:8px}.grow{flex:1}
+.mu{color:var(--muted)}.sm{font-size:12px}.xs{font-size:11px}.mono{font-family:var(--fm)}
+.gl{background:var(--glass);border:1px solid var(--gline);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:var(--r)}
+.b{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:rgba(255,255,255,.06);color:var(--text);border:1px solid rgba(255,255,255,.1);border-radius:var(--rs);padding:9px 14px;font:600 13px var(--fi);white-space:nowrap;cursor:pointer}
+.b.p{background:var(--violet);border-color:#9a3dff;color:#fff;box-shadow:0 8px 28px #7f00ff55}
+.b.dd{background:var(--red);border-color:var(--red);color:#fff}
+.b.d{background:#2a1216;border-color:#5a2028;color:#ff8a8a}
+.b.g{background:transparent;border-color:transparent;color:var(--muted)}
+.b.ic{padding:0;width:40px;height:40px}
+.b.on{background:var(--vsoft);border-color:var(--violet);color:var(--vt)}
+.in{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);color:var(--text);border-radius:var(--rs);padding:12px;font:inherit}
+.vid{position:absolute;inset:0;background:radial-gradient(120% 90% at 20% 20%,#2b3f6e 0,transparent 55%),radial-gradient(90% 90% at 85% 80%,#4a1b6d 0,transparent 60%),#0d1220;display:grid;place-items:center;color:#ffffff40;font-size:12px}
+.av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:12px;background:var(--vsoft);color:var(--vt);flex:none}
+.av.lv{background:#3a0d14;color:#ff8a8a}
+.live{display:inline-flex;align-items:center;gap:6px;background:#3a0d14;color:#ff8a8a;border-radius:999px;padding:4px 10px;font-weight:700;font-size:12px;white-space:nowrap}
+.live:before{content:"";width:7px;height:7px;border-radius:50%;background:var(--red)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--live);flex:none}
+.tr{width:36px;height:20px;border-radius:99px;background:var(--violet);position:relative;flex:none}.tr:after{content:"";position:absolute;right:3px;top:3px;width:14px;height:14px;border-radius:50%;background:#fff}
+.tr.off{background:var(--line)}.tr.off:after{right:auto;left:3px}
+.rng{height:4px;border-radius:4px;background:rgba(255,255,255,.12);position:relative;flex:1}.rng:after{content:"";position:absolute;inset:0 auto 0 0;width:var(--w,50%);background:var(--violet);border-radius:4px}
+.seg{display:flex;background:rgba(255,255,255,.05);border-radius:var(--rs);padding:3px;gap:2px}
+.seg .b{border-color:transparent;background:transparent;color:var(--muted);padding:7px 10px}
+.seg .b.on{background:rgba(255,255,255,.1);color:var(--text)}
+.cur{position:absolute;width:14px;height:20px;z-index:9}
+.cur:before{content:"";position:absolute;inset:0;background:#fff;clip-path:polygon(0 0,0 100%,30% 72%,52% 100%,66% 92%,46% 66%,85% 66%);filter:drop-shadow(0 1px 2px #000)}
+
+/* session chrome */
+.top{position:absolute;top:14px;left:14px;right:14px;padding:8px 10px 8px 14px;z-index:6}
+.dock{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);padding:8px;z-index:6}
+.side{position:absolute;right:14px;top:78px;bottom:84px;width:280px;padding:14px;display:flex;flex-direction:column;gap:10px;z-index:5}
+.side[hidden]{display:none}
+.pane{display:none;flex:1;flex-direction:column;gap:10px;min-height:0}.pane.on{display:flex}
+.msgs{flex:1;display:flex;flex-direction:column;gap:8px;font-size:13px;overflow:auto}
+.msgs b{color:var(--vt)}
+.plist{display:grid;gap:2px}
+.plist div{display:flex;align-items:center;gap:10px;padding:7px;border-radius:10px;font-size:13px}
+.plist div:hover{background:rgba(255,255,255,.05)}
+.tag{font-size:11px;color:var(--muted);border:1px solid var(--gline);border-radius:6px;padding:1px 6px}
+.mt{display:grid;grid-template-columns:1fr auto;gap:8px 12px;font-size:13px}
+.mt span:nth-child(even){font-family:var(--fm);text-align:right}
+.mbar{height:28px;display:flex;align-items:flex-end;gap:2px}
+.mbar i{flex:1;background:var(--violet);border-radius:2px 2px 0 0;opacity:.75}
+.mini{position:absolute;left:14px;top:78px;width:270px;padding:14px;display:grid;gap:12px;z-index:5}
+.mini[hidden]{display:none}
+.chip{position:absolute;left:14px;top:78px;z-index:5;padding:6px 6px 6px 12px}
+.chip[hidden]{display:none}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+ <symbol id="logo" viewBox="0 0 120 104"><rect x="7" y="7" width="106" height="70" rx="12" fill="none" stroke="#7F00FF" stroke-width="12"/><path d="M60 80v12M42 96h36" stroke="#7F00FF" stroke-width="10" stroke-linecap="round"/><path d="M48 26L78 42L48 58Z" fill="none" stroke="#fff" stroke-width="6" stroke-linejoin="round"/><circle cx="48" cy="26" r="7" fill="#fff"/><circle cx="78" cy="42" r="7" fill="#fff"/><circle cx="48" cy="58" r="7" fill="#fff"/></symbol>
+ <symbol id="mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></symbol>
+ <symbol id="hp" viewBox="0 0 24 24"><path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="4.5" height="6" rx="1.5"/><rect x="16.5" y="14" width="4.5" height="6" rx="1.5"/></symbol>
+ <symbol id="scr" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4M12 13V7M9 10l3-3 3 3"/></symbol>
+ <symbol id="chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></symbol>
+ <symbol id="full" viewBox="0 0 24 24"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></symbol>
+ <symbol id="leave" viewBox="0 0 24 24"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M10 8l-4 4 4 4M6 12h10"/></symbol>
+ <symbol id="gear" viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></symbol>
+ <symbol id="link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1"/><path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/></symbol>
+ <symbol id="pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></symbol>
+ <symbol id="stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></symbol>
+ <symbol id="more" viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01" stroke-width="3"/></symbol>
+ <symbol id="pass" viewBox="0 0 24 24"><path d="M4 8h13M14 5l3 3-3 3M20 16H7M10 13l-3 3 3 3"/></symbol>
+ <symbol id="vol" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></symbol>
+ <symbol id="ppl" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/></symbol>
+ <symbol id="lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+ <symbol id="sig" viewBox="0 0 24 24"><path d="M4 20v-3M9 20v-7M14 20V9M19 20V4"/></symbol>
+ <symbol id="shield" viewBox="0 0 24 24"><path d="M12 3l7.5 3v5.5c0 4.5-3.2 8.2-7.5 9.5-4.3-1.3-7.5-5-7.5-9.5V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+ <symbol id="rm" viewBox="0 0 24 24"><circle cx="10" cy="8" r="3.5"/><path d="M3.5 20a6.5 6.5 0 0 1 13 0M16 11h6"/></symbol>
+ <symbol id="x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+ <symbol id="hand" viewBox="0 0 24 24"><path d="M8 13V6a1.5 1.5 0 0 1 3 0v5M11 11V4.5a1.5 1.5 0 0 1 3 0V11M14 11V6a1.5 1.5 0 0 1 3 0v7a7 7 0 0 1-7 7h-.5A5.5 5.5 0 0 1 5 15.5V12a1.5 1.5 0 0 1 3 0"/></symbol>
+ <symbol id="min" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></symbol>
+ <symbol id="send" viewBox="0 0 24 24"><path d="M4 12L20 4l-6 16-3-7z"/></symbol>
+</svg>
+
+<div class="wrap">
+ <h1 class="page h">Stream P2P · <span style="color:var(--vt)">estilo final</span></h1>
+ <p class="lead">A junção das variações escolhidas num estilo só: painéis de vidro sobre o brilho violeta, títulos condensados do Editorial, cantos arredondados e textos em linguagem do dia a dia. Nas telas de sessão os botões funcionam: os ícones no canto superior direito trocam o painel lateral, e clicar de novo no que está ativo esconde o painel.</p>
+ <nav role="tablist" aria-label="Tela">
+  <button role="tab" data-s="s1" aria-selected="true">Início</button>
+  <button role="tab" data-s="s2" aria-selected="false">Sessão vazia</button>
+  <button role="tab" data-s="s3" aria-selected="false">Transmitindo</button>
+  <button role="tab" data-s="s4" aria-selected="false">Assistindo + pessoas</button>
+  <button role="tab" data-s="s5" aria-selected="false">Configurações</button>
+  <button role="tab" data-s="s6" aria-selected="false">Botão direito</button>
+ </nav>
+
+<!-- 1 · INÍCIO (D arredondado + painel do A, informal) -->
+<section class="screen on" id="s1">
+ <div class="scroll"><div class="f" style="padding:34px 44px;display:flex;flex-direction:column;gap:22px">
+  <div class="row"><svg class="lg"><use href="#logo"/></svg><span class="k">Stream P2P</span><span class="grow"></span><a class="b g sm">Baixar o app pra Windows ↗</a></div>
+  <div style="display:grid;grid-template-columns:1.25fr 1fr;gap:36px;align-items:end">
+   <div class="h" style="font-size:104px">Ao vivo<br><span style="color:var(--vt)">pra galera.</span></div>
+   <div class="gl" style="padding:16px;display:grid;gap:10px">
+    <span class="k">Antes de começar</span>
+    <div class="row sm"><span class="dot"></span>Tá tudo conectado<span class="grow"></span><span class="mu">rápido</span></div>
+    <div class="row sm"><span class="dot"></span>Seu navegador consegue transmitir<span class="grow"></span><span class="mu">✓</span></div>
+    <div class="row sm"><span class="dot" style="background:var(--warn)"></span>Microfone<span class="grow"></span><span class="mu">a gente pede quando você entrar</span></div>
+    <span class="xs mu">Não precisa criar conta. Só escolher um apelido.</span>
+   </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+   <div class="gl col" style="padding:20px;gap:12px"><span class="k">Quero abrir uma sala</span><input class="in" value="Yago" placeholder="Como te chamam?" aria-label="Seu apelido"><div class="row"><span class="b p" style="padding:12px 20px">Criar sala →</span><span class="xs mu">Você manda na sala e pode chamar quem quiser.</span></div></div>
+   <div class="gl col" style="padding:20px;gap:12px"><span class="k">Recebi um código</span><input class="in mono" value="k3f9-2a" aria-label="Código da sala"><div class="row"><span class="b" style="padding:12px 20px">Entrar →</span><div class="seg" style="margin-left:auto"><span class="b on">🎤 Falar</span><span class="b">🎧 Só ouvir</span></div></div></div>
+  </div>
+ </div></div>
+ <div class="notes"><div><b>Do D:</b> manchete grande e condensada, com as duas ações lado a lado.</div><div><b>Do A:</b> o painel "Antes de começar" mostra se dá pra transmitir, agora em frase simples.</div><div><b>Novo:</b> cantos arredondados e cartões de vidro. O apelido é pedido uma vez só.</div></div>
+</section>
+
+<!-- 2 · SESSÃO VAZIA (C + toggles do painel lateral) -->
+<section class="screen" id="s2">
+ <div class="scroll"><div class="f ses" data-open="chat">
+  <div class="gl row top"><svg class="lg"><use href="#logo"/></svg><b>Sala do Yago</b><span class="mono sm mu">k3f9-2a</span><span class="b" style="padding:6px 12px"><svg class="i"><use href="#link"/></svg>Chamar a galera</span><span class="grow"></span>
+   <div class="seg" role="group" aria-label="Painel lateral"><button class="b ic" data-p="chat" aria-label="Chat" title="Chat"><svg class="i"><use href="#chat"/></svg></button><button class="b ic" data-p="ppl" aria-label="Pessoas" title="Pessoas"><svg class="i"><use href="#ppl"/></svg></button><button class="b ic" data-p="met" aria-label="Como tá a conexão" title="Conexão"><svg class="i"><use href="#sig"/></svg></button></div>
+   <span class="b ic g" title="Ajustes"><svg class="i"><use href="#gear"/></svg></span></div>
+  <div style="position:absolute;inset:0;display:grid;place-items:center;padding-right:var(--padr,0)"><div class="col" style="align-items:center;text-align:center;gap:12px"><span class="h" style="font-size:54px">Palco livre</span><span class="mu">Ninguém tá mostrando a tela agora. Que tal você?</span><span class="b p" style="padding:14px 24px"><svg class="i"><use href="#scr"/></svg>Mostrar minha tela</span></div></div>
+  <aside class="gl side">
+   <div class="pane" data-k="chat"><div class="row"><span class="k">Chat</span><span class="grow"></span><button class="b ic g x" style="width:28px;height:28px" aria-label="Fechar"><svg class="i"><use href="#x"/></svg></button></div><div class="msgs"><span><b>Ana</b> bora ver o jogo?</span><span><b>Léo</b> transmite aí 👀</span></div><div class="row"><input class="in" placeholder="Manda uma mensagem"><span class="b p ic"><svg class="i"><use href="#send"/></svg></span></div></div>
+   <div class="pane" data-k="ppl"><div class="row"><span class="k">Na sala · 4</span><span class="grow"></span><button class="b ic g x" style="width:28px;height:28px" aria-label="Fechar"><svg class="i"><use href="#x"/></svg></button></div><div class="plist"><div><span class="av">Y</span>Yago (você)<span class="grow"></span><span class="tag">dono</span></div><div><span class="av">A</span>Ana<span class="grow"></span><span class="dot"></span></div><div><span class="av">L</span>Léo</div><div><span class="av">M</span>Mari<span class="grow"></span><span class="tag">ajuda a cuidar</span></div></div><span class="grow"></span><span class="b g sm" style="justify-content:flex-start"><svg class="i"><use href="#lock"/></svg>Regras da sala</span></div>
+   <div class="pane" data-k="met"><div class="row"><span class="k">Sua conexão</span><span class="grow"></span><button class="b ic g x" style="width:28px;height:28px" aria-label="Fechar"><svg class="i"><use href="#x"/></svg></button></div><div class="mt"><span>Sua internet manda</span><span>20 Mbps</span><span>Dá pra mandar direto pra</span><span>2 pessoas</span><span>Atraso combinado</span><span>~1,2 s</span></div><p class="xs mu" style="margin:0">Quem não cabe recebe de outra pessoa, que repassa. Ninguém fica de fora.</p></div>
+  </aside>
+  <div class="gl row dock"><span class="b ic on" title="Microfone"><svg class="i"><use href="#mic"/></svg></span><span class="b ic" title="Som"><svg class="i"><use href="#hp"/></svg></span><span class="b ic" title="Tela cheia"><svg class="i"><use href="#full"/></svg></span><span class="b d"><svg class="i"><use href="#leave"/></svg>Sair</span></div>
+ </div></div>
+ <div class="notes"><div><b>Do C:</b> o palco ocupa a tela inteira, com barra de cima e doca de vidro.</div><div><b>Novo:</b> os 3 ícones no canto de cima trocam o painel entre Chat, Pessoas e Conexão. Clicar no ícone ativo esconde o painel. Experimente.</div></div>
+</section>
+
+<!-- 3 · TRANSMITINDO (C + chat + painéis ocultáveis + métricas no mesmo formato) -->
+<section class="screen" id="s3">
+ <div class="scroll"><div class="f ses" data-open="chat"><div class="vid">prévia da sua tela</div>
+  <div class="gl row top"><svg class="lg"><use href="#logo"/></svg><b>Sala do Yago</b><span class="live">Você tá ao vivo · 12:04</span><span class="sm mu">3 assistindo</span><span class="grow"></span>
+   <div class="seg" role="group" aria-label="Painel lateral"><button class="b ic" data-p="chat" aria-label="Chat" title="Chat"><svg class="i"><use href="#chat"/></svg></button><button class="b ic" data-p="ppl" aria-label="Pessoas" title="Pessoas"><svg class="i"><use href="#ppl"/></svg></button><button class="b ic" data-p="met" aria-label="Como tá a transmissão" title="Como tá a transmissão"><svg class="i"><use href="#sig"/></svg></button></div>
+   <span class="b ic g"><svg class="i"><use href="#gear"/></svg></span></div>
+
+  <div class="gl mini">
+   <div class="row"><span class="k">Sua transmissão</span><span class="grow"></span><button class="b ic g mini-x" style="width:28px;height:28px" aria-label="Recolher"><svg class="i"><use href="#min"/></svg></button></div>
+   <div class="row"><div style="width:64px;height:40px;border-radius:8px;background:linear-gradient(135deg,#2b3f6e,#4a1b6d)"></div><div class="col" style="gap:0"><b class="sm">Tela inteira</b><span class="xs mu">Monitor 1</span></div><span class="grow"></span><span class="b" style="padding:5px 10px;font-size:12px">Trocar</span></div>
+   <div class="col" style="gap:6px"><span class="xs mu">Se a internet apertar, manter</span><div class="seg"><span class="b grow">Nitidez</span><span class="b on grow">Equilíbrio</span><span class="b grow">Fluidez</span></div></div>
+   <div class="row sm">Som do que tá na tela<span class="grow"></span><span class="tr"></span></div>
+   <span class="b g sm" style="justify-content:flex-start;padding:4px 0"><svg class="i"><use href="#pass"/></svg>Passar a vez pra alguém</span>
+  </div>
+  <button class="gl row chip b" hidden style="border-radius:999px"><span class="live">ao vivo</span><span class="sm">Sua transmissão</span><svg class="i" style="transform:rotate(180deg)"><use href="#min"/></svg></button>
+
+  <aside class="gl side">
+   <div class="pane" data-k="chat"><div class="row"><span class="k">Chat</span><span class="grow"></span><button class="b ic g x" style="width:28px;height:28px" aria-label="Fechar"><svg class="i"><use href="#x"/></svg></button></div><div class="msgs"><span><b>Ana</b> nítido demais 🔥</span><span><b>Léo</b> aumenta o som?</span><span><b>Mari</b> 👏👏</span></div><div class="row"><input class="in" placeholder="Manda uma mensagem"><span class="b p ic"><svg class="i"><use href="#send"/></svg></span></div></div>
+   <div class="pane" data-k="ppl"><div class="row"><span class="k">Assistindo · 3</span><span class="grow"></span><button class="b ic g x" style="width:28px;height:28px" aria-label="Fechar"><svg class="i"><use href="#x"/></svg></button></div><div class="plist"><div><span class="av">A</span>Ana<span class="grow"></span><span class="xs" style="color:var(--live)">chegando liso</span></div><div><span class="av">L</span>Léo<span class="grow"></span><span class="xs" style="color:var(--warn)">engasgando um pouco</span></div><div><span class="av">M</span>Mari<span class="grow"></span><span class="xs" style="color:var(--live)">chegando liso</span></div></div></div>
+   <div class="pane" data-k="met"><div class="row"><span class="k">Como tá a transmissão</span><span class="grow"></span><button class="b ic g x" style="width:28px;height:28px" aria-label="Fechar"><svg class="i"><use href="#x"/></svg></button></div>
+    <div class="mbar" aria-hidden="true"><i style="height:60%"></i><i style="height:72%"></i><i style="height:68%"></i><i style="height:80%"></i><i style="height:76%"></i><i style="height:84%"></i><i style="height:70%"></i><i style="height:88%"></i><i style="height:82%"></i><i style="height:90%"></i></div>
+    <div class="mt"><span>Qualidade</span><span>1080p · 60 fps</span><span>Saindo de você</span><span>7,8 Mbps</span><span>Atraso pra galera</span><span>1,2 s</span><span>Imagens perdidas</span><span>0,2%</span></div>
+    <p class="xs mu" style="margin:0">Tudo certo por aqui. Se a sua internet cair, a gente baixa a qualidade sozinho.</p></div>
+  </aside>
+  <div class="gl row dock"><span class="b ic on"><svg class="i"><use href="#mic"/></svg></span><span class="b ic"><svg class="i"><use href="#hp"/></svg></span><span class="b"><svg class="i"><use href="#pause"/></svg>Pausar</span><span class="b dd"><svg class="i"><use href="#stop"/></svg>Parar</span><span class="b d ic"><svg class="i"><use href="#leave"/></svg></span></div>
+ </div></div>
+ <div class="notes"><div><b>Do C:</b> a prévia ocupa a tela toda, com o painel "Sua transmissão" no canto.</div><div><b>Novo:</b> o chat também aparece aqui. O painel da transmissão recolhe para um chip (seta ▲) e o lateral some ao clicar no ícone ativo.</div><div><b>Métricas:</b> aparecem no mesmo painel lateral, com um gráfico pequeno e frases simples ("chegando liso", "engasgando um pouco").</div></div>
+</section>
+
+<!-- 4 · ASSISTINDO + PESSOAS (B no estilo novo) -->
+<section class="screen" id="s4">
+ <div class="scroll"><div class="f ses" data-open=""><div class="vid">tela da Ana</div>
+  <div class="gl row top"><svg class="lg"><use href="#logo"/></svg><b>Sala do Yago</b><span class="live">Ana tá transmitindo</span><span class="grow"></span>
+   <div class="row" style="padding-right:6px"><span class="av">Y</span><span class="av" style="margin-left:-10px;box-shadow:0 0 0 2px var(--violet)">L</span><span class="av" style="margin-left:-10px">M</span><span class="sm mu" style="padding-left:6px">+1</span></div>
+   <div class="seg" role="group" aria-label="Painel lateral"><button class="b ic" data-p="chat" aria-label="Chat"><svg class="i"><use href="#chat"/></svg></button><button class="b ic" data-p="ppl" aria-label="Pessoas"><svg class="i"><use href="#ppl"/></svg></button><button class="b ic" data-p="met" aria-label="Como tá chegando"><svg class="i"><use href="#sig"/></svg></button></div>
+   <span class="b ic g"><svg class="i"><use href="#gear"/></svg></span></div>
+  <div class="gl" style="position:absolute;top:78px;right:120px;width:260px;padding:16px;display:grid;gap:12px;box-shadow:0 14px 40px #000c;z-index:7">
+   <div class="row"><span class="av" style="width:44px;height:44px">L</span><div class="col" style="gap:0"><b>Léo</b><span class="xs" style="color:var(--live)">falando agora</span></div></div>
+   <div class="row sm"><svg class="i"><use href="#vol"/></svg><span class="rng" style="--w:80%"></span>80%</div>
+   <div class="row"><span class="b grow"><svg class="i"><use href="#pass"/></svg>Passar a vez</span><span class="b ic"><svg class="i"><use href="#more"/></svg></span></div>
+  </div>
+  <aside class="gl side" hidden>
+   <div class="pane" data-k="chat"><div class="row"><span class="k">Chat</span><span class="grow"></span><button class="b ic g x" style="width:28px;height:28px" aria-label="Fechar"><svg class="i"><use href="#x"/></svg></button></div><div class="msgs"><span><b>Léo</b> que jogada!</span></div><input class="in" placeholder="Manda uma mensagem"></div>
+   <div class="pane" data-k="ppl"><div class="row"><span class="k">Na sala · 4</span><span class="grow"></span><button class="b ic g x" style="width:28px;height:28px" aria-label="Fechar"><svg class="i"><use href="#x"/></svg></button></div><div class="plist"><div><span class="av lv">A</span>Ana<span class="grow"></span><span class="live" style="padding:1px 8px">ao vivo</span></div><div><span class="av">L</span>Léo</div><div><span class="av">M</span>Mari</div><div><span class="av">Y</span>Yago (você)</div></div></div>
+   <div class="pane" data-k="met"><div class="row"><span class="k">Como tá chegando</span><span class="grow"></span><button class="b ic g x" style="width:28px;height:28px" aria-label="Fechar"><svg class="i"><use href="#x"/></svg></button></div><div class="mbar"><i style="height:70%"></i><i style="height:74%"></i><i style="height:72%"></i><i style="height:80%"></i><i style="height:78%"></i><i style="height:82%"></i></div><div class="mt"><span>Qualidade</span><span>1080p · 60</span><span>Vem de</span><span>direto da Ana</span><span>Atraso</span><span>1,2 s</span></div></div>
+  </aside>
+  <div class="gl row dock"><span class="b ic on"><svg class="i"><use href="#mic"/></svg></span><span class="b ic"><svg class="i"><use href="#hp"/></svg></span><span class="b"><svg class="i"><use href="#hand"/></svg>Quero mostrar a minha</span><span class="b ic"><svg class="i"><use href="#full"/></svg></span><span class="b d ic"><svg class="i"><use href="#leave"/></svg></span></div>
+ </div></div>
+ <div class="notes"><div><b>Do B:</b> os rostos ficam empilhados na barra de cima. Clicar num rosto abre o cartão da pessoa, com o volume e as ações.</div><div><b>Novo:</b> o painel lateral começa fechado para o vídeo ficar inteiro e abre pelos mesmos ícones. O botão do meio vira "Quero mostrar a minha".</div></div>
+</section>
+
+<!-- 5 · CONFIGURAÇÕES (C) -->
+<section class="screen" id="s5">
+ <div class="scroll"><div class="f"><div class="vid" style="filter:brightness(.45)">a sala continua aqui atrás</div>
+  <div class="gl" style="position:absolute;top:14px;right:14px;bottom:14px;width:380px;padding:20px;display:flex;flex-direction:column;gap:16px">
+   <div class="row"><span class="h" style="font-size:30px">Ajustes</span><span class="grow"></span><span class="b ic g"><svg class="i"><use href="#x"/></svg></span></div>
+   <div class="seg"><span class="b grow">Som</span><span class="b on grow">Imagem</span><span class="b grow">Sala</span></div>
+   <div class="col"><span class="sm">Se a internet apertar, manter</span><div class="seg"><span class="b grow">Nitidez</span><span class="b on grow">Equilíbrio</span><span class="b grow">Fluidez</span></div><span class="xs mu">Nitidez deixa letras legíveis. Fluidez deixa jogo suave.</span></div>
+   <div class="col"><span class="sm">Atraso pra todo mundo</span><div class="row sm"><span class="mu xs">menos</span><span class="rng" style="--w:35%"></span><span class="mu xs">mais</span></div><span class="xs mu">No automático · agora 1,2 s. Menos atraso = conversa mais natural.</span></div>
+   <div class="col"><span class="sm">Velocidade da sua internet</span><div class="row"><input class="in" value="20 Mbps" aria-label="Upload"><span class="b">Medir agora</span></div></div>
+   <details class="sm mu"><summary style="cursor:pointer">Coisas mais técnicas</summary><p style="margin:8px 0 0">Formato do vídeo (codec), o que seu navegador suporta.</p></details>
+   <span class="grow"></span><span class="xs mu" style="text-align:center">Tudo que você muda já vale na hora.</span>
+  </div>
+ </div></div>
+ <div class="notes"><div><b>Do C:</b> gaveta de vidro na lateral, com a sala visível atrás.</div><div><b>Novo:</b> nomes simples (Som, Imagem, Sala) e uma frase curta embaixo de cada ajuste. A parte técnica fica escondida.</div></div>
+</section>
+
+<!-- 6 · BOTÃO DIREITO (B) -->
+<section class="screen" id="s6">
+ <div class="scroll"><div class="f"><div class="vid" style="filter:brightness(.55)">sala</div>
+  <div class="gl" style="position:absolute;right:14px;top:14px;width:250px;padding:14px;display:grid;gap:4px"><span class="k">Na sala</span><div class="plist"><div><span class="av">Y</span>Yago</div><div style="background:rgba(255,255,255,.08)"><span class="av">L</span>Léo</div><div><span class="av">M</span>Mari</div></div></div>
+  <span class="cur" style="left:780px;top:96px"></span>
+  <div class="gl" style="position:absolute;left:470px;top:104px;width:300px;padding:10px;display:grid;gap:4px;box-shadow:0 20px 50px #000d;background:rgba(20,20,26,.85)">
+   <div class="row" style="padding:8px"><span class="av" style="width:44px;height:44px">L</span><div class="col" style="gap:0"><b>Léo</b><span class="xs mu">tá na sala · conexão boa</span></div></div>
+   <div style="background:rgba(255,255,255,.05);border-radius:12px;padding:12px" class="row sm"><svg class="i"><use href="#vol"/></svg><span class="rng" style="--w:80%"></span><b>80%</b></div>
+   <div class="row" style="padding:10px;border-radius:12px;background:var(--vsoft);color:var(--vt)"><svg class="i"><use href="#pass"/></svg>Deixar o Léo mostrar a tela</div>
+   <div class="row" style="padding:10px;border-radius:12px"><svg class="i"><use href="#shield"/></svg>Deixar ele ajudar a cuidar da sala</div>
+   <div class="row" style="padding:10px;border-radius:12px"><svg class="i"><use href="#chat"/></svg>Chamar no chat</div>
+   <div class="row" style="padding:10px;border-radius:12px;color:#ff8a8a;background:#2a1216"><svg class="i"><use href="#rm"/></svg>Tirar da sala</div>
+  </div>
+ </div></div>
+ <div class="notes"><div><b>Do B:</b> cartão com o cabeçalho da pessoa e o volume em destaque.</div><div><b>Novo:</b> vidro e frases do dia a dia ("Deixar o Léo mostrar a tela" em vez de "Passar a vez", "ajudar a cuidar" em vez de "moderador").</div></div>
+</section>
+</div>
+
+<script>
+const tabs=[...document.querySelectorAll('nav button')];
+function show(id){tabs.forEach(b=>b.setAttribute('aria-selected',b.dataset.s===id));document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id));}
+tabs.forEach(b=>b.onclick=()=>{show(b.dataset.s);try{history.replaceState(null,'','#'+b.dataset.s)}catch(e){}});
+const hh=location.hash.slice(1);if(/^s[1-6]$/.test(hh))show(hh);
+
+document.querySelectorAll('.ses').forEach(f=>{
+ const side=f.querySelector('.side'), btns=[...f.querySelectorAll('[data-p]')];
+ function set(k){
+  f.dataset.open=k;
+  side.hidden=!k;
+  btns.forEach(b=>{b.classList.toggle('on',b.dataset.p===k);b.setAttribute('aria-pressed',b.dataset.p===k)});
+  side.querySelectorAll('.pane').forEach(p=>p.classList.toggle('on',p.dataset.k===k));
+  f.style.setProperty('--padr',k?'300px':'0');
+ }
+ btns.forEach(b=>b.onclick=()=>set(f.dataset.open===b.dataset.p?'':b.dataset.p));
+ side.querySelectorAll('.x').forEach(x=>x.onclick=()=>set(''));
+ set(f.dataset.open);
+ const mini=f.querySelector('.mini'), chip=f.querySelector('.chip');
+ if(mini){f.querySelector('.mini-x').onclick=()=>{mini.hidden=true;chip.hidden=false};chip.onclick=()=>{mini.hidden=false;chip.hidden=true};}
+});
+</script>

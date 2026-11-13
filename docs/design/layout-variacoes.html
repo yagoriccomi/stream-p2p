@@ -1,0 +1,540 @@
+<title>Stream P2P Layout Variations</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one screen at a time, its 5 variants stacked for side-by-side comparison. Fixed: logo + palette. */
+:root{color-scheme:dark;--bg:#0A0A0B;--s1:#141416;--s2:#1C1C20;--line:#2A2A30;--text:#F2F2F4;--muted:#A1A1AA;--violet:#7F00FF;--vt:#B266FF;--vsoft:#22103D;--live:#2EE59D;--red:#FF4D4D;--warn:#FFB020;
+--fi:Inter,system-ui,sans-serif;--fa:Archivo,'Arial Narrow',system-ui,sans-serif;--fm:'JetBrains Mono',ui-monospace,monospace}
+*{box-sizing:border-box}
+body{margin:0;background:#050506;color:var(--text);font:14px/1.45 var(--fi);padding-block:24px 80px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1180px;margin:0 auto;display:grid;gap:18px}
+h1.page{font:800 26px/1.1 var(--fa);font-stretch:85%;margin:0;text-wrap:balance}
+.lead{color:var(--muted);margin:0;max-width:70ch}
+nav{display:flex;gap:6px;flex-wrap:wrap;position:sticky;top:env(safe-area-inset-top,0px);background:#050506;padding-block:10px;z-index:20}
+nav button{background:var(--s1);color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:8px 14px;font:600 13px var(--fi);cursor:pointer}
+nav button[aria-selected=true]{background:var(--violet);color:#fff;border-color:var(--violet)}
+nav button:focus-visible{outline:2px solid var(--vt);outline-offset:2px}
+.screen{display:none;gap:28px}.screen.on{display:grid}
+.var{display:grid;gap:10px}
+.vh{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.vh b{font:800 15px var(--fa);letter-spacing:.06em;text-transform:uppercase;color:var(--vt)}
+.vh span{color:var(--muted);font-size:13px;min-width:0}
+.scroll{overflow-x:auto;border-radius:14px;border:1px solid var(--line)}
+.f{min-width:900px;height:480px;position:relative;overflow:hidden;background:var(--bg);color:var(--text)}
+.f.m{min-width:0;height:auto;padding:24px;display:flex;justify-content:center;background:#08080a}
+.phone{width:360px;max-width:100%;height:640px;border:8px solid #1a1a1f;border-radius:38px;overflow:hidden;position:relative;background:var(--bg);display:flex;flex-direction:column}
+svg.i{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+svg.lg{width:30px;height:26px;flex:none}
+.row{display:flex;gap:8px;align-items:center}.col{display:flex;flex-direction:column;gap:8px}.grow{flex:1}
+.mu{color:var(--muted)}.sm{font-size:12px}.xs{font-size:11px}.mono{font-family:var(--fm)}
+.b{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--s2);color:var(--text);border:1px solid var(--line);border-radius:var(--r,10px);padding:9px 14px;font:600 13px var(--fi);white-space:nowrap}
+.b.p{background:var(--violet);border-color:var(--violet);color:#fff}
+.b.d{background:transparent;border-color:#5a2028;color:#ff8a8a}
+.b.dd{background:var(--red);border-color:var(--red);color:#fff}
+.b.g{background:transparent;border-color:transparent;color:var(--muted)}
+.b.ic{padding:9px;width:40px;height:40px}
+.b.on{background:var(--vsoft);border-color:var(--violet);color:var(--vt)}
+.in{width:100%;background:var(--s2);border:1px solid var(--line);color:var(--text);border-radius:var(--r,10px);padding:11px 12px;font:inherit}
+.vid{position:absolute;inset:0;background:radial-gradient(120% 90% at 20% 20%,#2b3f6e 0,transparent 55%),radial-gradient(90% 90% at 85% 80%,#4a1b6d 0,transparent 60%),#0d1220;display:grid;place-items:center;color:#ffffff40;font-size:12px}
+.av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:12px;background:var(--vsoft);color:var(--vt);flex:none}
+.av.lv{background:#3a0d14;color:#ff8a8a}
+.live{display:inline-flex;align-items:center;gap:6px;background:#3a0d14;color:#ff8a8a;border-radius:999px;padding:4px 10px;font-weight:700;font-size:12px}
+.live:before{content:"";width:7px;height:7px;border-radius:50%;background:var(--red)}
+.tr{width:36px;height:20px;border-radius:99px;background:var(--violet);position:relative;flex:none}.tr:after{content:"";position:absolute;right:3px;top:3px;width:14px;height:14px;border-radius:50%;background:#fff}
+.tr.off{background:var(--line)}.tr.off:after{right:auto;left:3px}
+.rng{height:4px;border-radius:4px;background:var(--line);position:relative;flex:1}.rng:after{content:"";position:absolute;inset:0 auto 0 0;width:var(--w,50%);background:var(--violet);border-radius:4px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--live);flex:none}
+.cur{position:absolute;width:14px;height:20px;z-index:9}
+.cur:before{content:"";position:absolute;inset:0;background:#fff;clip-path:polygon(0 0,0 100%,30% 72%,52% 100%,66% 92%,46% 66%,85% 66%);filter:drop-shadow(0 1px 2px #000)}
+
+/* ---- A · Console: sharp, dense, mono labels, hairline grid ---- */
+.vA{--r:3px;font-size:13px}
+.vA .lbl{font:500 10px var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.vA .pn{background:var(--s1);border:1px solid var(--line)}
+/* ---- B · Soft: big radii, pills, filled surfaces, no borders ---- */
+.vB{--r:22px}
+.vB .b{border-color:transparent;border-radius:999px}
+.vB .b.d{background:#2a1216}
+.vB .pn{background:var(--s1);border-radius:24px}
+.vB .in{border-color:transparent;border-radius:16px}
+/* ---- C · Glass: violet glow, translucent blurred panels ---- */
+.vC{--r:16px;background:radial-gradient(60% 70% at 15% 10%,#7f00ff55,transparent 60%),radial-gradient(50% 60% at 95% 100%,#7f00ff33,transparent 60%),var(--bg)}
+.vC .gl{background:rgba(22,22,28,.55);border:1px solid rgba(255,255,255,.09);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-radius:var(--r)}
+.vC .b{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.1)}
+.vC .b.p{background:var(--violet);border-color:#9a3dff;box-shadow:0 8px 30px #7f00ff66}
+.vC .in{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.12)}
+/* ---- D · Editorial: condensed display type, square, thick rules ---- */
+.vD{--r:0}
+.vD .h{font-family:var(--fa);font-stretch:70%;font-weight:900;text-transform:uppercase;line-height:.9;letter-spacing:-.01em}
+.vD .b{border:2px solid var(--text);background:transparent;font:800 13px var(--fa);font-stretch:90%;text-transform:uppercase;letter-spacing:.06em}
+.vD .b.p{background:var(--violet);border-color:var(--violet)}
+.vD .b.d,.vD .b.dd{border-color:var(--red);color:var(--red);background:transparent}
+.vD .b.g{border-color:transparent}
+.vD .rule{border-top:3px solid var(--violet)}
+.vD .in{border:0;border-bottom:2px solid var(--text);background:transparent;padding-left:0}
+.vD .k{font:800 11px var(--fa);letter-spacing:.14em;text-transform:uppercase;color:var(--vt)}
+/* ---- E · Pocket: mobile-first, thumb zone, sheets ---- */
+.vE{--r:14px}
+.vE .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--s1);border-radius:22px 22px 0 0;padding:10px 16px 18px;box-shadow:0 -10px 40px #000a;z-index:5}
+.vE .sheet:before{content:"";display:block;width:40px;height:4px;border-radius:4px;background:var(--line);margin:0 auto 12px}
+.vE .li{display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid var(--line)}
+.vE .b{border-radius:14px}
+
+@media (prefers-reduced-motion:no-preference){nav button{transition:background .15s}}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+ <symbol id="logo" viewBox="0 0 120 104"><rect x="7" y="7" width="106" height="70" rx="12" fill="none" stroke="#7F00FF" stroke-width="12"/><path d="M60 80v12M42 96h36" stroke="#7F00FF" stroke-width="10" stroke-linecap="round"/><path d="M48 26L78 42L48 58Z" fill="none" stroke="#fff" stroke-width="6" stroke-linejoin="round"/><circle cx="48" cy="26" r="7" fill="#fff"/><circle cx="78" cy="42" r="7" fill="#fff"/><circle cx="48" cy="58" r="7" fill="#fff"/></symbol>
+ <symbol id="mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></symbol>
+ <symbol id="hp" viewBox="0 0 24 24"><path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="4.5" height="6" rx="1.5"/><rect x="16.5" y="14" width="4.5" height="6" rx="1.5"/></symbol>
+ <symbol id="scr" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4M12 13V7M9 10l3-3 3 3"/></symbol>
+ <symbol id="chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></symbol>
+ <symbol id="full" viewBox="0 0 24 24"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></symbol>
+ <symbol id="leave" viewBox="0 0 24 24"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M10 8l-4 4 4 4M6 12h10"/></symbol>
+ <symbol id="gear" viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></symbol>
+ <symbol id="link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1"/><path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/></symbol>
+ <symbol id="pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></symbol>
+ <symbol id="stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></symbol>
+ <symbol id="more" viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01" stroke-width="3"/></symbol>
+ <symbol id="pass" viewBox="0 0 24 24"><path d="M4 8h13M14 5l3 3-3 3M20 16H7M10 13l-3 3 3 3"/></symbol>
+ <symbol id="vol" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></symbol>
+ <symbol id="hd" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10v4M10 10v4M7 12h3M13 10v4h1.5a2 2 0 0 0 0-4z"/></symbol>
+ <symbol id="ppl" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/></symbol>
+ <symbol id="lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+ <symbol id="sig" viewBox="0 0 24 24"><path d="M4 20v-3M9 20v-7M14 20V9M19 20V4"/></symbol>
+ <symbol id="shield" viewBox="0 0 24 24"><path d="M12 3l7.5 3v5.5c0 4.5-3.2 8.2-7.5 9.5-4.3-1.3-7.5-5-7.5-9.5V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+ <symbol id="rm" viewBox="0 0 24 24"><circle cx="10" cy="8" r="3.5"/><path d="M3.5 20a6.5 6.5 0 0 1 13 0M16 11h6"/></symbol>
+ <symbol id="edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></symbol>
+ <symbol id="copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></symbol>
+ <symbol id="pip" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><rect x="12" y="11" width="7" height="6" rx="1"/></symbol>
+ <symbol id="chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+ <symbol id="x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+ <symbol id="send" viewBox="0 0 24 24"><path d="M4 12L20 4l-6 16-3-7z"/></symbol>
+ <symbol id="hand" viewBox="0 0 24 24"><path d="M8 13V6a1.5 1.5 0 0 1 3 0v5M11 11V4.5a1.5 1.5 0 0 1 3 0V11M14 11V6a1.5 1.5 0 0 1 3 0v7a7 7 0 0 1-7 7h-.5A5.5 5.5 0 0 1 5 15.5V12a1.5 1.5 0 0 1 3 0"/></symbol>
+ <symbol id="clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+</svg>
+
+<div class="wrap">
+ <h1 class="page">Stream P2P · 5 variações por tela</h1>
+ <p class="lead">Cada tela tem cinco direções: A Console, B Suave, C Vidro, D Editorial e E Bolso (celular). Logo e paleta são as mesmas; mudam o layout, a tipografia, as formas e a densidade.</p>
+ <nav role="tablist" aria-label="Tela">
+  <button role="tab" data-s="s1" aria-selected="true">Início</button>
+  <button role="tab" data-s="s2" aria-selected="false">Sessão vazia</button>
+  <button role="tab" data-s="s3" aria-selected="false">Transmitindo</button>
+  <button role="tab" data-s="s4" aria-selected="false">Assistindo + pessoas</button>
+  <button role="tab" data-s="s5" aria-selected="false">Configurações</button>
+  <button role="tab" data-s="s6" aria-selected="false">Botão direito</button>
+ </nav>
+
+<!-- ================= 1 · INÍCIO ================= -->
+<section class="screen on" id="s1">
+ <div class="var"><div class="vh"><b>A · Console</b><span>Tela dividida: marca e status do sistema à esquerda, formulário com abas Criar/Entrar à direita.</span></div>
+ <div class="scroll"><div class="f vA" style="display:grid;grid-template-columns:1fr 1fr">
+  <div style="border-right:1px solid var(--line);padding:40px;display:flex;flex-direction:column;gap:20px">
+   <div class="row"><svg class="lg"><use href="#logo"/></svg><b class="mono">stream-p2p</b><span class="lbl" style="margin-left:auto">v1.8</span></div>
+   <div class="grow"></div>
+   <div style="font:600 30px/1.15 var(--fi)">Sua tela, ao vivo,<br>para a sua galera.</div>
+   <div class="pn" style="padding:12px;display:grid;gap:6px;font:12px var(--fm)">
+    <div class="row"><span class="dot"></span>servidor online<span class="grow"></span><span class="mu">42 ms</span></div>
+    <div class="row"><span class="dot"></span>navegador suporta transmissão<span class="grow"></span><span class="mu">AV1</span></div>
+    <div class="row"><span class="dot" style="background:var(--warn)"></span>microfone<span class="grow"></span><span class="mu">pedido ao entrar</span></div>
+   </div>
+  </div>
+  <div style="padding:40px;display:flex;flex-direction:column;gap:16px;justify-content:center">
+   <div class="row" style="border-bottom:1px solid var(--line)"><span style="padding:8px 2px;border-bottom:2px solid var(--violet);font-weight:600">Criar sessão</span><span class="mu" style="padding:8px 12px">Entrar com código</span></div>
+   <label class="col"><span class="lbl">apelido</span><input class="in" value="Yago"></label>
+   <label class="col"><span class="lbl">voz</span><div class="row"><span class="b on grow">Com microfone</span><span class="b grow">Só ouvindo</span></div></label>
+   <span class="b p" style="padding:13px">Criar sessão  ↵</span>
+   <span class="xs mu mono">Sem login · você vira dono(a) e modera</span>
+  </div>
+ </div></div></div>
+
+ <div class="var"><div class="vh"><b>B · Suave</b><span>Um cartão central e arredondado, com seletor em pílula. O código aparece só quando "Entrar" está ativo.</span></div>
+ <div class="scroll"><div class="f vB" style="display:grid;place-items:center">
+  <div class="pn" style="width:400px;padding:30px;display:grid;gap:18px">
+   <div class="row" style="justify-content:center"><svg class="lg" style="width:44px;height:38px"><use href="#logo"/></svg></div>
+   <div style="text-align:center;font:700 24px/1.2 var(--fi)">Assistir junto,<br>sem conta.</div>
+   <div class="row" style="background:var(--s2);border-radius:999px;padding:4px"><span class="b grow" style="background:var(--bg)">Criar</span><span class="b g grow">Entrar</span></div>
+   <input class="in" placeholder="Seu apelido" value="Yago">
+   <span class="b p" style="padding:14px">Criar sessão</span>
+   <p class="sm mu" style="margin:0;text-align:center">Já tem link? Abra o link e você cai direto na sala.</p>
+  </div>
+ </div></div></div>
+
+ <div class="var"><div class="vh"><b>C · Vidro</b><span>Brilho violeta no fundo, título grande à esquerda e cartão de vidro com as duas ações lado a lado.</span></div>
+ <div class="scroll"><div class="f vC" style="display:grid;grid-template-columns:1.1fr 1fr;align-items:center;padding:0 50px;gap:40px">
+  <div class="col" style="gap:18px">
+   <div class="row"><svg class="lg"><use href="#logo"/></svg><b>Stream P2P</b></div>
+   <div style="font:800 46px/1 var(--fa);font-stretch:90%">Sua tela,<br>ao vivo, para<br><span style="color:var(--vt)">a sua galera.</span></div>
+   <p class="mu" style="margin:0;max-width:36ch">Uma pessoa transmite por vez. Voz e chat juntos. Direto entre vocês, sem servidor no meio.</p>
+  </div>
+  <div class="gl" style="padding:24px;display:grid;gap:14px">
+   <input class="in" placeholder="Seu apelido" value="Yago">
+   <span class="b p" style="padding:14px">Criar sessão</span>
+   <div class="row xs mu"><span class="grow" style="height:1px;background:rgba(255,255,255,.1)"></span>ou<span class="grow" style="height:1px;background:rgba(255,255,255,.1)"></span></div>
+   <div class="row"><input class="in mono" placeholder="código" value="k3f9-2a"><span class="b">Entrar</span></div>
+  </div>
+ </div></div></div>
+
+ <div class="var"><div class="vh"><b>D · Editorial</b><span>Manchete gigante e condensada, com as duas ações em colunas iguais separadas por fio.</span></div>
+ <div class="scroll"><div class="f vD" style="padding:34px 44px;display:flex;flex-direction:column;gap:20px">
+  <div class="row"><svg class="lg"><use href="#logo"/></svg><span class="k">Stream P2P</span><span class="grow"></span><span class="k" style="color:var(--muted)">App para Windows ↗</span></div>
+  <div class="h" style="font-size:96px">Ao vivo<br><span style="color:var(--violet)">pra galera.</span></div>
+  <div class="rule" style="display:grid;grid-template-columns:1fr 1fr;gap:40px;padding-top:18px">
+   <div class="col" style="gap:12px"><span class="k">Abrir uma sala</span><input class="in" value="Yago" placeholder="Apelido"><span class="b p" style="align-self:start">Criar sessão →</span></div>
+   <div class="col" style="gap:12px;border-left:2px solid var(--line);padding-left:40px"><span class="k">Tenho um código</span><input class="in mono" value="k3f9-2a"><span class="b" style="align-self:start">Entrar →</span></div>
+  </div>
+ </div></div></div>
+
+ <div class="var"><div class="vh"><b>E · Bolso</b><span>Pensado para o polegar: ações grandes na parte de baixo, e o código abre numa folha.</span></div>
+ <div class="scroll"><div class="f m vE"><div class="phone">
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:14px;padding:24px;text-align:center">
+   <svg style="width:72px;height:62px"><use href="#logo"/></svg>
+   <div style="font:800 28px/1.1 var(--fa);font-stretch:85%">Sua tela,<br>ao vivo.</div>
+   <p class="mu sm" style="margin:0">Sem login. Voz e chat juntos.</p>
+  </div>
+  <div style="padding:16px;display:grid;gap:10px">
+   <input class="in" placeholder="Seu apelido" value="Yago" style="padding:15px">
+   <span class="b p" style="padding:16px;font-size:15px">Criar sessão</span>
+   <span class="b" style="padding:16px;font-size:15px">Entrar com código</span>
+  </div>
+ </div></div></div></div>
+</section>
+
+<!-- ================= 2 · SESSÃO VAZIA ================= -->
+<section class="screen" id="s2">
+ <div class="var"><div class="vh"><b>A · Console</b><span>Três colunas fixas: pessoas | palco | chat. A barra inferior traz rótulos de atalho.</span></div>
+ <div class="scroll"><div class="f vA" style="display:grid;grid-template-columns:190px 1fr 250px;grid-template-rows:40px 1fr 48px">
+  <div style="grid-column:1/4;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;padding:0 12px"><svg class="lg" style="width:22px"><use href="#logo"/></svg><span class="mono sm">sala/k3f9-2a</span><span class="b" style="padding:4px 10px"><svg class="i" style="width:14px"><use href="#link"/></svg>convidar <span class="lbl">I</span></span><span class="grow"></span><span class="lbl">ninguém ao vivo</span></div>
+  <div style="border-right:1px solid var(--line);padding:10px;display:grid;align-content:start;gap:4px"><span class="lbl" style="padding:4px">pessoas · 4</span>
+   <div class="row sm" style="padding:5px"><span class="dot"></span>Yago<span class="grow"></span><span class="lbl">dono</span></div><div class="row sm" style="padding:5px"><span class="dot"></span>Ana</div><div class="row sm" style="padding:5px"><span class="dot" style="background:var(--muted)"></span>Léo</div><div class="row sm" style="padding:5px"><span class="dot"></span>Mari<span class="grow"></span><span class="lbl">mod</span></div></div>
+  <div style="display:grid;place-items:center;text-align:center;background:#060607"><div class="col" style="align-items:center"><span class="lbl">palco vazio</span><span class="b p">Transmitir <span class="lbl" style="color:#fff9">T</span></span></div></div>
+  <div style="border-left:1px solid var(--line);display:flex;flex-direction:column"><span class="lbl" style="padding:14px 12px 6px">chat</span><div class="grow sm" style="padding:0 12px;display:grid;align-content:start;gap:6px"><div><b class="mono" style="color:var(--vt)">ana</b> bora ver o jogo?</div><div><b class="mono" style="color:var(--vt)">léo</b> transmite aí</div></div><div style="padding:8px;border-top:1px solid var(--line)"><input class="in" placeholder="> mensagem"></div></div>
+  <div style="grid-column:1/4;border-top:1px solid var(--line);display:flex;align-items:center;gap:6px;padding:0 10px"><span class="b on">mic <span class="lbl">M</span></span><span class="b">som <span class="lbl">D</span></span><span class="grow"></span><span class="b">tela cheia <span class="lbl">F</span></span><span class="b">ajustes <span class="lbl">,</span></span><span class="b d">sair</span></div>
+ </div></div></div>
+
+ <div class="var"><div class="vh"><b>B · Suave</b><span>O palco ocupa a tela. Uma doca flutuante em pílula fica embaixo e o chat entra como gaveta arredondada.</span></div>
+ <div class="scroll"><div class="f vB" style="padding:14px;display:grid;grid-template-columns:1fr 280px;gap:14px">
+  <div style="position:relative;border-radius:26px;background:var(--s1);display:grid;place-items:center">
+   <div class="row" style="position:absolute;top:14px;left:14px;right:14px"><div class="row" style="background:var(--s2);border-radius:999px;padding:5px 12px 5px 6px"><svg class="lg" style="width:24px"><use href="#logo"/></svg><span class="sm">Sala da Ana</span></div><span class="grow"></span><span class="b p"><svg class="i"><use href="#link"/></svg>Convidar</span></div>
+   <div class="col" style="align-items:center;text-align:center"><div style="width:64px;height:64px;border-radius:22px;background:var(--vsoft);display:grid;place-items:center;color:var(--vt)"><svg class="i" style="width:30px;height:30px"><use href="#scr"/></svg></div><b style="font-size:18px">Palco livre</b><span class="mu sm">Quem quiser, pode transmitir.</span></div>
+   <div class="row" style="position:absolute;bottom:16px;left:50%;transform:translateX(-50%);background:var(--s2);border-radius:999px;padding:6px;box-shadow:0 10px 30px #0008">
+    <span class="b ic on" style="background:var(--vsoft)"><svg class="i"><use href="#mic"/></svg></span><span class="b ic"><svg class="i"><use href="#hp"/></svg></span><span class="b p" style="padding:10px 20px"><svg class="i"><use href="#scr"/></svg>Transmitir</span><span class="b ic"><svg class="i"><use href="#chat"/></svg></span><span class="b ic d"><svg class="i"><use href="#leave"/></svg></span>
+   </div>
+  </div>
+  <div class="pn" style="display:flex;flex-direction:column;padding:14px;gap:10px"><b>Conversa</b><div class="grow col sm"><div style="background:var(--s2);border-radius:16px 16px 16px 4px;padding:8px 12px;align-self:start">bora ver o jogo?</div><div style="background:var(--violet);border-radius:16px 16px 4px 16px;padding:8px 12px;align-self:end">já vou</div></div><input class="in" placeholder="Escreva algo…"></div>
+ </div></div></div>
+
+ <div class="var"><div class="vh"><b>C · Vidro</b><span>O palco ocupa a tela inteira. Barra superior e doca de vidro; o chat flutua como painel translúcido.</span></div>
+ <div class="scroll"><div class="f vC">
+  <div class="gl row" style="position:absolute;top:14px;left:14px;right:14px;padding:8px 12px"><svg class="lg"><use href="#logo"/></svg><b>Sessão</b><span class="mono sm mu">k3f9-2a</span><span class="b" style="padding:6px 12px"><svg class="i"><use href="#link"/></svg>Convidar</span><span class="grow"></span><div class="row"><span class="av">A</span><span class="av" style="margin-left:-12px">L</span><span class="av" style="margin-left:-12px">M</span></div><span class="b ic g"><svg class="i"><use href="#gear"/></svg></span></div>
+  <div style="position:absolute;inset:0;display:grid;place-items:center"><div class="col" style="align-items:center;text-align:center;gap:12px"><b style="font:800 30px var(--fa);font-stretch:90%">Ninguém no palco</b><span class="b p" style="padding:14px 24px"><svg class="i"><use href="#scr"/></svg>Transmitir minha tela</span></div></div>
+  <div class="gl" style="position:absolute;right:14px;top:76px;bottom:84px;width:260px;padding:14px;display:flex;flex-direction:column;gap:8px"><b class="sm">Chat</b><div class="grow sm col"><span><b style="color:var(--vt)">Ana</b> bora?</span><span><b style="color:var(--vt)">Léo</b> transmite aí</span></div><input class="in" placeholder="Mensagem"></div>
+  <div class="gl row" style="position:absolute;bottom:14px;left:50%;transform:translateX(-50%);padding:8px"><span class="b ic on"><svg class="i"><use href="#mic"/></svg></span><span class="b ic"><svg class="i"><use href="#hp"/></svg></span><span class="b ic"><svg class="i"><use href="#chat"/></svg></span><span class="b ic"><svg class="i"><use href="#full"/></svg></span><span class="b ic d"><svg class="i"><use href="#leave"/></svg></span></div>
+ </div></div></div>
+
+ <div class="var"><div class="vh"><b>D · Editorial</b><span>Cabeçalho tipográfico com o nome da sala, um trilho vertical de ícones à direita e rodapé de texto.</span></div>
+ <div class="scroll"><div class="f vD" style="display:grid;grid-template-columns:1fr 280px 56px;grid-template-rows:auto 1fr auto">
+  <div style="grid-column:1/4;padding:18px 24px;display:flex;align-items:end;gap:16px;border-bottom:3px solid var(--violet)"><svg class="lg"><use href="#logo"/></svg><span class="h" style="font-size:40px">Sala K3F9</span><span class="k" style="color:var(--muted)">4 pessoas · ninguém ao vivo</span><span class="grow"></span><span class="b">Convidar</span></div>
+  <div style="display:grid;place-items:center;padding:20px"><div class="col" style="align-items:start;gap:14px"><span class="h" style="font-size:64px;color:var(--line)">Palco<br>vazio.</span><span class="b p">Transmitir →</span></div></div>
+  <div style="border-left:2px solid var(--line);padding:16px;display:flex;flex-direction:column;gap:10px"><span class="k">Chat</span><div class="grow sm col" style="gap:10px"><div><span class="k" style="color:var(--text)">Ana</span><br>bora ver o jogo?</div><div><span class="k" style="color:var(--text)">Léo</span><br>transmite aí</div></div><input class="in" placeholder="Escreva"></div>
+  <div style="border-left:2px solid var(--line);display:flex;flex-direction:column;align-items:center;padding-top:10px;gap:6px"><span class="b ic" style="border-color:var(--violet);color:var(--vt)"><svg class="i"><use href="#chat"/></svg></span><span class="b ic g"><svg class="i"><use href="#ppl"/></svg></span><span class="b ic g"><svg class="i"><use href="#gear"/></svg></span></div>
+  <div style="grid-column:1/4;border-top:2px solid var(--line);padding:10px 24px;display:flex;gap:24px" class="k"><span style="color:var(--text)">● Mic ligado</span><span style="color:var(--muted)">Som</span><span style="color:var(--muted)">Tela cheia</span><span class="grow"></span><span style="color:var(--red)">Sair</span></div>
+ </div></div></div>
+
+ <div class="var"><div class="vh"><b>E · Bolso</b><span>Palco em cima, faixa de rostos e chat em baixo. Barra de navegação inferior com o botão Transmitir no meio.</span></div>
+ <div class="scroll"><div class="f m vE"><div class="phone">
+  <div class="row" style="padding:12px 14px"><svg class="lg" style="width:24px"><use href="#logo"/></svg><b>k3f9-2a</b><span class="grow"></span><span class="b p" style="padding:7px 12px"><svg class="i"><use href="#link"/></svg>Convidar</span></div>
+  <div style="margin:0 12px;aspect-ratio:16/10;border-radius:16px;background:var(--s1);display:grid;place-items:center;max-width:100%"><span class="mu sm">Ninguém transmitindo</span></div>
+  <div class="row" style="padding:12px 14px;gap:10px"><span class="av">Y</span><span class="av">A</span><span class="av">L</span><span class="av">M</span><span class="mu xs">4 na sala</span></div>
+  <div class="grow col sm" style="padding:0 14px;gap:6px"><span><b style="color:var(--vt)">Ana</b> bora ver o jogo?</span><span><b style="color:var(--vt)">Léo</b> transmite aí</span></div>
+  <div style="padding:8px 12px"><input class="in" placeholder="Mensagem"></div>
+  <div class="row" style="justify-content:space-around;padding:10px 6px 16px;border-top:1px solid var(--line)"><span class="b ic g" style="color:var(--vt)"><svg class="i"><use href="#mic"/></svg></span><span class="b ic g"><svg class="i"><use href="#hp"/></svg></span><span class="b p" style="border-radius:50%;width:56px;height:56px;padding:0;margin-top:-26px;box-shadow:0 6px 20px #7f00ff66"><svg class="i" style="width:24px;height:24px"><use href="#scr"/></svg></span><span class="b ic g"><svg class="i"><use href="#ppl"/></svg></span><span class="b ic g"><svg class="i"><use href="#more"/></svg></span></div>
+ </div></div></div></div>
+</section>
+
+<!-- ================= 3 · TRANSMITINDO ================= -->
+<section class="screen" id="s3">
+ <div class="var"><div class="vh"><b>A · Console</b><span>Faixa de telemetria sobre o palco: resolução, fps, quantos assistem e rede. Os controles ficam nela.</span></div>
+ <div class="scroll"><div class="f vA" style="display:grid;grid-template-rows:40px 38px 1fr 48px">
+  <div style="border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;padding:0 12px"><svg class="lg" style="width:22px"><use href="#logo"/></svg><span class="mono sm">sala/k3f9-2a</span><span class="grow"></span><span class="live">AO VIVO 12:04</span></div>
+  <div style="background:#120a1c;border-bottom:1px solid var(--violet);display:flex;align-items:center;gap:18px;padding:0 12px;font:12px var(--fm)"><span><span class="lbl">res</span> 1920×1080</span><span><span class="lbl">fps</span> 60</span><span><span class="lbl">bitrate</span> 7.8 Mb</span><span><span class="lbl">assistindo</span> 3</span><span><span class="lbl">atraso</span> 1.2 s</span><span class="grow"></span><span class="b" style="padding:4px 10px">fonte</span><span class="b" style="padding:4px 10px">qualidade ▾</span><span class="b" style="padding:4px 10px">pausar <span class="lbl">P</span></span><span class="b dd" style="padding:4px 10px">parar <span class="lbl" style="color:#fff">T</span></span></div>
+  <div style="position:relative"><div class="vid">prévia da sua tela</div></div>
+  <div style="border-top:1px solid var(--line);display:flex;align-items:center;gap:6px;padding:0 10px"><span class="b on">mic <span class="lbl">M</span></span><span class="b">som <span class="lbl">D</span></span><span class="b">áudio da tela ✓</span><span class="grow"></span><span class="b">chat <span class="lbl">C</span></span><span class="b d">sair</span></div>
+ </div></div></div>
+
+ <div class="var"><div class="vh"><b>B · Suave</b><span>A doca vira um "chip ao vivo" vermelho com o cronômetro, Pausar e Parar. O resto fica num "⋯".</span></div>
+ <div class="scroll"><div class="f vB" style="padding:14px"><div style="position:relative;height:100%;border-radius:26px;overflow:hidden"><div class="vid">prévia da sua tela</div>
+  <div class="row" style="position:absolute;top:14px;left:14px;right:14px"><div class="row" style="background:#000a;border-radius:999px;padding:5px 12px 5px 6px"><svg class="lg" style="width:24px"><use href="#logo"/></svg><span class="sm">Você está transmitindo</span></div><span class="grow"></span><div class="row" style="background:#000a;border-radius:999px;padding:6px 12px" ><svg class="i"><use href="#ppl"/></svg><span class="sm">3 assistindo</span></div></div>
+  <div class="row" style="position:absolute;bottom:16px;left:50%;transform:translateX(-50%);background:var(--s1);border-radius:999px;padding:6px;box-shadow:0 10px 30px #000a">
+   <span class="b ic on"><svg class="i"><use href="#mic"/></svg></span><span class="row" style="background:#3a0d14;color:#ff8a8a;border-radius:999px;padding:8px 14px;font-weight:700;font-size:13px"><span class="dot" style="background:var(--red)"></span>12:04</span><span class="b"><svg class="i"><use href="#pause"/></svg>Pausar</span><span class="b dd"><svg class="i"><use href="#stop"/></svg>Parar</span><span class="b ic"><svg class="i"><use href="#more"/></svg></span>
+  </div></div>
+ </div></div></div>
+
+ <div class="var"><div class="vh"><b>C · Vidro</b><span>Um mini-painel de vidro no canto do palco, com miniatura da fonte, qualidade e áudio, sempre visível.</span></div>
+ <div class="scroll"><div class="f vC"><div class="vid">prévia da sua tela</div>
+  <div class="gl row" style="position:absolute;top:14px;left:14px;padding:8px 12px"><svg class="lg"><use href="#logo"/></svg><span class="live">Ao vivo · você</span><span class="sm mu">3 assistindo</span></div>
+  <div class="gl" style="position:absolute;top:14px;right:14px;width:250px;padding:14px;display:grid;gap:12px">
+   <div class="row"><div style="width:64px;height:40px;border-radius:8px;background:linear-gradient(135deg,#2b3f6e,#4a1b6d)"></div><div class="col" style="gap:0"><b class="sm">Monitor 1</b><span class="xs mu">1080p · 60 fps</span></div><span class="grow"></span><span class="b" style="padding:5px 9px;font-size:12px">Trocar</span></div>
+   <div class="row" style="background:rgba(255,255,255,.05);border-radius:10px;padding:3px"><span class="b g grow" style="padding:6px;font-size:12px">Nitidez</span><span class="b grow" style="padding:6px;font-size:12px">Equilíbrio</span><span class="b g grow" style="padding:6px;font-size:12px">Fluidez</span></div>
+   <div class="row sm">Áudio da tela<span class="grow"></span><span class="tr"></span></div>
+   <div class="row"><span class="b grow"><svg class="i"><use href="#pause"/></svg>Pausar</span><span class="b dd grow"><svg class="i"><use href="#stop"/></svg>Parar</span></div>
+   <span class="b g sm" style="justify-content:flex-start;padding:4px 0"><svg class="i"><use href="#pass"/></svg>Passar a vez…</span>
+  </div>
+  <div class="gl row" style="position:absolute;bottom:14px;left:50%;transform:translateX(-50%);padding:8px"><span class="b ic on"><svg class="i"><use href="#mic"/></svg></span><span class="b ic"><svg class="i"><use href="#hp"/></svg></span><span class="b ic"><svg class="i"><use href="#chat"/></svg></span><span class="b ic d"><svg class="i"><use href="#leave"/></svg></span></div>
+ </div></div></div>
+
+ <div class="var"><div class="vh"><b>D · Editorial</b><span>A coluna lateral vira "No ar": controles listados como um índice, com o cronômetro grande.</span></div>
+ <div class="scroll"><div class="f vD" style="display:grid;grid-template-columns:1fr 300px">
+  <div style="position:relative"><div class="vid">prévia da sua tela</div><div style="position:absolute;left:0;top:0;background:var(--red);padding:6px 14px" class="k"><span style="color:#fff">No ar</span></div></div>
+  <div style="border-left:3px solid var(--red);padding:22px;display:flex;flex-direction:column;gap:14px">
+   <span class="k">Você está transmitindo</span><span class="h" style="font-size:72px">12:04</span><span class="k" style="color:var(--muted)">3 assistindo · 1080p60 · atraso 1,2 s</span>
+   <div class="rule"></div>
+   <div class="col" style="gap:0"><div class="row" style="padding:10px 0;border-bottom:1px solid var(--line)"><span class="k" style="color:var(--text)">Trocar fonte</span><span class="grow"></span>→</div><div class="row" style="padding:10px 0;border-bottom:1px solid var(--line)"><span class="k" style="color:var(--text)">Qualidade</span><span class="grow"></span><span class="mu sm">Equilíbrio</span></div><div class="row" style="padding:10px 0;border-bottom:1px solid var(--line)"><span class="k" style="color:var(--text)">Áudio da tela</span><span class="grow"></span><span class="tr"></span></div><div class="row" style="padding:10px 0;border-bottom:1px solid var(--line)"><span class="k" style="color:var(--text)">Passar a vez</span><span class="grow"></span>→</div></div>
+   <span class="grow"></span><div class="row"><span class="b grow">Pausar</span><span class="b dd grow">Parar</span></div>
+  </div>
+ </div></div></div>
+
+ <div class="var"><div class="vh"><b>E · Bolso</b><span>Prévia pequena em cima e um botão Parar enorme na zona do polegar. Os ajustes ficam em linhas grandes.</span></div>
+ <div class="scroll"><div class="f m vE"><div class="phone">
+  <div class="row" style="padding:12px 14px"><span class="live">Ao vivo 12:04</span><span class="grow"></span><span class="sm mu">3 assistindo</span></div>
+  <div style="margin:0 12px;aspect-ratio:16/9;border-radius:16px;position:relative;overflow:hidden;max-width:100%"><div class="vid"></div></div>
+  <div class="col" style="padding:8px 14px;gap:0">
+   <div class="li"><svg class="i"><use href="#scr"/></svg>Fonte<span class="grow"></span><span class="mu sm">Monitor 1</span><svg class="i mu"><use href="#chev"/></svg></div>
+   <div class="li"><svg class="i"><use href="#hd"/></svg>Qualidade<span class="grow"></span><span class="mu sm">Equilíbrio</span><svg class="i mu"><use href="#chev"/></svg></div>
+   <div class="li"><svg class="i"><use href="#vol"/></svg>Áudio da tela<span class="grow"></span><span class="tr"></span></div>
+   <div class="li"><svg class="i"><use href="#pass"/></svg>Passar a vez<span class="grow"></span><svg class="i mu"><use href="#chev"/></svg></div>
+  </div>
+  <div class="grow"></div>
+  <div style="padding:14px;display:grid;grid-template-columns:1fr 2fr;gap:10px"><span class="b" style="padding:18px"><svg class="i"><use href="#pause"/></svg></span><span class="b dd" style="padding:18px;font-size:16px"><svg class="i"><use href="#stop"/></svg>Parar</span></div>
+ </div></div></div></div>
+</section>
+
+<!-- ================= 4 · ASSISTINDO + PESSOAS ================= -->
+<section class="screen" id="s4">
+ <div class="var"><div class="vh"><b>A · Console</b><span>Trilho de pessoas à esquerda com medidor de voz e ping. O mixer fica aberto num painel embaixo.</span></div>
+ <div class="scroll"><div class="f vA" style="display:grid;grid-template-columns:230px 1fr;grid-template-rows:40px 1fr 48px">
+  <div style="grid-column:1/3;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;padding:0 12px"><svg class="lg" style="width:22px"><use href="#logo"/></svg><span class="mono sm">sala/k3f9-2a</span><span class="grow"></span><span class="live">ANA AO VIVO</span><span class="lbl">1080p60 · 1.2 s</span></div>
+  <div style="border-right:1px solid var(--line);padding:10px;display:grid;align-content:start;gap:2px"><span class="lbl" style="padding:4px">pessoas · 4</span>
+   <div class="row sm" style="padding:6px"><span class="av lv" style="width:22px;height:22px;font-size:10px">A</span>Ana<span class="grow"></span><span class="lbl" style="color:#ff8a8a">ao vivo</span></div>
+   <div class="row sm" style="padding:6px;background:var(--s2)"><span class="av" style="width:22px;height:22px;font-size:10px">L</span>Léo<span class="grow"></span><span style="width:40px;height:4px;background:linear-gradient(90deg,var(--live) 70%,var(--line) 70%)"></span><span class="lbl">38ms</span></div>
+   <div class="row sm" style="padding:6px"><span class="av" style="width:22px;height:22px;font-size:10px">M</span>Mari<span class="grow"></span><span class="lbl">mod</span></div>
+   <div class="row sm" style="padding:6px"><span class="av" style="width:22px;height:22px;font-size:10px">Y</span>Yago<span class="grow"></span><span class="lbl">dono</span></div>
+   <div class="pn" style="margin-top:10px;padding:10px;display:grid;gap:8px"><span class="lbl">mixer</span><div class="row xs">transm.<span class="rng" style="--w:60%"></span>60</div><div class="row xs">voz<span class="rng" style="--w:45%"></span>45</div><div class="row xs">léo<span class="rng" style="--w:80%"></span>80</div></div>
+  </div>
+  <div style="position:relative"><div class="vid">tela da Ana</div></div>
+  <div style="grid-column:1/3;border-top:1px solid var(--line);display:flex;align-items:center;gap:6px;padding:0 10px"><span class="b on">mic <span class="lbl">M</span></span><span class="b">som <span class="lbl">D</span></span><span class="grow"></span><span class="b">pedir a vez <span class="lbl">R</span></span><span class="grow"></span><span class="b">chat <span class="lbl">C</span></span><span class="b d">sair</span></div>
+ </div></div></div>
+
+ <div class="var"><div class="vh"><b>B · Suave</b><span>Rostos empilhados sobre o vídeo. Clicar abre um cartão da pessoa com volume e ações.</span></div>
+ <div class="scroll"><div class="f vB" style="padding:14px"><div style="position:relative;height:100%;border-radius:26px;overflow:hidden"><div class="vid">tela da Ana</div>
+  <div class="row" style="position:absolute;top:14px;left:14px;background:#000a;border-radius:999px;padding:5px 14px 5px 5px"><span class="av lv">A</span><span class="sm">Ana está transmitindo</span></div>
+  <div class="row" style="position:absolute;top:14px;right:14px;background:#000a;border-radius:999px;padding:4px"><span class="av">Y</span><span class="av" style="margin-left:-8px;box-shadow:0 0 0 2px var(--violet)">L</span><span class="av" style="margin-left:-8px">M</span><span class="sm" style="padding:0 8px">+1</span></div>
+  <div class="pn" style="position:absolute;top:62px;right:14px;width:250px;padding:16px;display:grid;gap:12px;box-shadow:0 14px 40px #000c">
+   <div class="row"><span class="av" style="width:42px;height:42px">L</span><div class="col" style="gap:0"><b>Léo</b><span class="xs mu">falando agora</span></div></div>
+   <div class="row sm"><svg class="i"><use href="#vol"/></svg><span class="rng" style="--w:80%"></span>80%</div>
+   <div class="row"><span class="b grow">Passar a vez</span><span class="b ic"><svg class="i"><use href="#more"/></svg></span></div>
+  </div>
+  <div class="row" style="position:absolute;bottom:16px;left:50%;transform:translateX(-50%);background:var(--s1);border-radius:999px;padding:6px;box-shadow:0 10px 30px #000a"><span class="b ic on"><svg class="i"><use href="#mic"/></svg></span><span class="b ic"><svg class="i"><use href="#hp"/></svg></span><span class="b"><svg class="i"><use href="#hand"/></svg>Pedir a vez</span><span class="b ic"><svg class="i"><use href="#chat"/></svg></span><span class="b ic d"><svg class="i"><use href="#leave"/></svg></span></div>
+ </div></div></div></div>
+
+ <div class="var"><div class="vh"><b>C · Vidro</b><span>As pessoas aparecem como uma grade de cartões de vidro sobre o vídeo desfocado, com o papel e o volume em cada cartão.</span></div>
+ <div class="scroll"><div class="f vC"><div class="vid" style="filter:blur(6px) brightness(.6)">tela da Ana</div>
+  <div class="gl row" style="position:absolute;top:14px;left:14px;right:14px;padding:8px 12px"><svg class="lg"><use href="#logo"/></svg><b>Pessoas na sala</b><span class="grow"></span><span class="b" style="padding:6px 12px"><svg class="i"><use href="#lock"/></svg>Regras</span><span class="b ic g"><svg class="i"><use href="#x"/></svg></span></div>
+  <div style="position:absolute;inset:80px 60px 90px;display:grid;grid-template-columns:repeat(4,1fr);gap:14px;align-content:center">
+   <div class="gl col" style="padding:16px;align-items:center;text-align:center;box-shadow:inset 0 0 0 2px #ff4d4d88"><span class="av lv" style="width:52px;height:52px;font-size:18px">A</span><b>Ana</b><span class="live">ao vivo</span><div class="row xs" style="width:100%"><span class="rng" style="--w:60%"></span></div></div>
+   <div class="gl col" style="padding:16px;align-items:center;text-align:center;box-shadow:inset 0 0 0 2px var(--live)"><span class="av" style="width:52px;height:52px;font-size:18px">L</span><b>Léo</b><span class="xs mu">falando</span><div class="row xs" style="width:100%"><span class="rng" style="--w:80%"></span></div></div>
+   <div class="gl col" style="padding:16px;align-items:center;text-align:center"><span class="av" style="width:52px;height:52px;font-size:18px">M</span><b>Mari</b><span class="xs mu">moderadora</span><div class="row xs" style="width:100%"><span class="rng" style="--w:50%"></span></div></div>
+   <div class="gl col" style="padding:16px;align-items:center;text-align:center"><span class="av" style="width:52px;height:52px;font-size:18px">Y</span><b>Yago</b><span class="xs mu">dono · você</span><span class="b" style="padding:4px 10px;font-size:12px">Apelido</span></div>
+  </div>
+  <div class="gl row" style="position:absolute;bottom:14px;left:50%;transform:translateX(-50%);padding:8px"><span class="b ic on"><svg class="i"><use href="#mic"/></svg></span><span class="b ic"><svg class="i"><use href="#hp"/></svg></span><span class="b"><svg class="i"><use href="#hand"/></svg>Pedir a vez</span><span class="b ic on"><svg class="i"><use href="#ppl"/></svg></span><span class="b ic d"><svg class="i"><use href="#leave"/></svg></span></div>
+ </div></div></div>
+
+ <div class="var"><div class="vh"><b>D · Editorial</b><span>Lista de pessoas em formato de tabela, com nome, papel, voz e ação. Fica sob o vídeo, como uma ficha técnica.</span></div>
+ <div class="scroll"><div class="f vD" style="display:grid;grid-template-rows:auto 1fr auto">
+  <div style="padding:14px 24px;display:flex;align-items:end;gap:14px;border-bottom:3px solid var(--violet)"><svg class="lg"><use href="#logo"/></svg><span class="h" style="font-size:32px">Ana no ar</span><span class="k" style="color:var(--muted)">1080p60 · 1,2 s</span><span class="grow"></span><span class="b">Pedir a vez</span></div>
+  <div style="display:grid;grid-template-columns:1.3fr 1fr"><div style="position:relative"><div class="vid">tela da Ana</div></div>
+   <div style="border-left:2px solid var(--line);padding:16px 20px;overflow:auto">
+    <div class="row" style="justify-content:space-between"><span class="k">Elenco · 4</span><span class="k" style="color:var(--muted)">Regras ↗</span></div>
+    <table style="width:100%;border-collapse:collapse;margin-top:10px;font-size:13px">
+     <tr class="k" style="color:var(--muted)"><td style="padding:6px 0">Nome</td><td>Papel</td><td>Voz</td><td></td></tr>
+     <tr style="border-top:2px solid var(--line)"><td style="padding:10px 0"><b>Ana</b></td><td style="color:var(--red)">ao vivo</td><td>60</td><td>⋯</td></tr>
+     <tr style="border-top:1px solid var(--line);background:var(--vsoft)"><td style="padding:10px 0"><b>Léo</b></td><td class="mu">—</td><td>80</td><td style="color:var(--vt)">⋯</td></tr>
+     <tr style="border-top:1px solid var(--line)"><td style="padding:10px 0"><b>Mari</b></td><td class="mu">mod</td><td>50</td><td>⋯</td></tr>
+     <tr style="border-top:1px solid var(--line)"><td style="padding:10px 0"><b>Yago</b></td><td class="mu">dono</td><td>—</td><td>✎</td></tr>
+    </table>
+   </div></div>
+  <div style="border-top:2px solid var(--line);padding:10px 24px;display:flex;gap:24px" class="k"><span style="color:var(--text)">● Mic</span><span style="color:var(--muted)">Som</span><span style="color:var(--muted)">Chat</span><span class="grow"></span><span style="color:var(--red)">Sair</span></div>
+ </div></div></div>
+
+ <div class="var"><div class="vh"><b>E · Bolso</b><span>O vídeo fica em cima e a lista de pessoas sobe como folha. Tocar numa pessoa abre as ações dela.</span></div>
+ <div class="scroll"><div class="f m vE"><div class="phone">
+  <div style="aspect-ratio:16/10;position:relative;max-width:100%"><div class="vid">tela da Ana</div><span class="live" style="position:absolute;top:10px;left:10px">Ana</span></div>
+  <div class="grow" style="background:#0007"></div>
+  <div class="sheet"><div class="row" style="margin-bottom:4px"><b>Na sala · 4</b><span class="grow"></span><span class="b g" style="padding:4px 8px"><svg class="i"><use href="#lock"/></svg></span></div>
+   <div class="li"><span class="av lv">A</span><div class="col grow" style="gap:0"><b class="sm">Ana</b><span class="xs mu">transmitindo</span></div><svg class="i mu"><use href="#chev"/></svg></div>
+   <div class="li"><span class="av">L</span><div class="col grow" style="gap:0"><b class="sm">Léo</b><span class="xs" style="color:var(--live)">falando</span></div><svg class="i mu"><use href="#chev"/></svg></div>
+   <div class="li"><span class="av">M</span><div class="col grow" style="gap:0"><b class="sm">Mari</b><span class="xs mu">moderadora</span></div><svg class="i mu"><use href="#chev"/></svg></div>
+   <div class="li" style="border:0"><span class="av">Y</span><div class="col grow" style="gap:0"><b class="sm">Yago (você)</b><span class="xs mu">dono</span></div><span class="b" style="padding:6px 10px;font-size:12px">Apelido</span></div>
+   <span class="b p" style="width:100%;margin-top:10px;padding:14px"><svg class="i"><use href="#hand"/></svg>Pedir a vez</span>
+  </div>
+ </div></div></div></div>
+</section>
+
+<!-- ================= 5 · CONFIGURAÇÕES ================= -->
+<section class="screen" id="s5">
+ <div class="var"><div class="vh"><b>A · Console</b><span>Página inteira com menu lateral. Cada ajuste é uma linha chave → valor e há um painel de diagnóstico.</span></div>
+ <div class="scroll"><div class="f vA" style="display:grid;grid-template-columns:200px 1fr 260px">
+  <div style="border-right:1px solid var(--line);padding:16px 10px;display:grid;align-content:start;gap:2px"><div class="row" style="padding:0 6px 14px"><svg class="lg" style="width:22px"><use href="#logo"/></svg><span class="mono sm">ajustes</span></div><span class="sm" style="padding:7px 10px;color:var(--muted)">áudio</span><span class="sm" style="padding:7px 10px;background:var(--s2);border-left:2px solid var(--violet)">vídeo</span><span class="sm" style="padding:7px 10px;color:var(--muted)">rede</span><span class="sm" style="padding:7px 10px;color:var(--muted)">sessão</span><span class="sm" style="padding:7px 10px;color:var(--muted)">atalhos</span></div>
+  <div style="padding:20px 24px;display:grid;align-content:start;gap:0">
+   <span class="lbl" style="padding-bottom:10px">vídeo</span>
+   <div class="row" style="padding:12px 0;border-top:1px solid var(--line)"><div class="col grow" style="gap:2px"><span>Prioridade sob perda</span><span class="xs mu">o que manter quando a rede apertar</span></div><span class="b">equilíbrio ▾</span></div>
+   <div class="row" style="padding:12px 0;border-top:1px solid var(--line)"><div class="col grow" style="gap:2px"><span>Codec</span><span class="xs mu">AV1 usa menos banda</span></div><span class="b">auto (AV1) ▾</span></div>
+   <div class="row" style="padding:12px 0;border-top:1px solid var(--line)"><div class="col grow" style="gap:2px"><span>Atraso para todos</span><span class="xs mu">agora 1.2 s</span></div><span class="b">auto ▾</span></div>
+   <div class="row" style="padding:12px 0;border-top:1px solid var(--line)"><div class="col grow" style="gap:2px"><span>Upload</span><span class="xs mu">medido há 2 min</span></div><span class="mono sm">20 Mbps</span><span class="b">medir</span></div>
+  </div>
+  <div style="border-left:1px solid var(--line);padding:20px 16px;display:grid;align-content:start;gap:8px;font:12px var(--fm)"><span class="lbl">diagnóstico</span><div class="row"><span class="dot"></span>WebCodecs<span class="grow"></span>ok</div><div class="row"><span class="dot"></span>AV1 encode<span class="grow"></span>gpu</div><div class="row"><span class="dot"></span>TURN<span class="grow"></span>ok</div><div class="row"><span class="dot" style="background:var(--warn)"></span>áudio do sistema<span class="grow"></span>app</div><span class="b" style="margin-top:8px">copiar relatório</span></div>
+ </div></div></div>
+
+ <div class="var"><div class="vh"><b>B · Suave</b><span>Modal central com abas em pílula no topo. Os ajustes ficam em cartões arredondados, com opções de escolha visual.</span></div>
+ <div class="scroll"><div class="f vB" style="display:grid;place-items:center;background:#000c">
+  <div class="pn" style="width:560px;padding:24px;display:grid;gap:16px">
+   <div class="row"><b style="font-size:20px">Ajustes</b><span class="grow"></span><span class="b ic"><svg class="i"><use href="#x"/></svg></span></div>
+   <div class="row" style="background:var(--s2);border-radius:999px;padding:4px"><span class="b g grow">Áudio</span><span class="b grow" style="background:var(--bg)">Vídeo</span><span class="b g grow">Sessão</span></div>
+   <span class="sm mu">Quando a rede apertar, manter</span>
+   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+    <div style="background:var(--s2);border-radius:18px;padding:14px;display:grid;gap:4px"><b>Nitidez</b><span class="xs mu">texto legível, menos fps</span></div>
+    <div style="background:var(--vsoft);border-radius:18px;padding:14px;display:grid;gap:4px;box-shadow:inset 0 0 0 2px var(--violet)"><b>Equilíbrio</b><span class="xs mu">um pouco de cada</span></div>
+    <div style="background:var(--s2);border-radius:18px;padding:14px;display:grid;gap:4px"><b>Fluidez</b><span class="xs mu">60 fps, menos resolução</span></div>
+   </div>
+   <div style="background:var(--s2);border-radius:18px;padding:14px" class="row"><div class="col grow" style="gap:0"><b class="sm">Atraso</b><span class="xs mu">Automático · agora 1,2 s</span></div><span class="b">Mudar</span></div>
+   <span class="b p" style="justify-self:end">Pronto</span>
+  </div>
+ </div></div></div>
+
+ <div class="var"><div class="vh"><b>C · Vidro</b><span>Gaveta lateral de vidro sobre a sessão, que continua visível. Os ajustes valem na hora, sem botão Salvar.</span></div>
+ <div class="scroll"><div class="f vC"><div class="vid" style="filter:brightness(.5)">sessão ao fundo</div>
+  <div class="gl" style="position:absolute;top:12px;right:12px;bottom:12px;width:360px;padding:20px;display:flex;flex-direction:column;gap:16px">
+   <div class="row"><b style="font-size:18px">Ajustes</b><span class="grow"></span><span class="b ic g"><svg class="i"><use href="#x"/></svg></span></div>
+   <div class="row" style="gap:16px;border-bottom:1px solid rgba(255,255,255,.1)"><span class="sm mu" style="padding-bottom:8px">Áudio</span><span class="sm" style="padding-bottom:8px;border-bottom:2px solid var(--vt)">Vídeo</span><span class="sm mu" style="padding-bottom:8px">Sessão</span></div>
+   <div class="col"><span class="sm">Prioridade</span><div class="row" style="background:rgba(255,255,255,.05);border-radius:12px;padding:3px"><span class="b g grow" style="padding:7px">Nitidez</span><span class="b grow" style="padding:7px">Equilíbrio</span><span class="b g grow" style="padding:7px">Fluidez</span></div></div>
+   <div class="col"><span class="sm">Atraso para todos</span><div class="row sm"><span class="mu xs">0,5 s</span><span class="rng" style="--w:35%"></span><span class="mu xs">3 s</span></div><span class="xs mu">Automático · 1,2 s</span></div>
+   <div class="col"><span class="sm">Upload</span><div class="row"><input class="in" value="20 Mbps"><span class="b">Medir</span></div></div>
+   <span class="grow"></span><span class="xs mu" style="text-align:center">As mudanças valem na hora.</span>
+  </div>
+ </div></div></div>
+
+ <div class="var"><div class="vh"><b>D · Editorial</b><span>Uma página longa em seções com títulos condensados, índice fixo à esquerda e texto explicativo curto ao lado de cada controle.</span></div>
+ <div class="scroll"><div class="f vD" style="display:grid;grid-template-columns:220px 1fr">
+  <div style="padding:26px 24px;border-right:2px solid var(--line);display:flex;flex-direction:column;gap:10px"><span class="h" style="font-size:40px">Ajus&shy;tes</span><div class="rule"></div><span class="k" style="color:var(--muted)">Áudio</span><span class="k">→ Vídeo</span><span class="k" style="color:var(--muted)">Rede</span><span class="k" style="color:var(--muted)">Sessão</span></div>
+  <div style="padding:26px 36px;display:grid;align-content:start;gap:22px">
+   <div style="display:grid;grid-template-columns:1fr 1.2fr;gap:24px;align-items:start"><div><span class="k">Prioridade</span><p class="sm mu" style="margin:6px 0 0">O que manter quando a internet de alguém apertar.</p></div><div class="col" style="gap:0"><span class="row" style="padding:8px 0;border-bottom:1px solid var(--line)">○ Nitidez</span><span class="row" style="padding:8px 0;border-bottom:1px solid var(--line);color:var(--vt);font-weight:700">● Equilíbrio</span><span class="row" style="padding:8px 0">○ Fluidez</span></div></div>
+   <div class="rule" style="border-top-width:2px;border-color:var(--line)"></div>
+   <div style="display:grid;grid-template-columns:1fr 1.2fr;gap:24px"><div><span class="k">Atraso</span><p class="sm mu" style="margin:6px 0 0">Igual para todos. Menos atraso deixa a conversa natural.</p></div><div><input class="in" value="Automático — 1,2 s"></div></div>
+   <div style="display:grid;grid-template-columns:1fr 1.2fr;gap:24px"><div><span class="k">Upload</span><p class="sm mu" style="margin:6px 0 0">Decide quantos recebem direto de você.</p></div><div class="row"><input class="in" value="20 Mbps"><span class="b">Medir</span></div></div>
+  </div>
+ </div></div></div>
+
+ <div class="var"><div class="vh"><b>E · Bolso</b><span>Lista no estilo de ajustes do celular: grupos, setas e interruptores, com cada assunto em sua própria tela.</span></div>
+ <div class="scroll"><div class="f m vE"><div class="phone" style="background:#08080a">
+  <div class="row" style="padding:14px"><span class="b ic g"><svg class="i" style="transform:scaleX(-1)"><use href="#chev"/></svg></span><b style="font-size:17px">Ajustes</b></div>
+  <div style="padding:0 14px;display:grid;gap:16px">
+   <div><span class="xs mu" style="padding-left:6px">ÁUDIO</span><div style="background:var(--s1);border-radius:14px;padding:0 12px"><div class="li"><svg class="i"><use href="#mic"/></svg>Microfone<span class="grow"></span><span class="mu sm">Headset</span><svg class="i mu"><use href="#chev"/></svg></div><div class="li"><svg class="i"><use href="#vol"/></svg>Supressão de ruído<span class="grow"></span><span class="tr"></span></div><div class="li" style="border:0"><svg class="i"><use href="#hand"/></svg>Apertar para falar<span class="grow"></span><span class="tr off"></span></div></div></div>
+   <div><span class="xs mu" style="padding-left:6px">VÍDEO</span><div style="background:var(--s1);border-radius:14px;padding:0 12px"><div class="li"><svg class="i"><use href="#hd"/></svg>Prioridade<span class="grow"></span><span class="mu sm">Equilíbrio</span><svg class="i mu"><use href="#chev"/></svg></div><div class="li" style="border:0"><svg class="i"><use href="#clock"/></svg>Atraso<span class="grow"></span><span class="mu sm">Auto</span><svg class="i mu"><use href="#chev"/></svg></div></div></div>
+   <div><span class="xs mu" style="padding-left:6px">SESSÃO</span><div style="background:var(--s1);border-radius:14px;padding:0 12px"><div class="li"><svg class="i"><use href="#lock"/></svg>Trancar sala<span class="grow"></span><span class="tr off"></span></div><div class="li" style="border:0;color:#ff8a8a">Encerrar para todos</div></div></div>
+  </div>
+ </div></div></div></div>
+</section>
+
+<!-- ================= 6 · BOTÃO DIREITO ================= -->
+<section class="screen" id="s6">
+ <div class="var"><div class="vh"><b>A · Console</b><span>Menu compacto no estilo de sistema, com atalho à direita de cada item. Mostra o clique numa pessoa e o clique no vídeo.</span></div>
+ <div class="scroll"><div class="f vA" style="display:grid;grid-template-columns:1fr 1fr">
+  <div style="position:relative;border-right:1px solid var(--line);padding:16px"><span class="lbl">clique numa pessoa</span>
+   <div class="row sm" style="padding:6px;margin-top:10px;background:var(--s2)"><span class="dot"></span>Léo</div>
+   <span class="cur" style="left:80px;top:62px"></span>
+   <div class="pn" style="position:absolute;left:86px;top:72px;width:260px;padding:4px;font-size:13px;box-shadow:0 10px 30px #000a">
+    <div class="row" style="padding:7px 10px"><svg class="i" style="width:15px"><use href="#vol"/></svg>Volume<span class="grow"></span><span class="rng" style="--w:80%;max-width:70px"></span></div>
+    <div class="row" style="padding:7px 10px;background:var(--violet)"><svg class="i" style="width:15px"><use href="#pass"/></svg>Passar a vez<span class="grow"></span><span class="lbl" style="color:#fffa">⇧P</span></div>
+    <div class="row" style="padding:7px 10px"><svg class="i" style="width:15px"><use href="#shield"/></svg>Tornar moderador</div>
+    <div class="row" style="padding:7px 10px"><svg class="i" style="width:15px"><use href="#copy"/></svg>Copiar nome</div>
+    <div style="border-top:1px solid var(--line);margin:4px 0"></div>
+    <div class="row" style="padding:7px 10px;color:#ff8a8a"><svg class="i" style="width:15px"><use href="#rm"/></svg>Remover da sessão<span class="grow"></span><span class="lbl">del</span></div>
+   </div>
+  </div>
+  <div style="position:relative"><div class="vid">vídeo</div>
+   <span class="cur" style="left:120px;top:110px"></span>
+   <div class="pn" style="position:absolute;left:126px;top:120px;width:250px;padding:4px;font-size:13px;box-shadow:0 10px 30px #000a">
+    <div class="row" style="padding:7px 10px"><svg class="i" style="width:15px"><use href="#full"/></svg>Tela cheia<span class="grow"></span><span class="lbl">F</span></div>
+    <div class="row" style="padding:7px 10px"><svg class="i" style="width:15px"><use href="#pip"/></svg>Janela flutuante<span class="grow"></span><span class="lbl">⇧F</span></div>
+    <div class="row" style="padding:7px 10px"><svg class="i" style="width:15px"><use href="#vol"/></svg>Silenciar transmissão</div>
+    <div class="row" style="padding:7px 10px"><svg class="i" style="width:15px"><use href="#sig"/></svg>Métricas</div>
+    <div style="border-top:1px solid var(--line);margin:4px 0"></div>
+    <div class="row" style="padding:7px 10px"><svg class="i" style="width:15px"><use href="#hand"/></svg>Pedir a vez<span class="grow"></span><span class="lbl">R</span></div>
+   </div>
+  </div>
+ </div></div></div>
+
+ <div class="var"><div class="vh"><b>B · Suave</b><span>Cartão arredondado com cabeçalho da pessoa (avatar, papel, status) e o volume como controle principal.</span></div>
+ <div class="scroll"><div class="f vB" style="position:relative;padding:14px"><div style="position:relative;height:100%;border-radius:26px;overflow:hidden"><div class="vid" style="filter:brightness(.6)">sessão</div></div>
+  <span class="cur" style="left:300px;top:110px"></span>
+  <div class="pn" style="position:absolute;left:306px;top:120px;width:290px;padding:10px;box-shadow:0 20px 50px #000d;display:grid;gap:4px">
+   <div class="row" style="padding:8px"><span class="av" style="width:42px;height:42px">L</span><div class="col" style="gap:0"><b>Léo</b><span class="xs mu">participante · 38 ms</span></div></div>
+   <div style="background:var(--s2);border-radius:16px;padding:12px" class="row sm"><svg class="i"><use href="#vol"/></svg><span class="rng" style="--w:80%"></span><b>80%</b></div>
+   <div class="row" style="padding:10px;border-radius:14px;background:var(--vsoft);color:var(--vt)"><svg class="i"><use href="#pass"/></svg>Passar a vez</div>
+   <div class="row" style="padding:10px;border-radius:14px"><svg class="i"><use href="#shield"/></svg>Tornar moderador</div>
+   <div class="row" style="padding:10px;border-radius:14px"><svg class="i"><use href="#chat"/></svg>Mencionar no chat</div>
+   <div class="row" style="padding:10px;border-radius:14px;color:#ff8a8a;background:#2a1216"><svg class="i"><use href="#rm"/></svg>Remover da sessão</div>
+  </div>
+ </div></div></div>
+
+ <div class="var"><div class="vh"><b>C · Vidro</b><span>Menu radial em volta do cursor. São seis ações a um gesto de distância, e o nome da ação aparece no centro.</span></div>
+ <div class="scroll"><div class="f vC"><div class="vid" style="filter:brightness(.55)">vídeo</div>
+  <div style="position:absolute;left:50%;top:50%;width:260px;height:260px;transform:translate(-50%,-50%)">
+   <div class="gl" style="position:absolute;inset:0;border-radius:50%"></div>
+   <div class="gl" style="position:absolute;inset:85px;border-radius:50%;display:grid;place-items:center;text-align:center;background:rgba(10,10,14,.8)"><span class="xs"><b>Tela cheia</b><br><span class="mu">F</span></span></div>
+   <span class="b ic p" style="position:absolute;left:110px;top:12px;border-radius:50%"><svg class="i"><use href="#full"/></svg></span>
+   <span class="b ic" style="position:absolute;left:196px;top:62px;border-radius:50%"><svg class="i"><use href="#pip"/></svg></span>
+   <span class="b ic" style="position:absolute;left:196px;top:158px;border-radius:50%"><svg class="i"><use href="#vol"/></svg></span>
+   <span class="b ic" style="position:absolute;left:110px;top:208px;border-radius:50%"><svg class="i"><use href="#hand"/></svg></span>
+   <span class="b ic" style="position:absolute;left:24px;top:158px;border-radius:50%"><svg class="i"><use href="#sig"/></svg></span>
+   <span class="b ic" style="position:absolute;left:24px;top:62px;border-radius:50%"><svg class="i"><use href="#chat"/></svg></span>
+  </div>
+  <div class="gl" style="position:absolute;bottom:14px;left:14px;padding:8px 12px" ><span class="xs mu">Segure o botão direito e arraste até a ação. Solte para executar.</span></div>
+ </div></div></div>
+
+ <div class="var"><div class="vh"><b>D · Editorial</b><span>Menu largo com seções rotuladas (Ouvir, Vez, Moderar) e a ação perigosa isolada embaixo, com borda vermelha.</span></div>
+ <div class="scroll"><div class="f vD" style="position:relative"><div class="vid" style="filter:grayscale(.6) brightness(.5)">sessão</div>
+  <span class="cur" style="left:260px;top:70px"></span>
+  <div style="position:absolute;left:266px;top:80px;width:330px;background:var(--bg);border:2px solid var(--text);box-shadow:8px 8px 0 var(--violet)">
+   <div style="padding:12px 16px;border-bottom:3px solid var(--violet)" class="row"><span class="h" style="font-size:28px">Léo</span><span class="grow"></span><span class="k" style="color:var(--muted)">participante</span></div>
+   <div style="padding:10px 16px;display:grid;gap:4px"><span class="k">Ouvir</span><div class="row sm" style="padding:4px 0">Volume<span class="rng" style="--w:80%"></span>80</div><div class="sm" style="padding:4px 0">Silenciar só para mim</div></div>
+   <div style="padding:10px 16px;border-top:2px solid var(--line);display:grid;gap:4px"><span class="k">Vez</span><div class="sm" style="padding:4px 0;color:var(--vt);font-weight:700">Passar a vez para Léo →</div></div>
+   <div style="padding:10px 16px;border-top:2px solid var(--line);display:grid;gap:4px"><span class="k">Moderar</span><div class="sm" style="padding:4px 0">Tornar moderador</div><div class="sm" style="padding:4px 0">Trocar apelido</div></div>
+   <div style="padding:12px 16px;border-top:2px solid var(--red);color:var(--red)" class="k">Remover da sessão</div>
+  </div>
+ </div></div></div>
+
+ <div class="var"><div class="vh"><b>E · Bolso</b><span>Toque longo abre uma folha de ações embaixo, com botões grandes, confirmação para remover e Cancelar separado.</span></div>
+ <div class="scroll"><div class="f m vE"><div class="phone">
+  <div style="aspect-ratio:16/10;position:relative;max-width:100%"><div class="vid" style="filter:brightness(.5)"></div></div>
+  <div class="grow" style="background:#000a"></div>
+  <div class="sheet" style="background:transparent;box-shadow:none;padding:10px">
+   <div style="background:var(--s1);border-radius:18px;overflow:hidden">
+    <div class="row" style="padding:14px;justify-content:center;flex-direction:column;gap:4px;border-bottom:1px solid var(--line)"><span class="av" style="width:44px;height:44px">L</span><b>Léo</b><div class="row sm" style="width:100%"><svg class="i"><use href="#vol"/></svg><span class="rng" style="--w:80%"></span>80%</div></div>
+    <div style="padding:15px;text-align:center;border-bottom:1px solid var(--line);color:var(--vt);font-weight:600">Passar a vez</div>
+    <div style="padding:15px;text-align:center;border-bottom:1px solid var(--line)">Tornar moderador</div>
+    <div style="padding:15px;text-align:center;color:#ff8a8a">Remover da sessão</div>
+   </div>
+   <div style="background:var(--s1);border-radius:18px;padding:15px;text-align:center;font-weight:700;margin-top:8px">Cancelar</div>
+  </div>
+ </div></div></div></div>
+</section>
+</div>
+
+<script>
+const tabs=[...document.querySelectorAll('nav button')];
+function show(id){tabs.forEach(b=>b.setAttribute('aria-selected',b.dataset.s===id));document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id));}
+tabs.forEach(b=>b.onclick=()=>{show(b.dataset.s);try{history.replaceState(null,'','#'+b.dataset.s)}catch(e){}});
+const h=location.hash.slice(1);if(/^s[1-6]$/.test(h))show(h);
+</script>

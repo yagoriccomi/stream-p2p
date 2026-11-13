@@ -76,6 +76,7 @@ function connect() {
       teardown({ keepScreen: true });
     }
     $('conn').hidden = false;
+    readyNet(false);
     $('conn-text').textContent = st.rejoin ? 'Reconectando à sessão…' : 'Reconectando ao servidor…';
     setTimeout(connect, Math.min(10_000, 1000 * 2 ** retry++));
   };
@@ -115,6 +116,7 @@ async function handle(msg) {
       st.me = msg.id;
       retry = 0;
       $('conn').hidden = true;
+      readyNet(true);
       autoStart?.();
       autoStart = null;
       if (st.rejoin) {
@@ -279,13 +281,14 @@ function renderStage() {
   $('ov-paused').hidden = !presenter || mine || !s.presenterState?.paused;
   $('ov-paused-text').textContent = presenter ? `${presenter.name} pausou. O vídeo volta sozinho.` : '';
   $('s-who').hidden = !presenter;
-  $('s-who').textContent = presenter ? (mine ? 'Você está transmitindo' : `${presenter.name} transmitindo`) : '';
-  $('pbar').hidden = !mine;
+  $('s-who').textContent = presenter ? (mine ? 'Você ao vivo' : `${presenter.name} ao vivo`) : '';
+  $('pbar').hidden = !mine || st.pbarMin;
+  $('p-chip').hidden = !mine || !st.pbarMin;
   const grant = s.grant && s.grant.until > Date.now() ? member(s.grant.id) : null;
-  $('ov-empty-title').textContent = grant ? (grant.id === st.me ? 'Sua vez de transmitir' : `Vez de ${grant.name}`) : 'Ninguém transmitindo';
+  $('ov-empty-title').textContent = grant ? (grant.id === st.me ? 'Sua vez' : `Vez de ${grant.name}`) : 'Palco livre';
   $('ov-empty-text').textContent = grant && grant.id !== st.me
     ? `${grant.name} tem até 1 minuto para começar.`
-    : 'Qualquer pessoa da sessão pode transmitir. Uma de cada vez.';
+    : 'Um de cada vez.';
   $('ov-stream').hidden = !canCapture() || (grant && grant.id !== st.me);
   if (mine) renderPresenterBar();
 }
@@ -317,7 +320,7 @@ function renderPeople() {
     if (m.role === 'owner') tags.push(h('span', { class: 'badge role' }, icon('owner', 'i sm'), 'dono(a)'));
     if (m.role === 'mod') tags.push(h('span', { class: 'badge role' }, icon('moderator', 'i sm'), 'moderador(a)'));
     const actions = a && m.id !== st.me ? personActions(a, m) : [];
-    return h('li', { class: 'person' },
+    const li = h('li', { class: 'person', oncontextmenu: (e) => { if (!actions.length) return; e.preventDefault(); openMenu({ x: e.clientX, y: e.clientY }, actions, { name: m.name, initials: initials(m.name), sub: m.role === 'owner' ? 'dono(a)' : m.role === 'mod' ? 'moderador(a)' : 'na sala' }); } },
       h('span', { class: 'avatar', 'aria-hidden': 'true', text: initials(m.name) }),
       h('span', { class: 'who' },
         h('b', { text: `${m.name}${m.id === st.me ? ' (você)' : ''}` }),
@@ -330,8 +333,9 @@ function renderPeople() {
       icon(m.mic ? 'mic' : 'mic-off', 'i sm'),
       actions.length ? h('button', {
         class: 'btn ghost icon', type: 'button', 'aria-label': `Ações para ${m.name}`, 'aria-haspopup': 'menu',
-        onclick: (e) => openMenu(e.currentTarget, actions),
+        onclick: (e) => openMenu(e.currentTarget, actions, { name: m.name, initials: initials(m.name) }),
       }, icon('more')) : null);
+    return li;
   }));
 }
 
@@ -343,14 +347,14 @@ function personActions(a, t) {
     label, icon: ic, red,
     run: () => (!confirmText || confirm(confirmText)) && send({ type: 'mod', action, id: t.id }),
   });
-  if (t.mic) mod('muteForAll', 'Silenciar para todos', 'mic-off');
-  if (CAN.passTurn(s, a) && s.presenterId !== t.id) items.push({ label: 'Passar a vez', icon: 'pass-turn', run: () => send({ type: 'passTurn', id: t.id }) });
-  if (s.presenterId === t.id && CAN.stopStream(s, a, t)) items.push({ label: 'Tirar da transmissão', icon: 'stop', run: () => send({ type: 'stopStream' }) });
-  mod('promote', 'Tornar moderador(a)', 'moderator');
-  mod('demote', 'Tirar moderação', 'moderator');
-  mod('transferOwner', 'Tornar dono(a)', 'owner', false, `Passar a coroa para ${t.name}? Você vira moderador(a).`);
-  mod('kick', 'Remover da sessão', 'remove-person', true);
-  mod('ban', 'Bloquear (403)', 'lock', true, `Bloquear ${t.name}? Este navegador não entra mais nesta sessão.`);
+  if (t.mic) mod('muteForAll', 'Silenciar', 'mic-off');
+  if (CAN.passTurn(s, a) && s.presenterId !== t.id) items.push({ label: 'Passar vez', icon: 'pass-turn', run: () => send({ type: 'passTurn', id: t.id }) });
+  if (s.presenterId === t.id && CAN.stopStream(s, a, t)) items.push({ label: 'Parar tela', icon: 'stop', run: () => send({ type: 'stopStream' }) });
+  mod('promote', 'Promover', 'moderator');
+  mod('demote', 'Rebaixar', 'moderator');
+  mod('transferOwner', 'Dar coroa', 'owner', false, `Passar a coroa para ${t.name}? Você vira moderador(a).`);
+  mod('kick', 'Expulsar', 'remove-person', true);
+  mod('ban', 'Banir', 'lock', true, `Bloquear ${t.name}? Este navegador não entra mais nesta sessão.`);
   return items;
 }
 
@@ -376,17 +380,17 @@ function renderFooter() {
   btn.hidden = s.presenterId === st.me;
   btn.classList.remove('primary');
   if (!s.presenterId && (!grant || grant === st.me)) {
-    label.textContent = grant === st.me ? 'Transmitir agora' : 'Transmitir';
+    label.textContent = grant === st.me ? 'Mostrar já' : 'Mostrar tela';
     setIcon(btn, 'screen-share');
     btn.hidden ||= !canCapture();
     if (grant === st.me) btn.classList.add('primary');
     btn.onclick = openSetup;
   } else if (s.queue.includes(st.me)) {
-    label.textContent = 'Cancelar pedido';
+    label.textContent = 'Cancelar';
     setIcon(btn, 'close');
     btn.onclick = () => send({ type: 'cancelRequest' });
   } else {
-    label.textContent = 'Pedir a vez';
+    label.textContent = 'Pedir vez';
     setIcon(btn, 'request-turn');
     btn.hidden ||= !canCapture();
     btn.onclick = () => send({ type: 'requestTurn' });
@@ -417,17 +421,29 @@ function addChat({ name, text, at, system }) {
   if (!system && !sideShown()) $('f-unread').hidden = false;
 }
 
-// Chat and people panel: hidden on demand, so the stream gets the whole width. Remembered per device.
-const sideShown = () => !document.querySelector('.session').classList.contains('side-off');
-function showSide(on) {
-  document.querySelector('.session').classList.toggle('side-off', !on);
-  $('f-side').setAttribute('aria-pressed', String(on));
-  $('f-side').setAttribute('aria-label', on ? 'Esconder o chat' : 'Mostrar o chat');
-  if (on) $('f-unread').hidden = true;
-  store.set('sideShown', on);
+// One glass side panel (chat, people or metrics), picked from the header; clicking the open one hides it.
+const sideTab = () => (document.querySelector('.session').classList.contains('side-off') ? '' : $('side').dataset.tab);
+const sideShown = () => sideTab() === 'chat';
+function setSide(tab) {
+  document.querySelector('.session').classList.toggle('side-off', !tab);
+  if (tab) $('side').dataset.tab = tab;
+  for (const b of document.querySelectorAll('[data-side]')) b.setAttribute('aria-pressed', String(b.dataset.side === tab));
+  if (tab === 'chat') $('f-unread').hidden = true;
+  store.set('sideTab', tab);
 }
-showSide(store.get('sideShown', true));
-$('f-side').addEventListener('click', () => showSide(!sideShown()));
+setSide((() => { const t = store.get('sideTab', 'chat'); return t === 'metrics' ? 'chat' : t; })());
+for (const b of document.querySelectorAll('[data-side]')) b.addEventListener('click', () => setSide(sideTab() === b.dataset.side ? '' : b.dataset.side));
+for (const b of document.querySelectorAll('.side-x')) b.addEventListener('click', () => setSide(''));
+$('p-min').addEventListener('click', () => { st.pbarMin = true; renderStage(); $('p-chip').focus(); });
+$('p-chip').addEventListener('click', () => { st.pbarMin = false; renderStage(); });
+$('stage').addEventListener('contextmenu', (e) => {
+  e.preventDefault();
+  openMenu({ x: e.clientX, y: e.clientY }, [
+    { label: 'Tela cheia', icon: 'fullscreen', run: () => $('f-full').click() },
+    { label: 'Métricas', icon: 'stats', run: () => setSide('metrics') },
+    { label: 'Chat', icon: 'chat', run: () => setSide('chat') },
+  ]);
+});
 
 // ── T01 · Início ──
 $('create-name').value = st.name;
@@ -448,7 +464,8 @@ fetch('/discord/install.json').then((r) => { $('bot-add').hidden = !r.ok; }).cat
 
 $('home-join-form').addEventListener('submit', (e) => {
   e.preventDefault();
-  openJoin($('home-code').value);
+  openJoin($('home-code').value, $('create-name').value.trim() || undefined);
+  if ($('join-code').value && $('join-name').value) $('join-form').requestSubmit();
 });
 
 // ── T09 · Entrar ──
@@ -527,12 +544,6 @@ $('chat-form').addEventListener('submit', (e) => {
   send({ type: 'chat', text });
   $('chat-input').value = '';
 });
-for (const tab of document.querySelectorAll('.side .tabs [role=tab]')) {
-  tab.addEventListener('click', () => {
-    document.querySelector('.side').dataset.tab = tab.dataset.tab;
-    for (const t of document.querySelectorAll('.side .tabs [role=tab]')) t.setAttribute('aria-selected', String(t === tab));
-  });
-}
 $('s-rename').addEventListener('click', () => {
   $('rename-input').value = myName();
   fieldError('rename-input', 'rename-err');
@@ -1157,17 +1168,12 @@ function renderMetrics(s, kbps, lossPct) {
   $('metrics-note').textContent = note;
   $('metrics-note').hidden = !note;
 }
-function showMetrics(on) {
-  $('metrics').hidden = !on;
-  $('m-toggle').setAttribute('aria-pressed', String(on));
-  store.set('metricsShown', on);
-}
-$('m-toggle').addEventListener('click', () => showMetrics($('metrics').hidden));
 setInterval(async () => {
   const s = await video.stats();
   if (!s) {
     $('s-stats').textContent = '';
-    $('m-toggle').hidden = $('metrics').hidden = true;
+    $('m-toggle').hidden = true;
+    if (sideTab() === 'metrics') setSide('');
     st.origin = null;
     window.__stats = null;
     reportStatus(); // also the heartbeat: --status calls the app closed after 10 s of silence
@@ -1180,8 +1186,7 @@ setInterval(async () => {
   last = { bytes: s.bytes, at: now, lost: s.lost, received: s.received, jbMin: s.jbMin, jbCount: s.jbCount };
   if (!s.viewer && s.children) send({ type: 'srcStats', capture: s.capture, w: s.w, h: s.h, fps: s.fps, kbps: Math.round(kbps / s.children), codec: s.codec, limit: s.limit });
   $('m-toggle').hidden = false;
-  if ($('m-toggle').getAttribute('aria-pressed') !== String(store.get('metricsShown', false))) showMetrics(store.get('metricsShown', false));
-  if (!$('metrics').hidden) renderMetrics(s, kbps, lossPct);
+  if (sideTab() === 'metrics') renderMetrics(s, kbps, lossPct);
   if (s.rttMs !== null) send({ type: 'hopRtt', ms: Math.round(s.rttMs), ...(needMs !== null && { needMs }) }); // server turns it into buffers
   window.__stats = { kbps, fps: s.fps, w: s.w, h: s.h, codec: s.codec, encoder: s.encoder, jitterMs: video.jitterMs, rttMs: s.rttMs, needMs, routes: s.routes, parent: video.parentId };
   reportStatus();
@@ -1354,6 +1359,12 @@ if (params.get('create') === '1' && params.get('name')) {
     autoStart = () => $('join-form').requestSubmit();
   }
 } else screen('home');
+function readyNet(ok) {
+  $('ready-net').className = `dot ${ok ? 'ok' : 'warn'}`;
+  $('ready-net-text').textContent = ok ? 'Online' : 'Conectando…';
+}
+$('ready-cap').className = `dot ${canCapture() ? 'ok' : 'bad'}`;
+$('ready-cap-text').textContent = canCapture() ? 'Tela ok' : 'Só assistir';
 $('conn').hidden = false;
 connect();
 checkAppUpdate();

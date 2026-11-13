@@ -113,16 +113,19 @@ export function closeOnX(dialog) {
 
 // Floating menu anchored to a button; Esc or outside click closes it.
 let menuOwner = null;
-export function openMenu(anchor, items) {
+export function openMenu(anchor, items, head) {
   const menu = $('menu');
   if (menuOwner === anchor && !menu.hidden) return closeMenu();
-  menu.replaceChildren(...items.map((it) => h('button', { type: 'button', role: 'menuitem', class: it.red ? 'red' : '', onclick: () => { closeMenu(); it.run(); } }, icon(it.icon, 'i sm'), it.label)));
+  const top = head ? [h('div', { class: 'menu-head' }, h('span', { class: 'avatar', 'aria-hidden': 'true', text: head.initials ?? '' }), h('span', {}, h('b', { text: head.name }), head.sub ?? ''))] : [];
+  menu.replaceChildren(...top, ...items.map((it) => h('button', { type: 'button', role: 'menuitem', class: it.red ? 'red' : '', onclick: () => { closeMenu(); it.run(); } }, icon(it.icon, 'i sm'), it.label)));
   menu.hidden = false;
-  const r = anchor.getBoundingClientRect();
+  // anchor: an element (menu under it) or a point {x, y} from a right-click
+  const r = anchor instanceof Element ? anchor.getBoundingClientRect() : { left: anchor.x, right: anchor.x, top: anchor.y, bottom: anchor.y };
   const w = menu.offsetWidth, hgt = menu.offsetHeight;
-  menu.style.left = `${Math.max(8, Math.min(innerWidth - w - 8, r.right - w))}px`;
+  const x = anchor instanceof Element ? r.right - w : r.left;
+  menu.style.left = `${Math.max(8, Math.min(innerWidth - w - 8, x))}px`;
   menu.style.top = `${r.bottom + hgt + 8 > innerHeight ? Math.max(8, r.top - hgt - 4) : r.bottom + 4}px`;
-  menuOwner = anchor;
+  menuOwner = anchor instanceof Element ? anchor : document.activeElement;
   menu.querySelector('button')?.focus();
 }
 export function closeMenu() {

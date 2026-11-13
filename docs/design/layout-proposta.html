@@ -1,0 +1,308 @@
+<title>Stream P2P Layout Proposal</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root{color-scheme:dark;--bg:#0A0A0B;--s1:#141417;--s2:#1C1C21;--line:#2A2A31;--text:#F2F2F5;--muted:#A3A3AD;--violet:#7F00FF;--violet-t:#B57BFF;--red:#F04452;--green:#2FD180;--warn:#F5B83D}
+*{box-sizing:border-box}
+body{margin:0;background:#050506;color:var(--text);font:14px/1.45 Inter,system-ui,sans-serif;padding-block:24px 80px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1.page{font-size:22px;margin:0 auto 4px;max-width:1180px}
+p.lead{color:var(--muted);margin:0 auto 24px;max-width:1180px}
+nav.tabs{display:flex;gap:6px;flex-wrap:wrap;max-width:1180px;margin:0 auto 16px}
+nav.tabs button{background:var(--s1);color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:7px 14px;font:inherit;cursor:pointer}
+nav.tabs button[aria-selected=true]{background:var(--violet);color:#fff;border-color:var(--violet)}
+.shot{max-width:1180px;margin:0 auto;display:none}
+.shot.on{display:block}
+.frame{background:var(--bg);border:1px solid var(--line);border-radius:14px;overflow:hidden;position:relative}
+.note{display:grid;gap:8px;margin-top:14px}
+.note div{background:var(--s1);border-left:3px solid var(--violet);padding:10px 12px;border-radius:6px;color:var(--muted)}
+.note b{color:var(--text)}
+.n{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--violet);color:#fff;font-size:11px;font-weight:700;margin-right:6px;vertical-align:1px}
+.pin{position:absolute;z-index:5;box-shadow:0 0 0 3px #050506}
+.btn{display:inline-flex;align-items:center;gap:8px;background:var(--s2);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:9px 14px;font:inherit;font-weight:600;white-space:nowrap}
+.btn.p{background:var(--violet);border-color:var(--violet);color:#fff}
+.btn.d{background:transparent;border-color:#5a2028;color:#ff8a94}
+.btn.g{background:transparent;border-color:transparent;color:var(--muted)}
+.btn.ic{padding:9px;width:40px;justify-content:center}
+.btn.big{padding:13px 22px;font-size:15px}
+.btn.on{background:#2a1544;border-color:var(--violet);color:var(--violet-t)}
+.muted{color:var(--muted)}.sm{font-size:12px}
+input,select{width:100%;background:var(--s2);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:11px 12px;font:inherit}
+label{display:grid;gap:6px;font-weight:600;font-size:13px}
+.mono{font-family:"JetBrains Mono",monospace}
+svg.i{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* home */
+.home{display:grid;place-items:center;padding:56px 16px;min-height:560px}
+.home .card{width:100%;max-width:420px;background:var(--s1);border:1px solid var(--line);border-radius:16px;padding:28px;display:grid;gap:16px}
+.home h2{margin:0;font-size:26px;line-height:1.15}
+.or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px}.or:before,.or:after{content:"";flex:1;height:1px;background:var(--line)}
+.radio{display:flex;gap:8px}.radio span{flex:1;border:1px solid var(--line);border-radius:10px;padding:9px;text-align:center;font-size:13px;color:var(--muted)}.radio span.sel{border-color:var(--violet);color:var(--text);background:#1d1030}
+
+/* session */
+.ses{display:grid;grid-template-columns:1fr 300px;grid-template-rows:auto 1fr auto;height:620px}
+.head{grid-column:1/3;display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.logo{width:26px;height:22px;border:3px solid var(--violet);border-radius:5px}
+.code{background:var(--s2);border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+.live{display:inline-flex;align-items:center;gap:6px;background:#3a0d14;color:#ff8a94;border-radius:999px;padding:4px 10px;font-weight:700;font-size:12px}
+.live:before{content:"";width:7px;height:7px;border-radius:50%;background:var(--red)}
+.grow{flex:1}
+.stage{position:relative;background:#000;display:grid;place-items:center;margin:12px 0 0 12px;border-radius:12px;overflow:hidden}
+.empty{text-align:center;display:grid;gap:10px;justify-items:center;padding:20px}
+.empty h3{margin:0;font-size:20px}
+.fake{position:absolute;inset:0;background:linear-gradient(135deg,#1b2a4a,#3b1a52 55%,#0f2a2a);display:grid;place-items:center;color:#ffffff55;font-size:13px}
+.who{position:absolute;left:12px;top:12px;background:#000a;border-radius:8px;padding:5px 10px;font-size:12px}
+.side{margin:12px 12px 0 12px;background:var(--s1);border:1px solid var(--line);border-radius:12px;display:flex;flex-direction:column;overflow:hidden}
+.seg{display:flex;margin:10px;background:var(--s2);border-radius:9px;padding:3px}
+.seg span{flex:1;text-align:center;padding:6px;border-radius:7px;color:var(--muted);font-weight:600;font-size:13px}.seg span.sel{background:var(--bg);color:var(--text)}
+.msgs{flex:1;padding:4px 14px;display:grid;align-content:start;gap:10px;font-size:13px}
+.msgs b{color:var(--violet-t)}
+.comp{display:flex;gap:6px;padding:10px;border-top:1px solid var(--line)}
+.ppl{list-style:none;margin:0;padding:0 10px;flex:1}
+.ppl li{display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px}
+.ppl li:hover,.ppl li.hl{background:var(--s2)}
+.av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:12px;background:#2a1544;color:var(--violet-t);flex:none}
+.tagr{font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:1px 6px}
+.foot{grid-column:1/3;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:12px 16px;gap:12px}
+.zone{display:flex;gap:8px;align-items:center}.zone.r{justify-content:flex-end}
+.zl{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#5d5d68;text-align:center;margin-top:4px}
+.menu{position:absolute;background:var(--s1);border:1px solid var(--line);border-radius:12px;padding:6px;min-width:230px;box-shadow:0 12px 40px #000a;z-index:4}
+.menu div{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;font-size:13px}
+.menu div:hover{background:var(--s2)}
+.menu hr{border:0;border-top:1px solid var(--line);margin:6px 0}
+.menu .dz{color:#ff8a94}
+.pop{position:absolute;background:var(--s1);border:1px solid var(--line);border-radius:12px;padding:14px;width:260px;z-index:4;display:grid;gap:12px;box-shadow:0 12px 40px #000a}
+.rng{display:grid;grid-template-columns:90px 1fr 34px;align-items:center;gap:8px;font-size:12px}
+.rng i{height:4px;background:var(--line);border-radius:4px;position:relative}.rng i:after{content:"";position:absolute;left:0;top:0;bottom:0;width:var(--w);background:var(--violet);border-radius:4px}
+
+/* settings */
+.dlgwrap{display:grid;place-items:center;padding:40px 16px;background:#000c;min-height:600px}
+.dlg{width:100%;max-width:640px;background:var(--s1);border:1px solid var(--line);border-radius:16px;display:grid;grid-template-columns:170px 1fr;overflow:hidden}
+.dlg aside{border-right:1px solid var(--line);padding:16px 10px;display:grid;align-content:start;gap:4px}
+.dlg aside span{padding:9px 12px;border-radius:8px;color:var(--muted);font-weight:600;display:flex;gap:8px;align-items:center}
+.dlg aside span.sel{background:var(--s2);color:var(--text)}
+.dlg main{padding:20px 22px;display:grid;gap:18px}
+.dlg h3{margin:0 0 -6px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.sw{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.tr{width:38px;height:22px;border-radius:99px;background:var(--violet);position:relative;flex:none}.tr:after{content:"";position:absolute;right:3px;top:3px;width:16px;height:16px;border-radius:50%;background:#fff}
+.tr.off{background:var(--line)}.tr.off:after{right:auto;left:3px}
+details{border-top:1px solid var(--line);padding-top:12px;color:var(--muted)}
+
+@media (max-width:820px){
+ .ses{grid-template-columns:1fr;height:auto}
+ .side{display:none}
+ .stage{margin:12px 12px 0;min-height:260px}
+ .foot{grid-template-columns:1fr;justify-items:center}
+ .dlg{grid-template-columns:1fr}.dlg aside{display:flex;border-right:0;border-bottom:1px solid var(--line);overflow-x:auto}
+ .lbl{display:none}
+}
+</style>
+<svg width="0" height="0" style="position:absolute">
+ <symbol id="mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></symbol>
+ <symbol id="hp" viewBox="0 0 24 24"><path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="4.5" height="6" rx="1.5"/><rect x="16.5" y="14" width="4.5" height="6" rx="1.5"/></symbol>
+ <symbol id="down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+ <symbol id="scr" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4M12 13V7M9 10l3-3 3 3"/></symbol>
+ <symbol id="chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></symbol>
+ <symbol id="full" viewBox="0 0 24 24"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></symbol>
+ <symbol id="leave" viewBox="0 0 24 24"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M10 8l-4 4 4 4M6 12h10"/></symbol>
+ <symbol id="gear" viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></symbol>
+ <symbol id="link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1"/><path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/></symbol>
+ <symbol id="pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></symbol>
+ <symbol id="stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></symbol>
+ <symbol id="more" viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01" stroke-width="3"/></symbol>
+ <symbol id="pass" viewBox="0 0 24 24"><path d="M4 8h13M14 5l3 3-3 3M20 16H7M10 13l-3 3 3 3"/></symbol>
+ <symbol id="vol" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></symbol>
+ <symbol id="hd" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10v4M10 10v4M7 12h3M13 10v4h1.5a2 2 0 0 0 0-4z"/></symbol>
+ <symbol id="ppl" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/></symbol>
+ <symbol id="lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+ <symbol id="sig" viewBox="0 0 24 24"><path d="M4 20v-3M9 20v-7M14 20V9M19 20V4"/></symbol>
+</svg>
+
+<h1 class="page">Proposta de layout · Stream P2P</h1>
+<p class="lead">Mockups estáticos. Os números roxos marcam o que mudou em relação ao layout atual.</p>
+
+<nav class="tabs" role="tablist">
+ <button data-t="a" aria-selected="true">1 · Entrada</button>
+ <button data-t="b" aria-selected="false">2 · Sessão vazia</button>
+ <button data-t="c" aria-selected="false">3 · Transmitindo</button>
+ <button data-t="d" aria-selected="false">4 · Assistindo + pessoas</button>
+ <button data-t="e" aria-selected="false">5 · Configurações</button>
+</nav>
+
+<!-- 1 entrada -->
+<section class="shot on" id="a">
+ <div class="frame"><div class="home">
+  <div class="card">
+   <div style="display:flex;gap:10px;align-items:center"><span class="logo"></span><b>Stream P2P</b></div>
+   <h2>Sua tela, ao vivo,<br>para a sua galera.</h2>
+   <label>Seu apelido <input value="Yago"></label>
+   <button class="btn p big" style="justify-content:center"><span class="n pin" style="position:static;box-shadow:none;background:#fff;color:var(--violet)">1</span>Criar sessão</button>
+   <div class="or">ou entre com um código</div>
+   <div style="display:flex;gap:8px"><input class="mono" placeholder="xxxx-xx" value="k3f9-2a"><button class="btn">Entrar</button></div>
+   <div class="radio"><span class="sel">🎤 Com microfone</span><span>🎧 Só ouvindo</span></div>
+   <p class="sm muted" style="margin:0">Sem login. Pedimos o microfone só quando você entrar. <a style="color:var(--violet-t)">App para Windows</a></p>
+  </div>
+ </div></div>
+ <div class="note">
+  <div><span class="n">1</span><b>Uma tela só.</b> O apelido é pedido uma vez e serve para criar e para entrar. Acaba o "Continuar", que levava a uma segunda tela com o código de novo.</div>
+  <div><b>Código visível</b>, em fonte mono. Não é senha: quem tem o link já entra.</div>
+  <div><b>Card de permissões removido.</b> A escolha mic/ouvir já explica o necessário.</div>
+ </div>
+</section>
+
+<!-- 2 sessão vazia -->
+<section class="shot" id="b">
+ <div class="frame"><div class="ses">
+  <header class="head">
+   <span class="logo"></span><b>Sessão</b><span class="code mono">k3f9-2a</span>
+   <button class="btn p" style="position:relative"><svg class="i"><use href="#link"/></svg>Convidar<span class="n pin" style="right:-8px;top:-8px">1</span></button>
+   <span class="grow"></span>
+   <span class="muted sm">4 pessoas</span>
+   <button class="btn ic g"><svg class="i"><use href="#gear"/></svg></button>
+  </header>
+  <div class="stage"><div class="empty">
+   <svg class="i" style="width:44px;height:44px;color:var(--muted)"><use href="#scr"/></svg>
+   <h3>Ninguém transmitindo</h3><p class="muted" style="margin:0">Qualquer pessoa pode transmitir, uma de cada vez.</p>
+   <p class="sm muted" style="margin:0">Use o botão <b style="color:var(--text)">Transmitir</b> lá embaixo.</p>
+  </div></div>
+  <aside class="side">
+   <div class="seg"><span class="sel">Chat</span><span>Pessoas · 4</span></div>
+   <div class="msgs"><div><b>Ana</b> bora ver o jogo?</div><div><b>Léo</b> transmite aí</div></div>
+   <div class="comp"><input placeholder="Mensagem"><button class="btn p ic">➤</button></div>
+  </aside>
+  <footer class="foot">
+   <div><div class="zone"><button class="btn ic on"><svg class="i"><use href="#mic"/></svg></button><button class="btn ic"><svg class="i"><use href="#hp"/></svg></button><button class="btn ic g"><svg class="i"><use href="#down"/></svg></button></div><div class="zl" style="text-align:left">voz</div></div>
+   <div style="position:relative"><button class="btn p big"><svg class="i"><use href="#scr"/></svg>Transmitir</button><span class="n pin" style="right:-8px;top:-8px">2</span><div class="zl">ação principal</div></div>
+   <div><div class="zone r"><button class="btn on"><svg class="i"><use href="#chat"/></svg><span class="lbl">Chat</span></button><button class="btn ic"><svg class="i"><use href="#full"/></svg></button><button class="btn d"><svg class="i"><use href="#leave"/></svg><span class="lbl">Sair</span></button></div><div class="zl" style="text-align:right">vista e saída</div></div>
+  </footer>
+ </div></div>
+ <div class="note">
+  <div><span class="n">1</span><b>"Convidar" com texto</b> no lugar do código mascarado + olho + ícone de link. Um clique copia o link.</div>
+  <div><span class="n">2</span><b>Uma ação principal</b> no centro do rodapé. O overlay só informa e não duplica o botão.</div>
+  <div><b>Rodapé em 3 zonas:</b> voz à esquerda, ação no centro, vista e saída à direita. A seta ao lado do fone abre o mixer rápido (tela 4).</div>
+ </div>
+</section>
+
+<!-- 3 transmitindo -->
+<section class="shot" id="c">
+ <div class="frame"><div class="ses">
+  <header class="head">
+   <span class="logo"></span><b>Sessão</b><span class="code mono">k3f9-2a</span>
+   <button class="btn"><svg class="i"><use href="#link"/></svg>Convidar</button>
+   <span class="live">Ao vivo · você</span>
+   <span class="muted sm" style="position:relative">1080p · 60 fps · 3 assistindo<span class="n pin" style="right:-26px;top:-4px">1</span></span>
+   <span class="grow"></span>
+   <button class="btn ic g"><svg class="i"><use href="#gear"/></svg></button>
+  </header>
+  <div class="stage"><div class="fake">prévia da sua tela</div></div>
+  <aside class="side">
+   <div class="seg"><span class="sel">Chat</span><span>Pessoas · 4</span></div>
+   <div class="msgs"><div><b>Ana</b> nítido demais 🔥</div><div><b>Léo</b> pode aumentar o som?</div></div>
+   <div class="comp"><input placeholder="Mensagem"><button class="btn p ic">➤</button></div>
+  </aside>
+  <footer class="foot">
+   <div class="zone"><button class="btn ic on"><svg class="i"><use href="#mic"/></svg></button><button class="btn ic"><svg class="i"><use href="#hp"/></svg></button><button class="btn ic g"><svg class="i"><use href="#down"/></svg></button></div>
+   <div class="zone" style="position:relative">
+    <button class="btn"><svg class="i"><use href="#pause"/></svg>Pausar</button>
+    <button class="btn d" style="background:var(--red);color:#fff;border-color:var(--red)"><svg class="i"><use href="#stop"/></svg>Parar</button>
+    <button class="btn ic on"><svg class="i"><use href="#more"/></svg></button>
+    <span class="n pin" style="right:-8px;top:-8px">2</span>
+    <div class="menu" style="bottom:52px;left:50%;transform:translateX(-10%)">
+     <div><svg class="i"><use href="#scr"/></svg>Trocar fonte</div>
+     <div><svg class="i"><use href="#hd"/></svg>Qualidade<span class="grow"></span><span class="muted sm">Balanceado ›</span></div>
+     <div><svg class="i"><use href="#vol"/></svg>Áudio da transmissão<span class="grow"></span><span class="tr" style="transform:scale(.8)"></span></div>
+     <hr>
+     <div><svg class="i"><use href="#pass"/></svg>Passar a vez…</div>
+     <div><svg class="i"><use href="#sig"/></svg>Ver métricas</div>
+    </div>
+   </div>
+   <div class="zone r"><button class="btn on"><svg class="i"><use href="#chat"/></svg><span class="lbl">Chat</span></button><button class="btn ic"><svg class="i"><use href="#full"/></svg></button><button class="btn d"><svg class="i"><use href="#leave"/></svg><span class="lbl">Sair</span></button></div>
+  </footer>
+ </div></div>
+ <div class="note">
+  <div><span class="n">1</span><b>Estado em linguagem simples</b> no cabeçalho, em vez de estatística mono e latência solta.</div>
+  <div><span class="n">2</span><b>O botão Transmitir vira Pausar + Parar.</b> Os 6 controles que ficavam sobre o vídeo vão para o menu "⋯". O vídeo fica limpo, e <code>T</code> passa a alternar uma ação só.</div>
+ </div>
+</section>
+
+<!-- 4 assistindo + pessoas -->
+<section class="shot" id="d">
+ <div class="frame"><div class="ses">
+  <header class="head">
+   <span class="logo"></span><b>Sessão</b><span class="code mono">k3f9-2a</span>
+   <button class="btn"><svg class="i"><use href="#link"/></svg>Convidar</button>
+   <span class="live">Ao vivo · Ana</span>
+   <span class="grow"></span>
+   <button class="btn ic g"><svg class="i"><use href="#gear"/></svg></button>
+  </header>
+  <div class="stage"><div class="fake">tela da Ana</div><span class="who">Ana · 1080p60</span></div>
+  <aside class="side" style="position:relative">
+   <div class="seg"><span>Chat</span><span class="sel">Pessoas · 4</span></div>
+   <ul class="ppl">
+    <li><span class="av">Y</span><span>Yago <span class="muted sm">(você)</span></span><span class="grow"></span><span class="tagr">dono</span><button class="btn ic g" style="width:30px;padding:4px"><svg class="i"><use href="#more"/></svg></button></li>
+    <li><span class="av" style="background:#3a0d14;color:#ff8a94">A</span><span>Ana</span><span class="grow"></span><span class="tagr" style="color:#ff8a94;border-color:#5a2028">ao vivo</span></li>
+    <li class="hl"><span class="av">L</span><span>Léo</span><span class="grow"></span><button class="btn ic g on" style="width:30px;padding:4px;position:relative"><svg class="i"><use href="#more"/></svg></button></li>
+    <li><span class="av">M</span><span>Mari</span><span class="grow"></span><span class="tagr">mod</span></li>
+   </ul>
+   <div class="menu" style="top:178px;right:14px">
+    <div><svg class="i"><use href="#vol"/></svg>Volume do Léo<span class="grow"></span><span class="muted sm">80%</span></div>
+    <div><svg class="i"><use href="#pass"/></svg>Passar a vez para Léo</div>
+    <div>🛡️ Tornar moderador</div>
+    <hr><div class="dz">Remover da sessão</div>
+   </div>
+   <div style="padding:10px;border-top:1px solid var(--line);position:relative"><button class="btn g" style="width:100%;justify-content:flex-start"><svg class="i"><use href="#lock"/></svg>Regras da sessão…</button><span class="n pin" style="right:8px;top:-10px">2</span></div>
+  </aside>
+  <footer class="foot">
+   <div class="zone" style="position:relative">
+    <button class="btn ic on"><svg class="i"><use href="#mic"/></svg></button><button class="btn ic"><svg class="i"><use href="#hp"/></svg></button><button class="btn ic g on"><svg class="i"><use href="#down"/></svg></button>
+    <span class="n pin" style="left:118px;top:-8px">1</span>
+    <div class="pop" style="bottom:52px;left:0">
+     <b>Volume</b>
+     <div class="rng"><span>Transmissão</span><i style="--w:60%"></i><span class="muted">60</span></div>
+     <div class="rng"><span>Voz</span><i style="--w:45%"></i><span class="muted">45</span></div>
+     <a class="sm" style="color:var(--violet-t)">Microfone e dispositivos ›</a>
+    </div>
+   </div>
+   <div><button class="btn"><svg class="i"><use href="#scr"/></svg>Pedir a vez</button></div>
+   <div class="zone r"><button class="btn on"><svg class="i"><use href="#ppl"/></svg><span class="lbl">Painel</span></button><button class="btn ic"><svg class="i"><use href="#full"/></svg></button><button class="btn d"><svg class="i"><use href="#leave"/></svg><span class="lbl">Sair</span></button></div>
+  </footer>
+ </div></div>
+ <div class="note">
+  <div><span class="n">1</span><b>Mixer rápido</b> num popover junto da voz. O diálogo "Áudio e sessão" deixa de existir.</div>
+  <div><span class="n">2</span><b>A moderação fica onde estão as pessoas:</b> o menu "⋯" de cada um tem volume, passar a vez, mod e remover. "Regras da sessão" (trancar, aprovar pedidos) aparece só para dono/mod.</div>
+  <div><b>Ação principal contextual:</b> quando outra pessoa está ao vivo, o botão vira "Pedir a vez".</div>
+  <div><b>"Encerrar para todos"</b> passa a ser uma opção dentro de Sair, só para o dono, com confirmação.</div>
+ </div>
+</section>
+
+<!-- 5 configurações -->
+<section class="shot" id="e">
+ <div class="frame"><div class="dlgwrap">
+  <div class="dlg">
+   <aside><span>🎤 Áudio</span><span class="sel">🖥️ Vídeo</span><span>🔒 Sessão</span><span>ℹ️ Sobre</span></aside>
+   <main>
+    <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:18px">Configurações</b><button class="btn ic g">✕</button></div>
+    <h3>Quando a rede apertar</h3>
+    <div class="radio"><span>Nitidez</span><span class="sel">Equilíbrio</span><span>Fluidez</span></div>
+    <p class="sm muted" style="margin:-8px 0 0">Muda na hora, sem reiniciar.</p>
+    <h3>Atraso</h3>
+    <label style="font-weight:500">Atraso para todos<select><option>Automático (agora 1,2 s)</option></select></label>
+    <h3>Internet</h3>
+    <label style="font-weight:500">Upload<div style="display:flex;gap:8px"><input value="20 Mbps"><button class="btn">Medir</button></div></label>
+    <details><summary>Avançado · codec, suporte do navegador</summary></details>
+    <div style="display:flex;justify-content:flex-end"><button class="btn p">Salvar</button></div>
+   </main>
+  </div>
+ </div></div>
+ <div class="note">
+  <div><b>Um diálogo com abas</b> no lugar de "Configurações" e "Áudio e sessão" separados. A aba Sessão aparece só para dono/mod.</div>
+  <div><b>Cada ajuste numa linha curta.</b> Os textos longos vão para "Avançado" ou para um tooltip.</div>
+  <div><b>O upload mora aqui.</b> O diálogo Transmitir só mostra o valor e um "alterar".</div>
+ </div>
+</section>
+
+<script>
+document.querySelectorAll('nav.tabs button').forEach(b=>b.onclick=()=>{
+ document.querySelectorAll('nav.tabs button').forEach(x=>x.setAttribute('aria-selected',x===b));
+ document.querySelectorAll('.shot').forEach(s=>s.classList.toggle('on',s.id===b.dataset.t));
+});
+</script>
