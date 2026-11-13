@@ -269,19 +269,46 @@ dialog::backdrop { background: rgba(0, 0, 0, .55); }
 @media (max-width: 1000px) {
   .s-head .latency, .s-head .label-sm, .s-head .brand .name { display: none; }
 }
+/* ── celular: mesma vibe de vidro, empilhada; dock flutuante fixo embaixo e painel vira gaveta ── */
 @media (max-width: 860px) {
-  .home-hero, .home-cards { grid-template-columns: minmax(0, 1fr); }
-  .voice-seg { margin-left: 0; }
-  .session { display: flex; flex-direction: column; height: 100dvh; }
-  .s-head, .s-foot, .side, .presenter, .presenter-chip, .request { position: static; transform: none; width: auto; max-width: none; margin: 8px 8px 0; }
-  .s-head { order: 0; }
+  body { background: radial-gradient(90% 50% at 0% 0%, rgba(127, 0, 255, .35), transparent 60%), radial-gradient(80% 40% at 100% 100%, rgba(127, 0, 255, .2), transparent 60%), var(--bg); background-attachment: fixed; }
+  .glass { border-radius: 22px; }
+
+  /* Início */
+  .home { padding: 18px 16px 32px; gap: 18px; }
+  .home-hero, .home-cards { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .display { font-size: clamp(54px, 17vw, 80px); }
+  .checklist { flex-direction: row; flex-wrap: wrap; gap: 8px; padding: 12px; }
+  .checklist .kicker, .checklist > p:not(.check) { display: none; }
+  .check { background: rgba(255, 255, 255, .06); border-radius: 999px; padding: 6px 12px; font-size: 13px; }
+  .card { padding: 18px; gap: 12px; }
+  #create-form .row { display: grid; grid-template-columns: 1fr 1fr; }
+  #create-form .row .btn { width: 100%; padding: 0 10px; }
+  .app-pitch { font-size: 12px; }
+  #home-join-form .row { flex-wrap: wrap; }
+  .voice-seg { margin-left: 0; flex: 1; }
+
+  /* Sessão */
+  .session { display: flex; flex-direction: column; height: 100dvh; padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+  .s-head, .side, .presenter, .presenter-chip, .request { position: static; transform: none; width: auto; max-width: none; margin: 8px 10px 0; }
+  .s-head { order: 0; padding: 6px 6px 6px 10px; gap: 6px; flex-wrap: nowrap; }
+  .s-head .brand, .s-head #s-copy span, .s-head .latency, .s-head #s-who { display: none; }
+  .s-head .side-tabs .btn { width: 36px; }
   .request { order: 1; }
-  .stage { position: relative; order: 2; aspect-ratio: 16 / 9; max-height: 45dvh; flex: none; margin: 8px 8px 0; border-radius: var(--r-lg); overflow: hidden; }
-  .session.side-off .stage { aspect-ratio: auto; flex: 1; max-height: none; }
+  .stage { position: relative; order: 2; aspect-ratio: 16 / 9; flex: none; margin: 8px 10px 0; border-radius: 22px; overflow: hidden; border: 1px solid var(--glass-line); }
+  .session.side-off .stage { aspect-ratio: auto; flex: 1; min-height: 0; }
+  .overlay, .session:not(.side-off) .overlay { padding: 12px; gap: 8px; }
+  .overlay .display.md, .overlay h2 { font-size: 30px; }
+  .overlay .btn.big { min-height: 44px; }
   .presenter, .presenter-chip { order: 3; max-height: none; }
-  .side { order: 4; flex: 1; min-height: 0; }
-  .s-foot { order: 5; margin-bottom: 8px; justify-content: center; flex-wrap: wrap; }
-  .overlay, .session:not(.side-off) .overlay { padding: 16px; }
-  .s-foot .label-sm { display: none; }
-  .toasts { left: 16px; right: 16px; width: auto; }
+  .presenter-chip { align-self: flex-start; }
+  .side { order: 4; flex: 1; min-height: 160px; border-radius: 22px 22px 22px 22px; }
+  .s-foot { position: fixed; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom)); transform: none; max-width: none; justify-content: space-between; gap: 4px; padding: 6px; border-radius: 22px; }
+  .s-foot .btn { flex: 1; min-width: 0; padding: 0; }
+  .s-foot .label-sm, .s-foot #f-full { display: none; }
+  .s-foot #f-stream { flex: 2.4; padding: 0 10px; }
+  .s-foot #f-stream span { display: inline; font-size: 14px; }
+  .toasts { left: 10px; right: 10px; width: auto; bottom: calc(90px + env(safe-area-inset-bottom)); }
+  .menu { left: 10px !important; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom)); top: auto !important; min-width: 0; border-radius: 22px; }
+  #dlg-settings, #dlg-audio { margin: auto 0 0; width: 100vw; max-width: 100vw; height: 88dvh; border-radius: 22px 22px 0 0; }
 }
