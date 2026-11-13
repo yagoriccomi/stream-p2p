@@ -45,6 +45,15 @@ button, .btn { font: inherit; color: inherit; cursor: pointer; }
 .btn.danger { background: transparent; border-color: var(--error); color: var(--error); }
 .btn.ghost { background: transparent; border-color: transparent; }
 .btn.icon { width: 48px; padding: 0; }
+[data-key] { position: relative; }
+@media (hover: hover) {
+  [data-key]:is(:hover, :focus-visible)::after {
+    content: "Atalho: " attr(data-key); position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+    padding: 4px 8px; border-radius: 6px; background: var(--raised); border: 1px solid var(--border);
+    color: var(--text); font-size: 12px; font-weight: 600; line-height: 1.2; white-space: nowrap; pointer-events: none; z-index: 10;
+  }
+  .s-head [data-key]:is(:hover, :focus-visible)::after { bottom: auto; top: calc(100% + 6px); }
+}
 .btn.big { min-height: 56px; font-size: 17px; border-radius: 14px; }
 .btn[aria-pressed="true"].toggle { background: var(--violet-soft); border-color: var(--violet-border); }
 .btn.off { color: var(--error); border-color: var(--error); }

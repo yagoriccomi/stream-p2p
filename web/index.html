@@ -162,7 +162,7 @@
     <div class="code-box">
       <span class="sr-only">Código da sessão:</span><span class="val" id="s-code">•••••••</span>
       <button class="btn ghost icon" type="button" id="s-eye" aria-label="Mostrar código" aria-pressed="false"><svg class="i"><use href="#i-watching"/></svg></button>
-      <button class="btn ghost icon" type="button" id="s-copy" aria-label="Copiar convite"><svg class="i"><use href="#i-invite-link"/></svg></button>
+      <button class="btn ghost icon" type="button" id="s-copy" data-key="I" aria-keyshortcuts="I" aria-label="Copiar convite"><svg class="i"><use href="#i-invite-link"/></svg></button>
     </div>
     <span class="badge live" id="s-live" hidden>Ao vivo</span>
     <span class="badge paused" id="s-paused" hidden>Pausado</span>
@@ -204,10 +204,10 @@
     <div class="presenter-bar" id="pbar" hidden>
       <button class="btn" type="button" id="p-source"><svg class="i"><use href="#i-screen-share"/></svg>Trocar fonte</button>
       <div class="seg" role="group" aria-label="Qualidade" id="p-quality"></div>
-      <button class="btn" type="button" id="p-pause" aria-pressed="false"><svg class="i"><use href="#i-pause"/></svg><span>Pausar</span></button>
+      <button class="btn" type="button" id="p-pause" data-key="P" aria-keyshortcuts="P" aria-pressed="false"><svg class="i"><use href="#i-pause"/></svg><span>Pausar</span></button>
       <button class="switch" type="button" role="switch" id="p-audio" aria-checked="true"><span>Áudio da transmissão</span><span class="track"></span></button>
       <button class="btn" type="button" id="p-pass"><svg class="i"><use href="#i-pass-turn"/></svg>Passar a vez</button>
-      <button class="btn danger" type="button" id="p-stop"><svg class="i"><use href="#i-stop"/></svg>Parar</button>
+      <button class="btn danger" type="button" id="p-stop" data-key="T" aria-keyshortcuts="T"><svg class="i"><use href="#i-stop"/></svg>Parar</button>
     </div>
   </section>
 
@@ -232,14 +232,14 @@
   </aside>
 
   <footer class="s-foot">
-    <button class="btn" type="button" id="f-mic" aria-pressed="false"><svg class="i"><use href="#i-mic-off"/></svg><span class="label-sm">Microfone</span></button>
-    <button class="btn" type="button" id="f-deafen" aria-pressed="false"><svg class="i"><use href="#i-headphones"/></svg><span class="label-sm">Ouvir</span></button>
+    <button class="btn" type="button" id="f-mic" data-key="M" aria-keyshortcuts="M" aria-pressed="false"><svg class="i"><use href="#i-mic-off"/></svg><span class="label-sm">Microfone</span></button>
+    <button class="btn" type="button" id="f-deafen" data-key="D" aria-keyshortcuts="D" aria-pressed="false"><svg class="i"><use href="#i-headphones"/></svg><span class="label-sm">Ouvir</span></button>
     <button class="btn" type="button" id="f-audio"><svg class="i"><use href="#i-volume"/></svg><span class="label-sm">Áudio</span></button>
-    <button class="btn" type="button" id="f-stream"><svg class="i"><use href="#i-screen-share"/></svg><span>Transmitir</span></button>
+    <button class="btn" type="button" id="f-stream" data-key="T" aria-keyshortcuts="T"><svg class="i"><use href="#i-screen-share"/></svg><span>Transmitir</span></button>
     <span class="grow"></span>
-    <button class="btn toggle" type="button" id="f-side" aria-pressed="true" aria-controls="side"><svg class="i"><use href="#i-chat"/></svg><span class="label-sm">Chat</span><span class="unread" id="f-unread" hidden></span></button>
-    <button class="btn icon" type="button" id="f-full" aria-label="Tela cheia"><svg class="i"><use href="#i-fullscreen"/></svg></button>
-    <button class="btn icon" type="button" id="f-settings" aria-label="Configurações"><svg class="i"><use href="#i-settings"/></svg></button>
+    <button class="btn toggle" type="button" id="f-side" data-key="C" aria-keyshortcuts="C" aria-pressed="true" aria-controls="side"><svg class="i"><use href="#i-chat"/></svg><span class="label-sm">Chat</span><span class="unread" id="f-unread" hidden></span></button>
+    <button class="btn icon" type="button" id="f-full" data-key="F" aria-keyshortcuts="F" aria-label="Tela cheia"><svg class="i"><use href="#i-fullscreen"/></svg></button>
+    <button class="btn icon" type="button" id="f-settings" data-key="," aria-keyshortcuts="Comma" aria-label="Configurações"><svg class="i"><use href="#i-settings"/></svg></button>
     <button class="btn danger" type="button" id="f-leave"><svg class="i"><use href="#i-leave"/></svg><span class="label-sm">Sair</span></button>
   </footer>
 </div>

@@ -946,6 +946,13 @@ wireSwitch($('opt-ptt'), (on) => { voice.setPtt(on); saveAudio({ ptt: on }); });
 const typing = (e) => e.target.closest?.('input, textarea, select, [contenteditable]');
 addEventListener('keydown', (e) => e.code === 'KeyV' && !e.repeat && !typing(e) && voice.setPttDown(true));
 addEventListener('keyup', (e) => e.code === 'KeyV' && voice.setPttDown(false));
+// Single-key shortcuts: the buttons carry data-key (shown as a hover hint by styles.css).
+addEventListener('keydown', (e) => {
+  if (e.repeat || e.ctrlKey || e.altKey || e.metaKey || typing(e) || document.querySelector('dialog[open]')) return;
+  const btn = [...document.querySelectorAll('[data-key]')]
+    .find((b) => b.dataset.key === e.key.toUpperCase() && b.offsetParent && !b.disabled);
+  if (btn) { e.preventDefault(); btn.click(); }
+});
 addEventListener('blur', () => voice.setPttDown(false));
 
 async function fillDevices() {
